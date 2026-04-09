@@ -94,7 +94,7 @@ body {
 /* ─── HERO ─── */
 .hero {
   background: var(--yedda-black);
-  padding: 64px 40px 0;
+  padding: 4px 40px 4px;
   position: relative; overflow: hidden;
   min-height: 340px;
 }
@@ -110,7 +110,7 @@ body {
   font-size: 11px; letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--yedda-teal-lt);
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   display: flex; align-items: center; gap: 10px;
 }
 .hero-eyebrow::before {
@@ -124,7 +124,7 @@ body {
   font-size: clamp(38px, 5vw, 68px);
   font-weight: 900; line-height: 1.02;
   letter-spacing: -0.03em;
-  color: white; margin-bottom: 20px;
+  color: white; margin-bottom: 4px;
 }
 
 .hero-title em {
@@ -135,12 +135,12 @@ body {
 .hero-sub {
   font-size: 15px; color: rgba(255,255,255,0.55);
   max-width: 520px; line-height: 1.75;
-  margin-bottom: 32px;
+  margin-bottom: 4px;
 }
 
 .hero-tags {
   display: flex; flex-wrap: wrap; gap: 8px;
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .htag {
@@ -159,14 +159,17 @@ body {
 
 /* ─── ABBEY SVG CHARACTER ─── */
 .abbey-wrap {
-  display: flex; justify-content: flex-end;
+  display: flex; justify-content: center;
   align-items: flex-end;
   padding-bottom: 0;
   position: relative;
+  height: 100%;
+  min-height: 340px;
 }
 
 .abbey-figure {
-  width: 280px;
+  width: 100%;
+  max-width: 420px;
   height: auto;
   object-fit: contain;
   animation: float 4s ease-in-out infinite;
@@ -1173,7 +1176,7 @@ footer {
 <!-- TOPBAR -->
 <nav class="topbar">
   <div class="topbar-logo">
-    <img src="yedda-logo.png" alt="Yedda.ai" style="height:30px;width:auto;">
+    <img src="yedda-logo.png" alt="Yedda.ai" style="height:52px;width:auto;">
   </div>
   <div class="topbar-meta">
     <span>Marketing Command Center</span>
@@ -1187,8 +1190,8 @@ footer {
   <div class="hero-grid">
     <div>
       <div class="hero-eyebrow">Full Deliverables Overview · April 2026</div>
-      <div style="margin-bottom:24px;">
-        <img src="yedda-logo.png" alt="Yedda.ai" style="height:54px;width:auto;">
+      <div style="margin-top:-48px;margin-bottom:-48px;line-height:0;">
+        <img src="yedda-logo.png" alt="Yedda.ai" style="height:180px;width:auto;display:block;">
       </div>
 
       <h1 class="hero-title">
@@ -2218,7 +2221,7 @@ The pattern across sectors is more consistent than most expect.</div>
 <!-- FOOTER -->
 <footer>
   <div class="footer-brand" style="display:flex;align-items:center;gap:16px;">
-    <img src="yedda-logo.png" alt="Yedda.ai" style="height:26px;width:auto;">
+    <img src="yedda-logo.png" alt="Yedda.ai" style="height:44px;width:auto;">
     <span style="color:rgba(255,255,255,0.35);font-size:12px;font-family:var(--font-body);font-weight:300;letter-spacing:0.04em;">Marketing Command Center</span>
   </div>
   <div class="footer-meta">
