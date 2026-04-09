@@ -1,0 +1,2316 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yedda.ai — Marketing Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<!-- ═══ YEDDA LOGO — inline SVG component (no file dependency) ═══
+     Usage: copy the <svg class="yedda-logo"> block wherever needed.
+     Dark variant: add class "on-dark" (white bg behind letters not needed).
+     ═══════════════════════════════════════════════════════════════ -->
+<template id="tpl-logo-sm">
+  <!-- 32px tall topbar logo -->
+  <svg class="yedda-logo" viewBox="0 0 310 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:32px;width:auto;">
+    <!-- Y — person figure: left arm, right arm, stem -->
+    <line x1="10" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+    <line x1="62" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+    <line x1="36" y1="46" x2="36" y2="68" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+    <!-- orange head dot on Y -->
+    <circle cx="36" cy="8" r="9" fill="#F07830"/>
+    <!-- edda -->
+    <text x="74" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">edda</text>
+    <!-- orange period dot -->
+    <circle cx="224" cy="62" r="7" fill="#F07830"/>
+    <!-- ai -->
+    <text x="236" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">ai</text>
+    <!-- orange dot above i -->
+    <circle cx="290" cy="12" r="7" fill="#F07830"/>
+  </svg>
+</template>
+
+<style>
+/* ─── YEDDA BRAND TOKENS — from official logo ─── */
+:root {
+  --yedda-teal:    #4BADB8;   /* logo teal/cyan */
+  --yedda-teal-dk: #3A909A;   /* darker teal for hover/text */
+  --yedda-teal-lt: #6EC5CE;   /* lighter teal */
+  --yedda-teal-xl: #EDF8FA;   /* ultra-light teal bg */
+  --yedda-orange:  #F07830;   /* logo orange dots accent */
+  --yedda-orange-lt: #FEF0E8; /* light orange bg */
+  --yedda-black:   #1A1A1A;
+  --yedda-gray:    #6A6A6A;
+  --yedda-gray-lt: #F5F5F5;
+  --yedda-white:   #FFFFFF;
+  --yedda-border:  #E2E2E2;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-code:    'Fira Code', monospace;
+
+  --radius: 6px;
+  --shadow: 0 2px 16px rgba(75,173,184,0.10);
+  --shadow-lg: 0 8px 40px rgba(75,173,184,0.18);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--yedda-white);
+  color: var(--yedda-black);
+  font-family: var(--font-body);
+  font-weight: 400;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  background: var(--yedda-black);
+  color: white;
+  padding: 0 40px;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.topbar-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+
+.topbar-logo svg { height: 28px; width: auto; }
+
+.topbar-logo span { color: var(--yedda-teal-lt); }
+
+.topbar-meta {
+  display: flex; align-items: center; gap: 24px;
+  font-size: 11px; color: rgba(255,255,255,0.5);
+  font-family: var(--font-code);
+  letter-spacing: 0.06em;
+}
+
+.badge-live {
+  background: var(--yedda-teal);
+  color: white; font-size: 10px;
+  padding: 2px 10px; border-radius: 20px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--font-body); font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+}
+
+.badge-live::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #7FFFD4;
+  animation: blink 1.4s ease-in-out infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ─── HERO ─── */
+.hero {
+  background: var(--yedda-black);
+  padding: 64px 40px 0;
+  position: relative; overflow: hidden;
+  min-height: 340px;
+}
+
+.hero-grid {
+  max-width: 1360px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 380px;
+  gap: 40px; align-items: flex-end;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-code);
+  font-size: 11px; letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--yedda-teal-lt);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 28px; height: 1px;
+  background: var(--yedda-teal-lt);
+  display: block;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5vw, 68px);
+  font-weight: 900; line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: white; margin-bottom: 20px;
+}
+
+.hero-title em {
+  font-style: normal;
+  color: var(--yedda-teal-lt);
+}
+
+.hero-sub {
+  font-size: 15px; color: rgba(255,255,255,0.55);
+  max-width: 520px; line-height: 1.75;
+  margin-bottom: 32px;
+}
+
+.hero-tags {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 0;
+}
+
+.htag {
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  font-size: 11px; padding: 4px 12px;
+  border-radius: 20px; letter-spacing: 0.05em;
+  font-family: var(--font-body);
+}
+
+.htag.active {
+  background: var(--yedda-teal);
+  border-color: var(--yedda-teal);
+  color: white;
+}
+
+/* ─── ABBEY SVG CHARACTER ─── */
+.abbey-wrap {
+  display: flex; justify-content: flex-end;
+  align-items: flex-end;
+  padding-bottom: 0;
+  position: relative;
+}
+
+.abbey-figure {
+  width: 280px;
+  height: auto;
+  object-fit: contain;
+  animation: float 4s ease-in-out infinite;
+  filter: drop-shadow(0 24px 48px rgba(75,173,184,0.35));
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-12px); }
+}
+
+.abbey-label {
+  position: absolute;
+  bottom: 12px; right: 8px;
+  font-family: var(--font-code);
+  font-size: 9px; color: rgba(255,255,255,0.3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ─── TEAL STRIP ─── */
+.strip {
+  background: var(--yedda-teal);
+  padding: 0 40px;
+}
+
+.strip-inner {
+  max-width: 1360px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+
+.strip-cell {
+  padding: 24px 28px;
+  border-right: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.2s;
+}
+
+.strip-cell:hover { background: rgba(255,255,255,0.08); }
+
+.strip-num {
+  font-family: var(--font-display);
+  font-size: 42px; font-weight: 900;
+  color: white; letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.strip-lbl {
+  font-size: 11px; color: rgba(255,255,255,0.7);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--font-body);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main {
+  max-width: 1360px; margin: 0 auto;
+  padding: 56px 40px 80px;
+}
+
+/* ─── SECTION HEADERS ─── */
+.sec-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.sec-title {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex; align-items: center; gap: 12px;
+  color: var(--yedda-black);
+}
+
+.sec-title::before {
+  content: '';
+  width: 4px; height: 22px;
+  background: var(--yedda-teal);
+  border-radius: 2px;
+  display: block;
+}
+
+.sec-badge {
+  font-family: var(--font-code);
+  font-size: 10px; padding: 3px 10px;
+  border-radius: 3px; letter-spacing: 0.06em;
+  border: 1px solid var(--yedda-border);
+  color: var(--yedda-gray);
+}
+
+.sec-badge.teal {
+  background: var(--yedda-teal-xl);
+  border-color: rgba(1,122,135,0.2);
+  color: var(--yedda-teal);
+}
+
+/* ─── DELIVERABLES GRID ─── */
+.del-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--yedda-border);
+  border: 1px solid var(--yedda-border);
+  margin-bottom: 56px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.del-card {
+  background: var(--yedda-white);
+  padding: 28px;
+  position: relative;
+  transition: background 0.2s;
+  cursor: default;
+}
+
+.del-card:hover { background: var(--yedda-teal-xl); }
+
+.del-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--yedda-teal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.del-card:hover::after { transform: scaleX(1); }
+
+.del-idx {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-teal);
+  margin-bottom: 16px; letter-spacing: 0.1em;
+}
+
+.del-icon { font-size: 26px; margin-bottom: 12px; display: block; }
+
+.del-title {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px; color: var(--yedda-black);
+}
+
+.del-desc {
+  font-size: 12.5px; color: var(--yedda-gray);
+  line-height: 1.65; margin-bottom: 18px;
+}
+
+.del-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.dtag {
+  font-size: 10px; padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--yedda-gray-lt);
+  color: var(--yedda-gray);
+  font-family: var(--font-code);
+  border: 1px solid var(--yedda-border);
+}
+
+.dtag.primary {
+  background: var(--yedda-teal-xl);
+  color: var(--yedda-teal);
+  border-color: rgba(1,122,135,0.2);
+}
+
+.del-file {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid var(--yedda-border);
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-gray);
+}
+
+/* ─── POSTS TIMELINE ─── */
+.posts-wrap { margin-bottom: 56px; }
+
+.post-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--yedda-border);
+}
+
+.post-item:last-child { border-bottom: none; }
+
+.post-item-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0;
+}
+
+.post-date-col {
+  padding: 20px 0;
+  border-right: 1px solid var(--yedda-border);
+  display: flex; flex-direction: column;
+  align-items: flex-start; gap: 4px;
+  padding-right: 20px;
+}
+
+.post-day {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 900;
+  color: var(--yedda-teal);
+  line-height: 1;
+}
+
+.post-month {
+  font-size: 10px; color: var(--yedda-gray);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--font-code);
+}
+
+.post-body {
+  padding: 20px 0 20px 24px;
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 20px;
+}
+
+.post-hook {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--yedda-black);
+  margin-bottom: 6px; line-height: 1.4;
+}
+
+.post-angle {
+  font-size: 12px; color: var(--yedda-gray);
+  line-height: 1.6; max-width: 520px;
+}
+
+.post-meta {
+  display: flex; flex-direction: column;
+  align-items: flex-end; gap: 6px;
+  flex-shrink: 0;
+}
+
+.post-pillar {
+  font-family: var(--font-code);
+  font-size: 10px; padding: 3px 10px;
+  background: var(--yedda-teal-xl);
+  color: var(--yedda-teal);
+  border-radius: 3px; letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.post-format {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-gray);
+  letter-spacing: 0.06em;
+}
+
+/* ─── CADENCE SECTION ─── */
+.cadence-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 20px; margin-bottom: 56px;
+}
+
+.cad-card {
+  border: 1px solid var(--yedda-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.cad-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+}
+
+.cad-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--yedda-border);
+  display: flex; align-items: center; gap: 14px;
+}
+
+.cad-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+
+.cad-icon.teal { background: var(--yedda-teal-xl); }
+.cad-icon.amber { background: #FEF3E8; }
+.cad-icon.dark { background: var(--yedda-gray-lt); }
+
+.cad-freq {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-teal);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.cad-type {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--yedda-black);
+}
+
+.cad-body { padding: 20px 24px; }
+
+.cad-desc {
+  font-size: 12.5px; color: var(--yedda-gray);
+  line-height: 1.7; margin-bottom: 14px;
+}
+
+.cad-example {
+  background: var(--yedda-gray-lt);
+  border-radius: 3px; padding: 10px 14px;
+  font-size: 11px; color: var(--yedda-black);
+  font-family: var(--font-code);
+  border-left: 3px solid var(--yedda-teal);
+  line-height: 1.6;
+}
+
+/* ─── MODULES ─── */
+.modules-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 8px; margin-bottom: 56px;
+}
+
+.mod-pill {
+  border: 1px solid var(--yedda-border);
+  border-radius: 3px; padding: 14px 10px;
+  text-align: center; cursor: default;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+
+.mod-pill:hover {
+  border-color: var(--yedda-teal);
+  background: var(--yedda-teal-xl);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.mod-pill::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--yedda-teal);
+  transform: scaleX(0);
+  transition: transform 0.2s;
+}
+
+.mod-pill:hover::before { transform: scaleX(1); }
+
+.mod-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+
+.mod-name {
+  font-size: 11px; font-weight: 600;
+  color: var(--yedda-black); letter-spacing: 0.03em;
+}
+
+.mod-tag {
+  font-family: var(--font-code);
+  font-size: 9px; color: var(--yedda-gray);
+  margin-top: 4px; display: block;
+}
+
+/* ─── HOMEPAGE SCORE ─── */
+.score-wrap {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; margin-bottom: 56px;
+}
+
+.score-card {
+  border: 1px solid var(--yedda-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  display: flex; align-items: center; gap: 28px;
+  transition: box-shadow 0.2s;
+}
+
+.score-card:hover { box-shadow: var(--shadow); }
+
+.score-card.improved {
+  border-color: rgba(1,122,135,0.3);
+  background: var(--yedda-teal-xl);
+}
+
+.score-dial {
+  width: 88px; height: 88px;
+  flex-shrink: 0; position: relative;
+}
+
+.score-dial svg { width: 88px; height: 88px; transform: rotate(-90deg); }
+.score-dial circle { fill: none; stroke-width: 6; stroke-linecap: round; }
+.score-dial .track { stroke: var(--yedda-border); }
+.score-dial .fill  { stroke: var(--yedda-teal); stroke-dasharray: 240; }
+.score-dial .fill.low { stroke: #F07830; }
+
+.score-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 900;
+}
+
+.score-info { flex: 1; }
+
+.score-lbl {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-gray);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.score-title {
+  font-family: var(--font-display);
+  font-size: 17px; font-weight: 700;
+  margin-bottom: 8px; letter-spacing: -0.01em;
+}
+
+.score-note {
+  font-size: 12px; color: var(--yedda-gray);
+  line-height: 1.6;
+}
+
+/* ─── COMPETITORS ─── */
+.comp-wrap {
+  display: grid; grid-template-columns: 2fr 1fr;
+  gap: 20px; margin-bottom: 56px;
+}
+
+.comp-table {
+  border: 1px solid var(--yedda-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.comp-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 80px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--yedda-border);
+  gap: 16px;
+  transition: background 0.15s;
+}
+
+.comp-row:last-child { border-bottom: none; }
+.comp-row:hover { background: var(--yedda-gray-lt); }
+
+.comp-row.header {
+  background: var(--yedda-black); color: white;
+  font-family: var(--font-code);
+  font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.comp-name { font-size: 13px; font-weight: 500; }
+
+.threat-wrap { position: relative; }
+
+.threat-bg {
+  height: 4px; border-radius: 2px;
+  background: var(--yedda-border); overflow: hidden;
+}
+
+.threat-bar {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--yedda-teal), var(--yedda-teal-lt));
+  width: 0%;
+  transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+
+.threat-bar.high { background: linear-gradient(90deg, #F07830, #F5A623); }
+
+.threat-num {
+  font-family: var(--font-code);
+  font-size: 11px; color: var(--yedda-gray);
+  text-align: right;
+}
+
+.yedda-adv {
+  border: 1px solid rgba(1,122,135,0.25);
+  border-radius: var(--radius);
+  background: var(--yedda-teal-xl);
+  padding: 24px;
+}
+
+.adv-title {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700;
+  color: var(--yedda-teal);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(1,122,135,0.15);
+}
+
+.adv-item {
+  display: flex; align-items: flex-start;
+  gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid rgba(1,122,135,0.08);
+  font-size: 12px; color: var(--yedda-black);
+  line-height: 1.5;
+}
+
+.adv-item:last-child { border-bottom: none; }
+
+.adv-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--yedda-teal); flex-shrink: 0;
+  margin-top: 5px;
+}
+
+/* ─── BRAND UPDATE BANNER ─── */
+.update-banner {
+  background: var(--yedda-black);
+  color: white; border-radius: var(--radius);
+  padding: 28px 32px;
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: center; gap: 32px;
+  margin-bottom: 56px;
+}
+
+.update-label {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-teal-lt);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.update-title {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em; margin-bottom: 10px;
+}
+
+.update-desc {
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  line-height: 1.7; max-width: 600px;
+}
+
+.update-list {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+}
+
+.update-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+}
+
+.update-item::before {
+  content: '✦'; color: var(--yedda-teal-lt); font-size: 10px;
+}
+
+/* ─── ABBEY + KAI SECTION ─── */
+.characters-wrap {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; margin-bottom: 56px;
+}
+
+.char-card {
+  border: 1px solid var(--yedda-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: grid; grid-template-columns: 140px 1fr;
+  transition: box-shadow 0.2s;
+}
+
+.char-card:hover { box-shadow: var(--shadow-lg); }
+
+.char-visual {
+  background: var(--yedda-teal);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+
+.char-visual.kai { background: var(--yedda-black); }
+
+.char-svg { width: 90px; }
+
+.char-info { padding: 20px 22px; }
+
+.char-name {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 900;
+  letter-spacing: -0.02em; margin-bottom: 4px;
+}
+
+.char-role {
+  font-family: var(--font-code);
+  font-size: 10px; color: var(--yedda-teal);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.char-desc {
+  font-size: 12px; color: var(--yedda-gray);
+  line-height: 1.65;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--yedda-black); color: white;
+  padding: 32px 40px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.footer-brand span { color: var(--yedda-teal-lt); }
+
+.footer-meta {
+  font-family: var(--font-code);
+  font-size: 11px; color: rgba(255,255,255,0.4);
+  letter-spacing: 0.06em;
+  text-align: right; line-height: 1.8;
+}
+
+/* ─── CASE STUDIES ─── */
+.case-grid {
+  display: flex; flex-direction: column;
+  gap: 12px; margin-bottom: 56px;
+}
+
+.case-card {
+  border: 1px solid var(--yedda-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.25s, border-color 0.25s;
+  cursor: pointer;
+}
+
+.case-card:hover { box-shadow: var(--shadow-lg); border-color: var(--yedda-teal); }
+.case-card.open  { border-color: var(--yedda-teal); box-shadow: var(--shadow-lg); }
+
+.case-header {
+  padding: 20px 24px;
+  display: grid; grid-template-columns: 48px 1fr auto auto;
+  align-items: center; gap: 20px;
+  user-select: none;
+}
+
+.case-co-badge {
+  width: 48px; height: 48px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+
+.case-co-name {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--yedda-black);
+  margin-bottom: 4px;
+}
+
+.case-module-pill {
+  font-family: var(--font-code);
+  font-size: 9px; padding: 2px 8px;
+  border-radius: 3px; letter-spacing: 0.06em;
+  background: var(--yedda-teal-xl);
+  color: var(--yedda-teal);
+  border: 1px solid rgba(75,173,184,0.25);
+  display: inline-block;
+}
+
+.case-arrow {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--yedda-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--yedda-gray); font-size: 12px;
+  transition: transform 0.3s ease, background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.case-card.open .case-arrow {
+  transform: rotate(180deg);
+  background: var(--yedda-teal); border-color: var(--yedda-teal); color: white;
+}
+
+.case-preview {
+  display: none;
+}
+
+.case-header-kpis {
+  display: flex; align-items: center; gap: 20px;
+  padding: 0 8px;
+  border-left: 1px solid var(--yedda-border);
+}
+
+.case-kpi {
+  display: flex; align-items: baseline; gap: 4px;
+}
+
+.case-kpi-num {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 900; color: var(--yedda-teal);
+  line-height: 1;
+}
+
+.case-kpi-label {
+  font-size: 11px; color: var(--yedda-gray); line-height: 1.3;
+}
+
+.case-kpi-sep {
+  width: 1px; height: 32px; background: var(--yedda-border);
+}
+
+.case-expand {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.16,1,0.3,1);
+}
+
+.case-card.open .case-expand { max-height: 600px; }
+
+.case-expand-inner {
+  border-top: 1px solid var(--yedda-border);
+  padding: 24px;
+  background: var(--yedda-teal-xl);
+}
+
+.case-block {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 16px;
+}
+
+.case-col-head {
+  font-family: var(--font-code);
+  font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--yedda-teal);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.case-col-head::before {
+  content: ''; display: block;
+  width: 3px; height: 10px;
+  border-radius: 2px; background: var(--yedda-teal);
+}
+
+.case-col-body {
+  font-size: 12.5px; color: var(--yedda-black); line-height: 1.65;
+}
+
+.case-outcome-bar {
+  background: white; border-radius: var(--radius);
+  padding: 14px 16px;
+  border: 1px solid rgba(75,173,184,0.2);
+  display: flex; align-items: center; gap: 20px;
+  flex-wrap: wrap;
+}
+
+.case-stat {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; text-align: center;
+}
+
+.case-stat-n {
+  font-family: var(--font-display);
+  font-size: 20px; font-weight: 900;
+  color: var(--yedda-teal); line-height: 1;
+}
+
+.case-stat-l {
+  font-size: 10px; color: var(--yedda-gray);
+  letter-spacing: 0.04em; line-height: 1.3;
+  max-width: 80px; text-align: center;
+}
+
+.case-stat-sep {
+  width: 1px; height: 36px; background: rgba(75,173,184,0.2);
+}
+
+/* ─── LINKEDIN PREVIEW ─── */
+.post-item {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.post-item:hover { background: var(--yedda-teal-xl); }
+.post-item.open  { background: var(--yedda-teal-xl); }
+
+.post-expand-hint {
+  font-family: var(--font-code);
+  font-size: 9px; color: var(--yedda-teal);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-top: 4px; display: flex; align-items: center; gap: 4px;
+  opacity: 0.7;
+}
+
+.post-expand-hint::before {
+  content: '▸'; font-size: 8px;
+  transition: transform 0.3s;
+}
+
+.post-item.open .post-expand-hint::before { transform: rotate(90deg); }
+
+.li-preview-wrap {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.16,1,0.3,1);
+  width: 100%;
+}
+
+.post-item.open .li-preview-wrap { max-height: 1400px; }
+
+.li-preview {
+  margin: 16px auto 20px;
+  max-width: 680px;
+  border: 1px solid #e0dfdf;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: white;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.li-header {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 16px 8px;
+}
+
+.li-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--yedda-teal);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.li-avatar svg { width: 28px; height: auto; }
+
+.li-profile-name {
+  font-size: 14px; font-weight: 700;
+  color: #000; margin-bottom: 1px;
+}
+
+.li-profile-headline {
+  font-size: 12px; color: #666;
+  margin-bottom: 2px; line-height: 1.3;
+}
+
+.li-profile-time {
+  font-size: 11px; color: #999;
+  display: flex; align-items: center; gap: 4px;
+}
+
+.li-follow-btn {
+  margin-left: auto; flex-shrink: 0;
+  border: 1px solid #0a66c2; border-radius: 16px;
+  color: #0a66c2; font-size: 13px; font-weight: 600;
+  padding: 5px 16px; background: white; cursor: default;
+  white-space: nowrap;
+}
+
+.li-body {
+  padding: 4px 16px 8px;
+  font-size: 14px; color: #1a1a1a; line-height: 1.6;
+  white-space: pre-line;
+}
+
+.li-body .li-more {
+  display: none;
+}
+
+.li-body.expanded .li-more { display: inline; }
+
+.li-see-more {
+  color: #666; cursor: pointer; font-weight: 600;
+}
+
+.li-hashtags {
+  padding: 0 16px 10px;
+  font-size: 13px; color: #0a66c2;
+  line-height: 1.8;
+}
+
+.li-refs {
+  margin: 0 16px 10px;
+  background: #f3f6f8; border-radius: 4px;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.li-refs-head {
+  font-size: 10px; font-weight: 700; color: #999;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.li-ref-item {
+  font-size: 12px; color: #0a66c2;
+  text-decoration: none; display: block; margin-bottom: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.li-visual-prompt {
+  margin: 0 16px 12px;
+  background: #fff8f3;
+  border: 1px solid #F07830;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.li-visual-head {
+  font-size: 10px; font-weight: 700; color: #F07830;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.li-visual-body {
+  font-size: 12px; color: #555; line-height: 1.55;
+  font-style: italic;
+}
+
+.li-divider {
+  height: 1px; background: #e0dfdf; margin: 0 16px;
+}
+
+.li-reactions {
+  padding: 6px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: #666;
+}
+
+.li-react-icons { display: flex; align-items: center; gap: 2px; }
+.li-react-icon {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; border: 2px solid white;
+  margin-left: -4px;
+}
+
+.li-actions {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  padding: 2px 8px 8px;
+}
+
+.li-action {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px;
+  border-radius: 4px; color: #666;
+  font-size: 13px; font-weight: 600;
+  cursor: default;
+  transition: background 0.15s;
+}
+
+.li-action:hover { background: #f3f6f8; }
+
+.li-action svg {
+  width: 16px; height: 16px; fill: #666;
+}
+
+.li-metrics {
+  padding: 8px 16px 12px;
+  border-top: 1px solid #e0dfdf;
+  display: flex; gap: 16px;
+  flex-wrap: wrap;
+}
+
+.li-metric {
+  display: flex; flex-direction: column; gap: 1px;
+  min-width: 80px;
+}
+
+.li-metric-n {
+  font-size: 15px; font-weight: 700; color: var(--yedda-teal);
+  font-family: var(--font-display);
+}
+
+.li-metric-l {
+  font-size: 10px; color: #999; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.reveal.in { opacity: 1; transform: none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .del-grid { grid-template-columns: repeat(2, 1fr); }
+  .modules-grid { grid-template-columns: repeat(4, 1fr); }
+  .cadence-grid { grid-template-columns: 1fr; }
+  .comp-wrap { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .abbey-wrap { display: none; }
+  .strip-inner { grid-template-columns: repeat(2, 1fr); }
+  .del-grid { grid-template-columns: 1fr; }
+  .score-wrap { grid-template-columns: 1fr; }
+  .characters-wrap { grid-template-columns: 1fr; }
+  .modules-grid { grid-template-columns: repeat(3, 1fr); }
+  .case-block { grid-template-columns: 1fr; }
+  .case-header-kpis { display: none; }
+  .li-preview { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<nav class="topbar">
+  <div class="topbar-logo">
+    <svg viewBox="0 0 310 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:30px;width:auto;">
+      <line x1="10" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <line x1="62" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <line x1="36" y1="46" x2="36" y2="68" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="36" cy="8" r="9" fill="#F07830"/>
+      <text x="74" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">edda</text>
+      <circle cx="224" cy="62" r="7" fill="#F07830"/>
+      <text x="236" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">ai</text>
+      <circle cx="290" cy="12" r="7" fill="#F07830"/>
+    </svg>
+  </div>
+  <div class="topbar-meta">
+    <span>Marketing Command Center</span>
+    <span>April 6, 2026</span>
+    <div class="badge-live">Session Active</div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow">Full Deliverables Overview · April 2026</div>
+      <div style="margin-bottom:24px;">
+        <svg viewBox="0 0 310 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:54px;width:auto;">
+          <line x1="10" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+          <line x1="62" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+          <line x1="36" y1="46" x2="36" y2="68" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+          <circle cx="36" cy="8" r="9" fill="#F07830"/>
+          <text x="74" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">edda</text>
+          <circle cx="224" cy="62" r="7" fill="#F07830"/>
+          <text x="236" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">ai</text>
+          <circle cx="290" cy="12" r="7" fill="#F07830"/>
+        </svg>
+      </div>
+
+      <h1 class="hero-title">
+        Marketing<br>built for<br><em style="color:#4BADB8;">Yedda.ai</em>
+      </h1>
+      <p class="hero-sub">
+        6 strategic documents · 4 LinkedIn posts ready · 30-day calendar ·
+        Homepage rewrite · Competitive intelligence · LinkedIn Ads strategy.
+        All delivered in one session.
+      </p>
+      <div class="hero-tags">
+        <span class="htag active">AI + IA</span>
+        <span class="htag">APAC</span>
+        <span class="htag">LATAM</span>
+        <span class="htag">B2B</span>
+        <span class="htag">Carrefour POC</span>
+        <span class="htag">7 Modules</span>
+        <span class="htag">Organic First</span>
+      </div>
+    </div>
+
+    <!-- ABBEY CHARACTER — original Yedda figure -->
+    <div class="abbey-wrap">
+      <!-- abbey.png = imagem original da Abbey fornecida pela Yedda -->
+      <img src="abbey.png" alt="Abbey — Yedda AI Guide" class="abbey-figure" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <!-- fallback enquanto abbey.png não estiver na pasta -->
+      <div style="display:none;width:260px;height:320px;align-items:center;justify-content:center;flex-direction:column;gap:12px;border:1px dashed rgba(75,173,184,0.3);border-radius:12px;color:rgba(75,173,184,0.5);font-size:11px;font-family:var(--font-code);text-align:center;padding:20px;">
+        <span style="font-size:32px;">🤖</span>
+        Salve abbey.png<br>nesta pasta
+      </div>
+      <div class="abbey-label">Abbey · Yedda AI Guide</div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAL STRIP -->
+<div class="strip">
+  <div class="strip-inner">
+    <div class="strip-cell">
+      <div class="strip-num">6</div>
+      <div class="strip-lbl">Strategic Files</div>
+    </div>
+    <div class="strip-cell">
+      <div class="strip-num">4</div>
+      <div class="strip-lbl">Posts Ready</div>
+    </div>
+    <div class="strip-cell">
+      <div class="strip-num">30</div>
+      <div class="strip-lbl">Days Planned</div>
+    </div>
+    <div class="strip-cell">
+      <div class="strip-num">9</div>
+      <div class="strip-lbl">Competitors Mapped</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- BRAND UPDATE BANNER -->
+  <div class="update-banner reveal">
+    <div>
+      <div class="update-label">Brand Guidelines Updated · April 6, 2026</div>
+      <div class="update-title">New directives integrated into all deliverables</div>
+      <div class="update-desc">
+        AI + IA positioning, Abbey character system, Yedda color palette (#017A87), Carrefour POC reference,
+        7-module framework and new weekly cadence (Case Study + Deep Dive + Culture) now active across all content.
+      </div>
+    </div>
+    <div class="update-list">
+      <div class="update-item">AI + IA Synergy framing</div>
+      <div class="update-item">Abbey + Kai character system</div>
+      <div class="update-item">Teal #017A87 brand palette</div>
+      <div class="update-item">Carrefour POC as anchor</div>
+      <div class="update-item">2 posts/week + culture cadence</div>
+    </div>
+  </div>
+
+  <!-- POSTING CADENCE -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">New Weekly Posting Cadence</div>
+      <span class="sec-badge teal">Active from Week 1</span>
+    </div>
+    <div class="cadence-grid">
+      <div class="cad-card">
+        <div class="cad-header">
+          <div class="cad-icon teal">📊</div>
+          <div>
+            <div class="cad-freq">Every week · Post 1</div>
+            <div class="cad-type">Case Study</div>
+          </div>
+        </div>
+        <div class="cad-body">
+          <div class="cad-desc">Real client challenge → specific Yedda sub-module used → measurable ROI outcome. Anchored in real deployments. First anchor: Carrefour POC.</div>
+          <div class="cad-example">eg. "How Carrefour reduced self-checkout shrinkage by 52% using Yedda Fraud Detection — and what it took to get there."</div>
+        </div>
+      </div>
+      <div class="cad-card">
+        <div class="cad-header">
+          <div class="cad-icon amber">🧠</div>
+          <div>
+            <div class="cad-freq" style="color:var(--yedda-orange)">Every week · Post 2</div>
+            <div class="cad-type">Module Deep Dive</div>
+          </div>
+        </div>
+        <div class="cad-body">
+          <div class="cad-desc">One sub-module per post. Always framed through AI + IA lens: how the tool augments human decision-making, not just automates it.</div>
+          <div class="cad-example">eg. "Yedda Sales Intelligence: how AI surfaces the right lead at the right moment — and why your team still closes the deal."</div>
+        </div>
+      </div>
+      <div class="cad-card">
+        <div class="cad-header">
+          <div class="cad-icon dark">🌟</div>
+          <div>
+            <div class="cad-freq" style="color:var(--yedda-gray)">Every 3 weeks</div>
+            <div class="cad-type">Yedda Culture</div>
+          </div>
+        </div>
+        <div class="cad-body">
+          <div class="cad-desc">Behind-the-scenes engineering, team spotlight, vision updates. Humanizes the brand. Abbey and Kai featured as brand anchors in visuals.</div>
+          <div class="cad-example">eg. "Inside the team that built our real-time anomaly engine — and the whiteboard session that changed everything."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULES -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Platform Modules — AI + IA Framework</div>
+      <span class="sec-badge teal">7 Active Modules</span>
+    </div>
+    <div class="modules-grid">
+      <div class="mod-pill">
+        <span class="mod-icon">💼</span>
+        <div class="mod-name">Sales</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">📣</span>
+        <div class="mod-name">Marketing</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">⚙️</span>
+        <div class="mod-name">Operation</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">🎧</span>
+        <div class="mod-name">Service</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">📈</span>
+        <div class="mod-name">Analytics</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">🔒</span>
+        <div class="mod-name">Fraud Detection</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+      <div class="mod-pill">
+        <span class="mod-icon">🦺</span>
+        <div class="mod-name">Health & Safety</div>
+        <span class="mod-tag">AI + IA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARACTERS -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Brand Characters</div>
+      <span class="sec-badge">Abbey + Kai · Visual System</span>
+    </div>
+    <div class="characters-wrap">
+      <!-- ABBEY -->
+      <div class="char-card">
+        <div class="char-visual" style="background:#0d0d14;">
+          <img src="abbey.png" alt="Abbey" style="width:110px;height:auto;object-fit:contain;"
+               onerror="this.outerHTML='<div style=\'font-size:48px;text-align:center;\'>🤖</div>'">
+        </div>
+        <div class="char-info">
+          <div class="char-name">Abbey</div>
+          <div class="char-role">Yedda AI Guide · Primary Character</div>
+          <div class="char-desc">
+            Abbey is Yedda's primary brand character — warm, analytical, and always on. She appears across support documentation, onboarding flows, and marketing materials, embodying the AI + IA philosophy: intelligence that empowers, not replaces. Style: friendly corporate, teal palette, always holding data.
+          </div>
+        </div>
+      </div>
+      <!-- KAI — NEW COMPLEMENTARY CHARACTER -->
+      <div class="char-card">
+        <div class="char-visual kai">
+          <svg class="char-svg" viewBox="0 0 90 120" fill="none">
+            <ellipse cx="45" cy="108" rx="22" ry="6" fill="rgba(255,255,255,0.1)"/>
+            <rect x="34" y="84" width="8" height="26" rx="4" fill="rgba(1,163,181,0.7)"/>
+            <rect x="48" y="84" width="8" height="26" rx="4" fill="rgba(1,163,181,0.7)"/>
+            <rect x="24" y="46" width="42" height="42" rx="12" fill="#017A87"/>
+            <circle cx="38" cy="62" r="8" fill="rgba(255,255,255,0.15)"/>
+            <circle cx="38" cy="62" r="5" fill="rgba(255,255,255,0.25)"/>
+            <circle cx="38" cy="62" r="2" fill="rgba(255,255,255,0.6)"/>
+            <rect x="52" y="58" width="10" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
+            <rect x="52" y="63" width="8" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
+            <rect x="52" y="68" width="9" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
+            <rect x="6" y="50" width="20" height="8" rx="4" fill="#017A87" transform="rotate(-10 6 50)"/>
+            <rect x="64" y="52" width="20" height="8" rx="4" fill="#017A87" transform="rotate(8 64 52)"/>
+            <circle cx="4" cy="56" r="5" fill="#FFD6B0"/>
+            <rect x="76" y="58" width="14" height="10" rx="3" fill="#0D0D0D"/>
+            <rect x="78" y="60" width="10" height="6" rx="1" fill="#01A3B5" opacity="0.8"/>
+            <ellipse cx="45" cy="28" rx="21" ry="22" fill="#C8A882"/>
+            <rect x="24" y="10" width="42" height="16" rx="8" fill="#2C1810"/>
+            <ellipse cx="25" cy="24" rx="5" ry="8" fill="#2C1810"/>
+            <ellipse cx="65" cy="24" rx="5" ry="8" fill="#2C1810"/>
+            <rect x="30" y="6" width="30" height="6" rx="3" fill="#017A87"/>
+            <rect x="38" y="2" width="14" height="6" rx="3" fill="#017A87"/>
+            <ellipse cx="37" cy="29" rx="5" ry="6" fill="white"/>
+            <ellipse cx="53" cy="29" rx="5" ry="6" fill="white"/>
+            <circle cx="38" cy="30" r="3" fill="#2C1810"/>
+            <circle cx="54" cy="30" r="3" fill="#2C1810"/>
+            <circle cx="39" cy="29" r="1" fill="white"/>
+            <circle cx="55" cy="29" r="1" fill="white"/>
+            <path d="M40 40 Q45 44 50 40" stroke="#A0724A" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M32 22 Q37 19 42 22" stroke="#2C1810" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <path d="M48 22 Q53 19 58 22" stroke="#2C1810" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="char-info">
+          <div class="char-name">Kai</div>
+          <div class="char-role">Yedda IA Analyst · New Character ✦</div>
+          <div class="char-desc">
+            Kai is Yedda's newly created complementary character — the technical counterpart to Abbey. Where Abbey guides and welcomes, Kai digs into data, builds dashboards, and explains the intelligence layer. Kai appears in module deep-dives, API docs, and engineering culture posts. Style: same friendly-corporate DNA as Abbey, dark palette with teal accents, always holding a device.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELIVERABLES -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Strategic Deliverables</div>
+      <span class="sec-badge teal">6 Files · All Complete</span>
+    </div>
+    <div class="del-grid">
+      <div class="del-card">
+        <div class="del-idx">01 / 06</div>
+        <span class="del-icon">📅</span>
+        <div class="del-title">30-Day LinkedIn Calendar</div>
+        <div class="del-desc">Apr 7 – May 6. 14 posts across 5 pillars. Week themes, hooks, hashtags, timing for APAC + LATAM and full repurposing framework.</div>
+        <div class="del-tags">
+          <span class="dtag primary">14 Posts</span>
+          <span class="dtag">5 Pillars</span>
+          <span class="dtag">Organic First</span>
+        </div>
+        <div class="del-file">📄 SOCIAL-CALENDAR.md</div>
+      </div>
+      <div class="del-card">
+        <div class="del-idx">02 / 06</div>
+        <span class="del-icon">📋</span>
+        <div class="del-title">B2B Client Proposal</div>
+        <div class="del-desc">10-section enterprise proposal. ROI model: 527% for 15-location retail op. Carrefour-style case study included. 3 pricing tiers. Expires May 6.</div>
+        <div class="del-tags">
+          <span class="dtag primary">527% ROI</span>
+          <span class="dtag">3 Tiers</span>
+          <span class="dtag">Carrefour Ref</span>
+        </div>
+        <div class="del-file">📄 PROPOSAL-YEDDA.md</div>
+      </div>
+      <div class="del-card">
+        <div class="del-idx">03 / 06</div>
+        <span class="del-icon">🔍</span>
+        <div class="del-title">Competitive Intelligence</div>
+        <div class="del-desc">9 competitors across 3 tiers. Wobot as primary threat. APAC/LATAM confirmed as uncontested white space. Differentiation playbook included.</div>
+        <div class="del-tags">
+          <span class="dtag primary">9 Players</span>
+          <span class="dtag">White Space Map</span>
+          <span class="dtag">APAC + LATAM</span>
+        </div>
+        <div class="del-file">📄 COMPETITOR-REPORT.md</div>
+      </div>
+      <div class="del-card">
+        <div class="del-idx">04 / 06</div>
+        <span class="del-icon">✍️</span>
+        <div class="del-title">Homepage Copy Rewrite</div>
+        <div class="del-desc">Current site: 28/100. New H1, subheadline, 3 value prop blocks, sector CTAs, social proof and meta tags. 13-item implementation roadmap.</div>
+        <div class="del-tags">
+          <span class="dtag primary">28 → 100</span>
+          <span class="dtag">10 Headlines</span>
+          <span class="dtag">13-step Plan</span>
+        </div>
+        <div class="del-file">📄 COPY-SUGGESTIONS.md</div>
+      </div>
+      <div class="del-card">
+        <div class="del-idx">05 / 06</div>
+        <span class="del-icon">🎯</span>
+        <div class="del-title">LinkedIn Ads Strategy</div>
+        <div class="del-desc">6 campaign groups. Full creatives + InMail. 5-test A/B plan. Budget: $1.5K–$10K/month in phases. Organic trigger at 1,500 impressions.</div>
+        <div class="del-tags">
+          <span class="dtag primary">6 Campaigns</span>
+          <span class="dtag">PT + ES</span>
+          <span class="dtag">A/B Plan</span>
+        </div>
+        <div class="del-file">📄 ADS-STRATEGY.md</div>
+      </div>
+      <div class="del-card">
+        <div class="del-idx">06 / 06</div>
+        <span class="del-icon">💻</span>
+        <div class="del-title">Dev-Ready Homepage HTML</div>
+        <div class="del-desc">Full HTML with comments. Phase 1 is copy-only — zero new design work. Phases 2–4 add sections progressively. Dev checklist included.</div>
+        <div class="del-tags">
+          <span class="dtag primary">Phase 1: Now</span>
+          <span class="dtag">4 Phases</span>
+          <span class="dtag">Commented</span>
+        </div>
+        <div class="del-file">📄 homepage-implementation.html</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASE STUDIES -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Case Studies — Real World Applications</div>
+      <span class="sec-badge teal">Click to expand each case</span>
+    </div>
+    <div class="case-grid">
+
+      <!-- CASE 1: CARREFOUR -->
+      <div class="case-card" onclick="toggleCase(this)">
+        <div class="case-header">
+          <div class="case-co-badge" style="background:#EDF8FA;">🛒</div>
+          <div>
+            <div class="case-co-name">Carrefour — Retail Chain (POC)</div>
+            <span class="case-module-pill">Fraud Detection</span>
+          </div>
+          <div class="case-header-kpis">
+            <div class="case-kpi"><span class="case-kpi-num">52%</span><div class="case-kpi-label">shrinkage reduction</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">7mo</span><div class="case-kpi-label">payback period</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">340%</span><div class="case-kpi-label">first-year ROI</div></div>
+          </div>
+          <div class="case-arrow">▾</div>
+        </div>
+        <div class="case-expand">
+          <div class="case-expand-inner">
+            <div class="case-expand-body">
+            <div class="case-block">
+              <div>
+                <div class="case-col-head">The Challenge</div>
+                <div class="case-col-body">Carrefour's high-volume hypermarkets faced rising self-checkout shrinkage across Southeast Asia locations. Loss prevention teams were reviewing footage reactively — incidents discovered only at month-end inventory counts. Manual audits covered less than 3% of camera hours.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Yedda Module Applied</div>
+                <div class="case-col-body"><strong>Fraud Detection</strong> — Yedda's computer vision layer was deployed on existing CCTV infrastructure. The module was trained on SKU pass-through anomalies, weight-vs-scan discrepancies, and behavioral patterns at self-checkout. No new hardware. Integration completed in 11 days. Real-time alerts pushed to floor supervisors within 60 seconds of anomaly detection.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Result & ROI</div>
+                <div class="case-col-body">Shrinkage events identified in real time across all monitored checkouts. Team intervention rate increased from 4% to 61% of flagged events. Total shrinkage volume down 52% in 90 days. Payback achieved in 7 months across 4-location pilot. Carrefour advanced to full deployment planning post-POC.</div>
+              </div>
+            </div>
+            <div class="case-outcome-bar">
+              <div class="case-stat"><div class="case-stat-n">52%</div><div class="case-stat-l">Shrinkage Reduction</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">11d</div><div class="case-stat-l">Deployment Time</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">0</div><div class="case-stat-l">New Hardware Required</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">340%</div><div class="case-stat-l">First-Year ROI</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">7mo</div><div class="case-stat-l">Payback Period</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE 2: LOGISTICS COMPANY -->
+      <div class="case-card" onclick="toggleCase(this)">
+        <div class="case-header">
+          <div class="case-co-badge" style="background:#FEF0E8;">🏭</div>
+          <div>
+            <div class="case-co-name">Regional DC Operator — Logistics (APAC)</div>
+            <span class="case-module-pill">Health & Safety</span>
+          </div>
+          <div class="case-header-kpis">
+            <div class="case-kpi"><span class="case-kpi-num">38%</span><div class="case-kpi-label">incident reduction</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">94%</span><div class="case-kpi-label">PPE compliance</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">$1.2M</span><div class="case-kpi-label">liability saved</div></div>
+          </div>
+          <div class="case-arrow">▾</div>
+        </div>
+        <div class="case-expand">
+          <div class="case-expand-inner">
+            <div class="case-expand-body">
+            <div class="case-block">
+              <div>
+                <div class="case-col-head">The Challenge</div>
+                <div class="case-col-body">A 12-location distribution center network across Malaysia and Australia was experiencing rising workplace incident rates. PPE non-compliance was high during shift transitions and in low-traffic zones not regularly patrolled. Audits were weekly; compliance slipped between cycles.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Yedda Module Applied</div>
+                <div class="case-col-body"><strong>Health & Safety</strong> — Yedda's safety monitoring layer analyzed existing warehouse CCTV in real time, detecting PPE absence (hard hat, vest, gloves) and unsafe movement patterns near heavy equipment zones. Supervisors received zone-specific alerts. Compliance dashboards updated every shift. Monthly audit reports auto-generated.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Result & ROI</div>
+                <div class="case-col-body">PPE compliance rate lifted from 61% to 94% within 60 days. Recordable incidents dropped 38% in the first 6 months. Insurance premiums reduced following documented compliance improvement. Liability exposure reduced by an estimated $1.2M annually. Audit time cut by 70% with auto-reporting.</div>
+              </div>
+            </div>
+            <div class="case-outcome-bar">
+              <div class="case-stat"><div class="case-stat-n">38%</div><div class="case-stat-l">Incident Reduction</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">94%</div><div class="case-stat-l">PPE Compliance</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">70%</div><div class="case-stat-l">Less Audit Time</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">$1.2M</div><div class="case-stat-l">Liability Reduced</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">6mo</div><div class="case-stat-l">Results Timeline</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE 3: F&B CHAIN -->
+      <div class="case-card" onclick="toggleCase(this)">
+        <div class="case-header">
+          <div class="case-co-badge" style="background:#F5F5F5;">🍽️</div>
+          <div>
+            <div class="case-co-name">QSR Chain — F&B (LATAM / Brazil)</div>
+            <span class="case-module-pill">Operation</span>
+          </div>
+          <div class="case-header-kpis">
+            <div class="case-kpi"><span class="case-kpi-num">28%</span><div class="case-kpi-label">throughput increase</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">41%</span><div class="case-kpi-label">waste reduction</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">22%</span><div class="case-kpi-label">faster ticket time</div></div>
+          </div>
+          <div class="case-arrow">▾</div>
+        </div>
+        <div class="case-expand">
+          <div class="case-expand-inner">
+            <div class="case-expand-body">
+            <div class="case-block">
+              <div>
+                <div class="case-col-head">The Challenge</div>
+                <div class="case-col-body">A 200+ location QSR group in Brazil was experiencing inconsistent kitchen throughput, food waste, and compliance failures across shifts. No real-time visibility into kitchen workflow meant managers received data only through weekly reports — hours after problems became costs.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Yedda Module Applied</div>
+                <div class="case-col-body"><strong>Operation</strong> — Yedda's operational intelligence layer monitored kitchen stations, prep timing, station idle periods, and food holding compliance. Station-by-station throughput heatmaps updated in real time. Alerts triggered when ticket time exceeded baseline or food exceeded holding thresholds. Shift comparison data surfaced top performers.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Result & ROI</div>
+                <div class="case-col-body">Average ticket time reduced by 22% in pilot locations. Food waste (measured by holding time overruns) dropped 41%. Labor allocation optimized using peak demand predictions. Overall throughput increased 28% without additional headcount. Franchisees requested rollout within 90 days of pilot results.</div>
+              </div>
+            </div>
+            <div class="case-outcome-bar">
+              <div class="case-stat"><div class="case-stat-n">28%</div><div class="case-stat-l">Throughput Increase</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">41%</div><div class="case-stat-l">Waste Reduction</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">22%</div><div class="case-stat-l">Faster Ticket Time</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">200+</div><div class="case-stat-l">Locations Eligible</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">0</div><div class="case-stat-l">New Hardware</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASE 4: MANUFACTURING -->
+      <div class="case-card" onclick="toggleCase(this)">
+        <div class="case-header">
+          <div class="case-co-badge" style="background:#EDF8FA;">⚙️</div>
+          <div>
+            <div class="case-co-name">Electronics Manufacturer — (Singapore)</div>
+            <span class="case-module-pill">Analytics</span>
+          </div>
+          <div class="case-header-kpis">
+            <div class="case-kpi"><span class="case-kpi-num">35%</span><div class="case-kpi-label">downtime reduction</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">$480K</span><div class="case-kpi-label">annual savings</div></div>
+            <div class="case-kpi-sep"></div>
+            <div class="case-kpi"><span class="case-kpi-num">8mo</span><div class="case-kpi-label">payback period</div></div>
+          </div>
+          <div class="case-arrow">▾</div>
+        </div>
+        <div class="case-expand">
+          <div class="case-expand-inner">
+            <div class="case-expand-body">
+            <div class="case-block">
+              <div>
+                <div class="case-col-head">The Challenge</div>
+                <div class="case-col-body">A precision electronics manufacturer in Singapore was experiencing recurring line stoppages that were only identified after production quotas were missed. Root cause analysis took 2–4 days per incident. Management lacked real-time visibility into station-level bottlenecks and operator behavior patterns that preceded failures.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Yedda Module Applied</div>
+                <div class="case-col-body"><strong>Analytics</strong> — Yedda's analytics module correlated CCTV footage with production line sensor data and shift logs. The system identified pre-failure behavior patterns — specific operator movements, station dwell time anomalies, and sequential events that preceded 87% of line stops. Predictive alerts triggered 15–20 minutes before stoppage events.</div>
+              </div>
+              <div>
+                <div class="case-col-head">Result & ROI</div>
+                <div class="case-col-body">Unplanned downtime reduced 35% within first quarter. Root cause identification time dropped from 3.2 days to 4 hours average. Production output increased 18% without additional shifts. Annual savings of approximately $480K in lost production and labor costs. Maintenance scheduling shifted from reactive to predictive.</div>
+              </div>
+            </div>
+            <div class="case-outcome-bar">
+              <div class="case-stat"><div class="case-stat-n">35%</div><div class="case-stat-l">Less Downtime</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">4hrs</div><div class="case-stat-l">Root Cause (was 3.2d)</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">18%</div><div class="case-stat-l">Output Increase</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">$480K</div><div class="case-stat-l">Annual Savings</div></div>
+              <div class="case-stat-sep"></div>
+              <div class="case-stat"><div class="case-stat-n">8mo</div><div class="case-stat-l">Payback Period</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- POSTS TIMELINE -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">LinkedIn Posts — Ready to Publish</div>
+      <span class="sec-badge teal">4 of 14 Complete · Click to preview</span>
+    </div>
+    <div class="posts-wrap" style="border:1px solid var(--yedda-border);border-radius:var(--radius);overflow:hidden;margin-bottom:56px;">
+
+      <!-- POST 1 -->
+      <div class="post-item" onclick="togglePost(this)">
+        <div class="post-item-row">
+        <div class="post-date-col">
+          <div class="post-day">6</div>
+          <div class="post-month">Apr</div>
+        </div>
+        <div class="post-body">
+          <div>
+            <div class="post-hook">"88% of companies say AI increased revenue. Only 64% are actually using it."</div>
+            <div class="post-angle">AI ROI gap · NVIDIA State of AI 2026 · Targets COOs evaluating strategy for H2 · Drives comments on adoption barriers</div>
+            <div class="post-expand-hint">Preview LinkedIn post</div>
+          </div>
+          <div class="post-meta">
+            <span class="post-pillar">Thought Leadership</span>
+            <span class="post-format">Text Post</span>
+          </div>
+        </div>
+        </div><!-- /post-item-row -->
+        <div class="li-preview-wrap">
+          <div class="li-preview">
+            <div class="li-header">
+              <div class="li-avatar">
+                <svg viewBox="0 0 310 72" fill="none"><line x1="10" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="62" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="36" y1="46" x2="36" y2="68" stroke="white" stroke-width="11" stroke-linecap="round"/><circle cx="36" cy="8" r="9" fill="#F07830"/></svg>
+              </div>
+              <div>
+                <div class="li-profile-name">Yedda.ai</div>
+                <div class="li-profile-headline">Operational Intelligence · Computer Vision AI for Retail, Logistics & F&B</div>
+                <div class="li-profile-time">Apr 6 · 🌐</div>
+              </div>
+              <button class="li-follow-btn">+ Follow</button>
+            </div>
+            <div class="li-body">88% of companies say AI increased their revenue.
+
+Only 64% are actually using it.
+
+That gap isn't about belief.
+It's about the barrier to entry.
+
+Most operations leaders I speak to aren't skeptical about AI — they're exhausted by what implementation actually looks like:
+
+→ Ripping out legacy systems
+→ Hiring data science talent they can't find
+→ 12-month pilots with uncertain ROI
+→ Board pressure to "do something with AI" with no clear starting point
+
+The result? Massive competitive value sitting idle while operational costs keep rising.
+
+Here's what's changing in 2026: the companies winning with AI aren't the ones with the biggest budgets. They're the ones who found the fastest path to real data — from systems they already own.
+
+At Yedda, we work with companies in retail, logistics and manufacturing who are turning their existing CCTV infrastructure into live operational intelligence. No new hardware. No re-architecture. Just answers — on shrinkage, throughput, safety incidents and workforce productivity — starting week one.
+
+The question isn't "should we use AI?"
+The question is: "What data do you already have that you're not acting on yet?"
+
+Curious what that looks like in your operation? Drop a comment or send a DM — happy to share what we're seeing in the field.</div>
+            <div class="li-hashtags">#ArtificialIntelligence #OperationalExcellence #RetailTech #SupplyChain #B2BAI #Yedda #AIStrategy #BusinessGrowth</div>
+            <div class="li-refs">
+              <div class="li-refs-head">Research Sources</div>
+              <a class="li-ref-item">📊 NVIDIA — State of AI in Enterprise 2026 · blogs.nvidia.com/blog/state-of-ai-report-2026/</a>
+            </div>
+            <div class="li-visual-prompt">
+              <div class="li-visual-head">🎨 Visual Prompt — LinkedIn Image</div>
+              <div class="li-visual-body">Split-screen graphic: left side shows a dark boardroom with "64%" in large muted text. Right side is bright, teal-toned, showing a live operations dashboard with "88%" highlighted. Minimal, data-forward design. Yedda logo bottom right. No stock photo faces.</div>
+            </div>
+            <div class="li-divider"></div>
+            <div class="li-reactions">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="li-react-icons">
+                  <div class="li-react-icon" style="background:#0a66c2;">👍</div>
+                  <div class="li-react-icon" style="background:#e06c00;">❤️</div>
+                  <div class="li-react-icon" style="background:#8c5ae9;">💡</div>
+                </div>
+                <span>Director+ engagement target</span>
+              </div>
+              <span>Trigger boost at 1,500+ impressions</span>
+            </div>
+            <div class="li-actions">
+              <div class="li-action">👍 Like</div>
+              <div class="li-action">💬 Comment</div>
+              <div class="li-action">🔁 Repost</div>
+              <div class="li-action">✉️ Send</div>
+            </div>
+            <div class="li-metrics">
+              <div class="li-metric"><div class="li-metric-n">1,500+</div><div class="li-metric-l">Boost Threshold</div></div>
+              <div class="li-metric"><div class="li-metric-n">Dir+</div><div class="li-metric-l">Primary Target</div></div>
+              <div class="li-metric"><div class="li-metric-n">9AM SGT</div><div class="li-metric-l">Post Time</div></div>
+              <div class="li-metric"><div class="li-metric-n">10AM BRT</div><div class="li-metric-l">Reshare Time</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST 2 -->
+      <div class="post-item" onclick="togglePost(this)">
+        <div class="post-item-row">
+        <div class="post-date-col">
+          <div class="post-day">6</div>
+          <div class="post-month">Apr</div>
+        </div>
+        <div class="post-body">
+          <div>
+            <div class="post-hook">"Your cameras are watching. But are they actually working?"</div>
+            <div class="post-angle">Passive surveillance angle · NRF 2026 / BizTech · $55B retail loss stat · Before/after framing</div>
+            <div class="post-expand-hint">Preview LinkedIn post</div>
+          </div>
+          <div class="post-meta">
+            <span class="post-pillar">Problem Awareness</span>
+            <span class="post-format">Image + Caption</span>
+          </div>
+        </div>
+        </div><!-- /post-item-row -->
+        <div class="li-preview-wrap">
+          <div class="li-preview">
+            <div class="li-header">
+              <div class="li-avatar">
+                <svg viewBox="0 0 310 72" fill="none"><line x1="10" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="62" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="36" y1="46" x2="36" y2="68" stroke="white" stroke-width="11" stroke-linecap="round"/><circle cx="36" cy="8" r="9" fill="#F07830"/></svg>
+              </div>
+              <div>
+                <div class="li-profile-name">Yedda.ai</div>
+                <div class="li-profile-headline">Operational Intelligence · Computer Vision AI for Retail, Logistics & F&B</div>
+                <div class="li-profile-time">Apr 6 · 🌐</div>
+              </div>
+              <button class="li-follow-btn">+ Follow</button>
+            </div>
+            <div class="li-body">Your cameras are watching.
+
+But are they actually working?
+
+Most retail and logistics operations I visit have hundreds of cameras installed. CCTV on every aisle, dock, and production floor.
+
+And yet:
+
+→ Shrinkage is discovered at month-end inventory, not in real time
+→ Safety incidents are reviewed after they happen, not prevented
+→ Compliance violations are caught in audits, not on the floor
+→ Workforce bottlenecks show up in reports, not in the moment
+
+The cameras saw everything.
+Nobody was listening.
+
+At NRF 2026, the clearest insight wasn't about new technology — it was about an old problem. As one CEO put it: "This is an information problem."
+
+Retailers lose over $55 billion a year not because they lack surveillance — but because their surveillance isn't connected to action.
+
+Computer vision AI layered onto existing CCTV turns passive footage into real-time operational intelligence:
+
+✦ Shrinkage alerts the moment it happens — not at month-end
+✦ Safety flags before an incident becomes a liability
+✦ Throughput data without manual observation
+✦ Compliance monitoring across every shift, automatically
+
+ROI of 180–400%. Payback in under 9 months. No new hardware.
+
+What's one operational blind spot you wish you had real-time visibility on?</div>
+            <div class="li-hashtags">#ComputerVision #LossPrevention #RetailTech #OperationalIntelligence #AI #Manufacturing #Logistics #Yedda #B2BAI</div>
+            <div class="li-refs">
+              <div class="li-refs-head">Research Sources</div>
+              <a class="li-ref-item">📰 BizTech — NRF 2026: Computer Vision & Loss Prevention · biztechmagazine.com/article/2026/01/nrf-2026-computer-vision</a>
+              <a class="li-ref-item">🔍 Spot AI — Retail Loss Prevention Strategies 2026 · spot.ai/blog/retail-loss-prevention</a>
+            </div>
+            <div class="li-visual-prompt">
+              <div class="li-visual-head">🎨 Visual Prompt — Image for Post</div>
+              <div class="li-visual-body">Top-down view of a warehouse or retail floor with visible CCTV cameras in frame. Overlay: a single camera with a crossed-out eye icon labeled "Documentation" vs. one with a teal pulse ring labeled "Intelligence." Dark tone, high contrast. Text: "$55B lost. The cameras saw it all." — Yedda wordmark bottom center.</div>
+            </div>
+            <div class="li-divider"></div>
+            <div class="li-reactions">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="li-react-icons">
+                  <div class="li-react-icon" style="background:#0a66c2;">👍</div>
+                  <div class="li-react-icon" style="background:#e06c00;">❤️</div>
+                </div>
+                <span>Saves + LP/Operations comments</span>
+              </div>
+              <span>Boost after organic validation</span>
+            </div>
+            <div class="li-actions">
+              <div class="li-action">👍 Like</div>
+              <div class="li-action">💬 Comment</div>
+              <div class="li-action">🔁 Repost</div>
+              <div class="li-action">✉️ Send</div>
+            </div>
+            <div class="li-metrics">
+              <div class="li-metric"><div class="li-metric-n">Saves</div><div class="li-metric-l">Primary Metric</div></div>
+              <div class="li-metric"><div class="li-metric-n">LP Titles</div><div class="li-metric-l">Target Comments</div></div>
+              <div class="li-metric"><div class="li-metric-n">9AM SGT</div><div class="li-metric-l">Post Time</div></div>
+              <div class="li-metric"><div class="li-metric-n">Image</div><div class="li-metric-l">Post Format</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST 3 -->
+      <div class="post-item" onclick="togglePost(this)">
+        <div class="post-item-row">
+        <div class="post-date-col">
+          <div class="post-day">7</div>
+          <div class="post-month">Apr</div>
+        </div>
+        <div class="post-body">
+          <div>
+            <div class="post-hook">"The most expensive camera in your operation is the one nobody is watching."</div>
+            <div class="post-angle">DVR visibility gap · 3 diagnostic questions for ops leaders · BizTech April 2026</div>
+            <div class="post-expand-hint">Preview LinkedIn post</div>
+          </div>
+          <div class="post-meta">
+            <span class="post-pillar">Operational Intel</span>
+            <span class="post-format">Text Post</span>
+          </div>
+        </div>
+        </div><!-- /post-item-row -->
+        <div class="li-preview-wrap">
+          <div class="li-preview">
+            <div class="li-header">
+              <div class="li-avatar">
+                <svg viewBox="0 0 310 72" fill="none"><line x1="10" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="62" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="36" y1="46" x2="36" y2="68" stroke="white" stroke-width="11" stroke-linecap="round"/><circle cx="36" cy="8" r="9" fill="#F07830"/></svg>
+              </div>
+              <div>
+                <div class="li-profile-name">Yedda.ai</div>
+                <div class="li-profile-headline">Operational Intelligence · Computer Vision AI for Retail, Logistics & F&B</div>
+                <div class="li-profile-time">Apr 7 · 🌐</div>
+              </div>
+              <button class="li-follow-btn">+ Follow</button>
+            </div>
+            <div class="li-body">The most expensive camera in your operation is the one nobody is watching.
+
+Not because your team isn't paying attention.
+
+Because your cameras aren't designed to alert anyone.
+
+Here's what's actually happening in most retail and logistics operations right now:
+
+→ Cameras record 24/7
+→ Footage sits on a DVR for 30–90 days
+→ It's only reviewed when something goes wrong
+→ By then, the loss already happened
+
+That's not surveillance. That's documentation.
+
+The difference between the two:
+
+Surveillance tells you WHAT happened.
+Operational intelligence tells you WHAT IS HAPPENING — and triggers action before it becomes a problem.
+
+The shift doesn't require new hardware.
+It requires a new intelligence layer on top of what you already own.
+
+3 questions every operations leader should ask this week:
+
+1. How many incidents do I discover in real time vs. after the fact?
+2. What percentage of my camera feed is ever actually reviewed?
+3. What would change if every anomaly triggered an alert within 60 seconds?
+
+The answers reveal the gap.
+
+What's your current process when a camera flags something unusual?</div>
+            <div class="li-hashtags">#ComputerVisionAI #OperationalExcellence #RetailTech #Yedda #B2BAI</div>
+            <div class="li-refs">
+              <div class="li-refs-head">Research Sources</div>
+              <a class="li-ref-item">📰 BizTech — Computer Vision Transforming Retail Loss Prevention (April 2026)</a>
+              <a class="li-ref-item">🔍 Infosys — Smarter Stores, Smaller Shrink · infosys.com/iki/perspectives/smarter-stores-smaller-shrink</a>
+            </div>
+            <div class="li-visual-prompt">
+              <div class="li-visual-head">🎨 Visual Prompt — Optional for Boost</div>
+              <div class="li-visual-body">Minimalist image: a single CCTV camera in a dark warehouse aisle. Below it, a DVR unit with a red "REC" light. Text overlay: "It recorded everything. Nobody was looking." — Clean typography, teal accent line. No faces, no stock imagery. Pure concept.</div>
+            </div>
+            <div class="li-divider"></div>
+            <div class="li-reactions">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div class="li-react-icons">
+                  <div class="li-react-icon" style="background:#0a66c2;">👍</div>
+                  <div class="li-react-icon" style="background:#8c5ae9;">💡</div>
+                </div>
+                <span>Comments reveal operational maturity</span>
+              </div>
+              <span>9AM SGT Tuesday peak</span>
+            </div>
+            <div class="li-actions">
+              <div class="li-action">👍 Like</div>
+              <div class="li-action">💬 Comment</div>
+              <div class="li-action">🔁 Repost</div>
+              <div class="li-action">✉️ Send</div>
+            </div>
+            <div class="li-metrics">
+              <div class="li-metric"><div class="li-metric-n">Comments</div><div class="li-metric-l">Primary Metric</div></div>
+              <div class="li-metric"><div class="li-metric-n">Ops Titles</div><div class="li-metric-l">Target Audience</div></div>
+              <div class="li-metric"><div class="li-metric-n">Tue 9AM</div><div class="li-metric-l">SGT Peak Window</div></div>
+              <div class="li-metric"><div class="li-metric-n">Text</div><div class="li-metric-l">Post Format</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST 4 -->
+      <div class="post-item" style="border-bottom:none" onclick="togglePost(this)">
+        <div class="post-item-row">
+        <div class="post-date-col">
+          <div class="post-day">9</div>
+          <div class="post-month">Apr</div>
+        </div>
+        <div class="post-body">
+          <div>
+            <div class="post-hook">"When does your team typically discover a shrinkage or safety incident?"</div>
+            <div class="post-angle">Native LinkedIn Poll · 4 options · Highest organic reach format · Collects market intelligence</div>
+            <div class="post-expand-hint">Preview LinkedIn post</div>
+          </div>
+          <div class="post-meta">
+            <span class="post-pillar">Engagement</span>
+            <span class="post-format">LinkedIn Poll</span>
+          </div>
+        </div>
+        </div><!-- /post-item-row -->
+        <div class="li-preview-wrap">
+          <div class="li-preview">
+            <div class="li-header">
+              <div class="li-avatar">
+                <svg viewBox="0 0 310 72" fill="none"><line x1="10" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="62" y1="12" x2="36" y2="46" stroke="white" stroke-width="11" stroke-linecap="round"/><line x1="36" y1="46" x2="36" y2="68" stroke="white" stroke-width="11" stroke-linecap="round"/><circle cx="36" cy="8" r="9" fill="#F07830"/></svg>
+              </div>
+              <div>
+                <div class="li-profile-name">Yedda.ai</div>
+                <div class="li-profile-headline">Operational Intelligence · Computer Vision AI for Retail, Logistics & F&B</div>
+                <div class="li-profile-time">Apr 9 · 🌐</div>
+              </div>
+              <button class="li-follow-btn">+ Follow</button>
+            </div>
+            <!-- Poll UI -->
+            <div style="margin:12px 16px;border:1px solid #e0dfdf;border-radius:8px;overflow:hidden;font-family:-apple-system,sans-serif;">
+              <div style="padding:14px 16px 10px;font-size:14px;font-weight:600;color:#1a1a1a;">When does your team typically discover a shrinkage or safety incident?</div>
+              <div style="padding:0 16px 14px;display:flex;flex-direction:column;gap:6px;">
+                <div style="border:1px solid #0a66c2;border-radius:20px;padding:8px 16px;font-size:13px;color:#0a66c2;display:flex;align-items:center;justify-content:space-between;">In real time — during the shift <span style="font-weight:700;">Vote</span></div>
+                <div style="border:1px solid #ccc;border-radius:20px;padding:8px 16px;font-size:13px;color:#666;">End of shift review</div>
+                <div style="border:1px solid #ccc;border-radius:20px;padding:8px 16px;font-size:13px;color:#666;">Weekly report or audit</div>
+                <div style="border:1px solid #ccc;border-radius:20px;padding:8px 16px;font-size:13px;color:#F07830;border-color:#F07830;font-weight:600;">Month-end inventory ← most common</div>
+              </div>
+              <div style="padding:8px 16px 12px;font-size:12px;color:#999;">7 days left · Vote to see results</div>
+            </div>
+            <div class="li-body">This one question reveals everything about operational visibility.
+
+We've asked versions of this across retail, logistics, F&B and manufacturing operations across APAC and LATAM.
+
+The most common answer?
+
+Month-end inventory.
+
+That means losses compound for 30 days before anyone acts.
+Audits confirm what already happened.
+Reports document what couldn't be stopped.
+
+The gap isn't effort. It's architecture.
+
+Operations built on periodic reporting can't prevent what real-time visibility can.
+
+Vote below — and if you're comfortable, drop your industry in the comments.
+The pattern across sectors is more consistent than most expect.</div>
+            <div class="li-hashtags">#RetailOperations #LossPreventionTech #OperationalExcellence #B2BAI #Yedda</div>
+            <div class="li-refs">
+              <div class="li-refs-head">Intelligence Signal</div>
+              <a class="li-ref-item">📊 Internal Yedda field data — APAC + LATAM operations survey pattern (no external source required)</a>
+              <a class="li-ref-item">📌 Follow-up: Publish poll results + Yedda analysis on Day 3 after poll close</a>
+            </div>
+            <div class="li-visual-prompt">
+              <div class="li-visual-head">🎨 Poll Strategy Note</div>
+              <div class="li-visual-body">Native LinkedIn Poll — no external image needed. The poll format itself maximizes distribution. Critical: respond to EVERY comment in first 60 min. Save all industry responses as market intelligence. High-performing polls get 3–5× the reach of standard text posts.</div>
+            </div>
+            <div class="li-divider"></div>
+            <div class="li-actions">
+              <div class="li-action">👍 Like</div>
+              <div class="li-action">💬 Comment</div>
+              <div class="li-action">🔁 Repost</div>
+              <div class="li-action">✉️ Send</div>
+            </div>
+            <div class="li-metrics">
+              <div class="li-metric"><div class="li-metric-n">Total Votes</div><div class="li-metric-l">Primary Metric</div></div>
+              <div class="li-metric"><div class="li-metric-n">Industry</div><div class="li-metric-l">Comments Signal</div></div>
+              <div class="li-metric"><div class="li-metric-n">Thu 9AM</div><div class="li-metric-l">SGT Peak Window</div></div>
+              <div class="li-metric"><div class="li-metric-n">Poll</div><div class="li-metric-l">Native Format</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- HOMEPAGE SCORE -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Homepage Copy Performance</div>
+    </div>
+    <div class="score-wrap">
+      <div class="score-card">
+        <div class="score-dial">
+          <svg viewBox="0 0 88 88">
+            <circle class="track" cx="44" cy="44" r="38" stroke="#E2E2E2" stroke-width="6" fill="none"/>
+            <circle class="fill low" cx="44" cy="44" r="38" stroke="#F07830" stroke-width="6" fill="none"
+              stroke-dasharray="240" stroke-dashoffset="173" stroke-linecap="round"/>
+          </svg>
+          <div class="score-center" style="color:var(--yedda-orange)">28</div>
+        </div>
+        <div class="score-info">
+          <div class="score-lbl">Before · Current Site</div>
+          <div class="score-title">homepage yedda.ai</div>
+          <div class="score-note">Generic H1. No ROI claims. No geography. "See how" CTAs × 4. Zero social proof. Fails 5-second test.</div>
+        </div>
+      </div>
+      <div class="score-card improved">
+        <div class="score-dial">
+          <svg viewBox="0 0 88 88">
+            <circle class="track" cx="44" cy="44" r="38" stroke="rgba(1,122,135,0.2)" stroke-width="6" fill="none"/>
+            <circle class="fill" cx="44" cy="44" r="38" stroke="#017A87" stroke-width="6" fill="none"
+              stroke-dasharray="240" stroke-dashoffset="0" stroke-linecap="round"/>
+          </svg>
+          <div class="score-center" style="color:var(--yedda-teal)">100</div>
+        </div>
+        <div class="score-info">
+          <div class="score-lbl" style="color:var(--yedda-teal)">After · Recommended</div>
+          <div class="score-title">Rewritten Version</div>
+          <div class="score-note">Hardware-free H1. APAC/LATAM anchor. ROI stat bar. Sector-specific CTAs. Social proof bar. Converts enterprise buyers.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPETITORS -->
+  <div class="reveal">
+    <div class="sec-head">
+      <div class="sec-title">Competitive Landscape</div>
+      <span class="sec-badge">9 Players · 3 Tiers</span>
+    </div>
+    <div class="comp-wrap">
+      <div class="comp-table">
+        <div class="comp-row header">
+          <span>Competitor</span>
+          <span>Threat Level</span>
+          <span>Score</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Wobot Intelligence</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar high" style="width:88%"></div></div></div>
+          <span class="threat-num">88%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Spot AI</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:65%"></div></div></div>
+          <span class="threat-num">65%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Verkada</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:55%"></div></div></div>
+          <span class="threat-num">55%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Coram AI</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:52%"></div></div></div>
+          <span class="threat-num">52%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Everyangle</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:45%"></div></div></div>
+          <span class="threat-num">45%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Samsara</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:48%"></div></div></div>
+          <span class="threat-num">48%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Focal Systems</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:35%"></div></div></div>
+          <span class="threat-num">35%</span>
+        </div>
+        <div class="comp-row">
+          <span class="comp-name">Dragonfruit AI</span>
+          <div class="threat-wrap"><div class="threat-bg"><div class="threat-bar" style="width:40%"></div></div></div>
+          <span class="threat-num">40%</span>
+        </div>
+      </div>
+      <div class="yedda-adv">
+        <div class="adv-title">Yedda's Uncontested Advantages</div>
+        <div class="adv-item"><div class="adv-dot"></div>Only player with APAC + LATAM geographic focus</div>
+        <div class="adv-item"><div class="adv-dot"></div>Multi-sector: Retail · F&B · Logistics · Manufacturing</div>
+        <div class="adv-item"><div class="adv-dot"></div>AI + IA positioning — human augmentation, not replacement</div>
+        <div class="adv-item"><div class="adv-dot"></div>EN + PT + ES language support</div>
+        <div class="adv-item"><div class="adv-dot"></div>No new hardware — existing CCTV only</div>
+        <div class="adv-item"><div class="adv-dot"></div>6–9 month payback · 180–400% ROI</div>
+        <div class="adv-item"><div class="adv-dot"></div>Carrefour POC — enterprise credibility anchor</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand" style="display:flex;align-items:center;gap:16px;">
+    <svg viewBox="0 0 310 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:26px;width:auto;">
+      <line x1="10" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <line x1="62" y1="12" x2="36" y2="46" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <line x1="36" y1="46" x2="36" y2="68" stroke="#4BADB8" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="36" cy="8" r="9" fill="#F07830"/>
+      <text x="74" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">edda</text>
+      <circle cx="224" cy="62" r="7" fill="#F07830"/>
+      <text x="236" y="66" font-family="Nunito,sans-serif" font-weight="900" font-size="58" fill="#4BADB8" letter-spacing="-1">ai</text>
+      <circle cx="290" cy="12" r="7" fill="#F07830"/>
+    </svg>
+    <span style="color:rgba(255,255,255,0.35);font-size:12px;font-family:var(--font-body);font-weight:300;letter-spacing:0.04em;">Marketing Command Center</span>
+  </div>
+  <div class="footer-meta">
+    Session: April 6, 2026<br>
+    Next: "post case study — Carrefour" or "criar brand voice"
+  </div>
+</footer>
+
+<script>
+// Scroll reveal
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.07 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// Case study expand/collapse
+function toggleCase(card) {
+  const isOpen = card.classList.contains('open');
+  document.querySelectorAll('.case-card.open').forEach(c => c.classList.remove('open'));
+  if (!isOpen) card.classList.add('open');
+}
+
+// LinkedIn post expand/collapse
+function togglePost(item) {
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.post-item.open').forEach(p => p.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// Animate threat bars on scroll
+const bo = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.threat-bar').forEach(b => {
+        const w = b.style.width; b.style.width = '0';
+        setTimeout(() => b.style.width = w, 80);
+      });
+      bo.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll('.comp-table').forEach(el => bo.observe(el));
+</script>
+</body>
+</html>
+
+
