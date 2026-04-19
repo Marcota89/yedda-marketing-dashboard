@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Yedda.ai — Post 4: 80% Results, ⅔ Haven't Started</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#0b0d10; font-family:'DM Sans',sans-serif; }
+
+  .card { width:1200px; height:628px; position:relative; overflow:hidden; }
+
+  .bg {
+    position:absolute; inset:0;
+    background:radial-gradient(ellipse 800px 400px at 50% 50%, rgba(75,173,184,0.06) 0%, transparent 70%), #0b0d10;
+  }
+
+  .scanlines {
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(75,173,184,0.015) 4px);
+    pointer-events:none; z-index:2;
+  }
+
+  .watermark {
+    position:absolute; bottom:-40px; right:-20px;
+    font-family:'Playfair Display',serif; font-size:260px; font-weight:900;
+    color:rgba(75,173,184,0.025); line-height:1; pointer-events:none; z-index:1; letter-spacing:-0.06em;
+  }
+
+  .logo-bar {
+    position:absolute; top:28px; left:52px;
+    display:flex; align-items:center; gap:12px; z-index:20;
+  }
+  .logo-img { height:150px; width:auto; }
+  .logo-sep { width:1px; height:16px; background:rgba(255,255,255,0.1); }
+  .logo-tag { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); }
+
+  .live-badge {
+    position:absolute; top:28px; right:52px;
+    display:flex; align-items:center; gap:7px;
+    background:rgba(75,173,184,0.1); border:1px solid rgba(75,173,184,0.3);
+    padding:5px 12px; border-radius:20px; z-index:20;
+  }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#4BADB8;
+    box-shadow:0 0 6px rgba(75,173,184,1); animation:blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .live-text { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#4BADB8; }
+
+  /* Main layout */
+  .content {
+    position:absolute; top:50%; left:52px; right:52px;
+    transform:translateY(-50%);
+    z-index:10;
+    display:grid; grid-template-columns:1fr auto;
+    gap:60px; align-items:center;
+  }
+
+  .overline {
+    font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.22em;
+    text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .overline::before { content:''; display:inline-block; width:20px; height:1px; background:rgba(255,255,255,0.2); }
+
+  .big-statement {
+    font-family:'Playfair Display',serif; font-weight:900; font-size:58px;
+    line-height:1.0; letter-spacing:-0.025em; color:#fff; margin-bottom:10px;
+  }
+  .big-statement .teal { color:#4BADB8; }
+  .big-statement .orange { color:#F07830; }
+  .big-statement .dim { color:rgba(255,255,255,0.2); font-style:italic; font-size:40px; }
+
+  .sub-statement {
+    font-size:14px; color:rgba(255,255,255,0.45); line-height:1.6;
+    max-width:520px; margin-bottom:24px;
+  }
+  .sub-statement strong { color:rgba(255,255,255,0.7); font-weight:600; }
+
+  /* Progress bar */
+  .gap-bar-wrap { margin-bottom:20px; }
+  .gap-bar-label { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.16em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); margin-bottom:8px; }
+  .gap-bar { height:28px; border-radius:4px; overflow:hidden;
+    display:flex; border:1px solid rgba(255,255,255,0.06); }
+  .bar-not-started { flex:2; background:rgba(255,255,255,0.04);
+    display:flex; align-items:center; padding:0 12px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.3); letter-spacing:0.08em;
+    border-right:1px solid rgba(255,255,255,0.06); }
+  .bar-started { flex:1; background:rgba(75,173,184,0.15);
+    display:flex; align-items:center; justify-content:flex-end; padding:0 12px;
+    font-family:'Fira Code',monospace; font-size:9px; color:#4BADB8; letter-spacing:0.08em; }
+
+  /* Module pills */
+  .modules { display:flex; flex-wrap:wrap; gap:6px; }
+  .pill {
+    font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.08em;
+    padding:4px 10px; border-radius:3px;
+    background:rgba(75,173,184,0.07); border:1px solid rgba(75,173,184,0.2);
+    color:rgba(75,173,184,0.8); white-space:nowrap;
+    display:flex; align-items:center; gap:5px;
+  }
+  .pill-dot { width:4px; height:4px; border-radius:50%; background:#F07830; }
+
+  /* Right col */
+  .right-col { display:flex; flex-direction:column; align-items:center; gap:16px; min-width:180px; }
+  .abbey-img { height:160px; width:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 32px rgba(75,173,184,0.45)); }
+
+  .stat-mini { display:flex; flex-direction:column; gap:8px; width:100%; }
+  .stat-mini-card { padding:10px 12px; border-radius:4px; }
+  .stat-mini-card.teal { background:rgba(75,173,184,0.08); border:1px solid rgba(75,173,184,0.2); }
+  .stat-mini-card.orange { background:rgba(240,120,48,0.08); border:1px solid rgba(240,120,48,0.2); }
+  .stat-mini-n { font-family:'Playfair Display',serif; font-size:26px; font-weight:900; line-height:1; }
+  .stat-mini-card.teal .stat-mini-n { color:#4BADB8; }
+  .stat-mini-card.orange .stat-mini-n { color:#F07830; }
+  .stat-mini-l { font-family:'Fira Code',monospace; font-size:8px; color:rgba(255,255,255,0.3);
+    letter-spacing:0.05em; line-height:1.4; margin-top:2px; }
+
+  /* Bottom */
+  .bottom-tagline {
+    position:absolute; bottom:36px; left:52px; right:52px;
+    display:flex; align-items:center; justify-content:space-between; z-index:15;
+  }
+  .tagline-text { font-family:'Playfair Display',serif; font-size:14px; font-weight:700;
+    font-style:italic; color:rgba(255,255,255,0.3); }
+  .tagline-text .highlight { color:#4BADB8; font-style:normal; }
+  .source-ref { font-family:'Fira Code',monospace; font-size:8px;
+    color:rgba(255,255,255,0.2); letter-spacing:0.1em; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#4BADB8,#6EC5CE 40%,#F07830 80%,#F07830); z-index:30; }
+  .corner-tl { position:absolute; top:0; left:0; width:3px; height:80px; background:#4BADB8; z-index:30; }
+
+  .hashtags { position:absolute; bottom:14px; left:52px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(75,173,184,0.4); z-index:20; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="bg"></div>
+  <div class="scanlines"></div>
+  <div class="watermark">IA</div>
+  <div class="corner-tl"></div>
+
+  <div class="logo-bar">
+    <img src="../yedda-logo.png" alt="Yedda.ai" class="logo-img">
+    <div class="logo-sep"></div>
+    <div class="logo-tag">Intelligence Augmentation · Apr 25</div>
+  </div>
+
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    <div class="live-text">Constellation Research · 2026</div>
+  </div>
+
+  <div class="content">
+    <div class="text-col">
+      <div class="overline">Enterprise AI · April 2026 · Agentic AI Report</div>
+
+      <div class="big-statement">
+        <span class="orange">80%</span> getting results.<br>
+        <span class="dim">⅔ haven't</span><br>
+        <span class="teal">started yet.</span>
+      </div>
+
+      <p class="sub-statement">
+        The gap isn't the technology. It's knowing <strong>where to deploy it — and why.</strong><br>
+        Start with the decision. Then build the intelligence layer that delivers it.
+      </p>
+
+      <div class="gap-bar-wrap">
+        <div class="gap-bar-label">// enterprise AI adoption gap · 2026</div>
+        <div class="gap-bar">
+          <div class="bar-not-started">⅔ · Not yet scaled</div>
+          <div class="bar-started">80% · Results</div>
+        </div>
+      </div>
+
+      <div class="modules">
+        <div class="pill"><span class="pill-dot"></span>Sales</div>
+        <div class="pill"><span class="pill-dot"></span>Marketing</div>
+        <div class="pill"><span class="pill-dot"></span>Operation</div>
+        <div class="pill"><span class="pill-dot"></span>Service</div>
+        <div class="pill"><span class="pill-dot"></span>Analytics</div>
+        <div class="pill"><span class="pill-dot"></span>Fraud</div>
+        <div class="pill"><span class="pill-dot"></span>Safety</div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <img src="../abbey.png" alt="Abbey" class="abbey-img">
+      <div class="stat-mini">
+        <div class="stat-mini-card orange">
+          <div class="stat-mini-n">80%</div>
+          <div class="stat-mini-l">measurable results<br>with AI agents</div>
+        </div>
+        <div class="stat-mini-card teal">
+          <div class="stat-mini-n">7</div>
+          <div class="stat-mini-l">modules · one<br>AI + IA framework</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-tagline">
+    <div class="tagline-text">"The advantage isn't in having AI. It's in <span class="highlight">knowing where to deploy it.</span>"</div>
+    <div class="source-ref">Constellation Research · Neuralt · April 2026</div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="hashtags">#IntelligenceAugmentation · #EnterpriseAI · #AI · #YeddaAI</div>
+</div>
+</body>
+</html>

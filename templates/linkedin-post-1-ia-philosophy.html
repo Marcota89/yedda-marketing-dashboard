@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Yedda.ai — Post 1: 95% AI Pilots Fail</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#0f0f14; font-family:'DM Sans',sans-serif; }
+
+  .card {
+    width:1200px; height:628px; position:relative; overflow:hidden;
+    display:grid; grid-template-columns:1fr 420px;
+    background:linear-gradient(135deg,#0f0f14 60%,#0d1218 100%);
+  }
+
+  /* Grid texture */
+  .card::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:linear-gradient(rgba(75,173,184,0.03) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(75,173,184,0.03) 1px,transparent 1px);
+    background-size:48px 48px;
+  }
+
+  /* Glows */
+  .glow-a { position:absolute; top:-80px; left:-60px; width:500px; height:500px; border-radius:50%;
+    background:radial-gradient(circle,rgba(75,173,184,0.1) 0%,transparent 65%); pointer-events:none; z-index:2; }
+  .glow-b { position:absolute; bottom:-100px; right:80px; width:380px; height:380px; border-radius:50%;
+    background:radial-gradient(circle,rgba(240,120,48,0.07) 0%,transparent 65%); pointer-events:none; z-index:2; }
+
+  /* Left */
+  .left { padding:44px 48px 36px 56px; display:flex; flex-direction:column; position:relative; z-index:10; }
+
+  .logo-wrap { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+  .logo-img { height:150px; width:auto; }
+  .logo-sep { width:1px; height:18px; background:rgba(255,255,255,0.1); }
+  .logo-ctx { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); }
+
+  .eyebrow { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.22em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:''; display:inline-block; width:20px; height:1px; background:#4BADB8; }
+
+  .headline { font-family:'Playfair Display',serif; font-size:58px; font-weight:900;
+    line-height:0.98; letter-spacing:-0.03em; color:#fff; margin-bottom:12px; }
+  .headline .teal { color:#4BADB8; }
+  .headline .dim { color:rgba(255,255,255,0.22); font-style:italic; font-size:42px; }
+
+  .subtext { font-size:13px; color:rgba(255,255,255,0.42); line-height:1.7;
+    max-width:400px; margin-bottom:28px; }
+  .subtext strong { color:rgba(255,255,255,0.7); font-weight:600; }
+
+  /* Comparison blocks */
+  .compare { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+
+  .compare-row { display:flex; align-items:center; gap:10px; }
+
+  .c-label { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; width:80px; flex-shrink:0; }
+  .c-label.old { color:rgba(255,255,255,0.25); }
+  .c-label.new { color:#4BADB8; }
+
+  .c-flow { display:flex; align-items:center; gap:6px; }
+  .c-step { font-size:10px; font-weight:500; padding:5px 10px; border-radius:3px; white-space:nowrap; }
+  .c-step.dim { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); color:rgba(255,255,255,0.28); }
+  .c-step.lit { background:rgba(75,173,184,0.12); border:1px solid rgba(75,173,184,0.28); color:#6EC5CE; }
+  .c-arr { font-size:9px; color:rgba(255,255,255,0.15); }
+  .c-arr.teal { color:#4BADB8; }
+
+  .sep { height:1px; background:rgba(255,255,255,0.05); margin:6px 0; }
+
+  .source-ref { font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.2);
+    letter-spacing:0.08em; margin-top:auto; }
+
+  /* Right */
+  .right { display:flex; flex-direction:column; justify-content:space-between;
+    align-items:center; padding:36px 44px 36px 20px; position:relative; z-index:10; }
+
+  /* Big stat */
+  .big-stat { text-align:center; }
+  .big-num { font-family:'Playfair Display',serif; font-size:110px; font-weight:900;
+    color:rgba(75,173,184,0.12); line-height:1; letter-spacing:-0.04em; }
+  .big-ctx { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; color:rgba(75,173,184,0.3); margin-top:-8px; }
+
+  /* Stat cards */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .stat-card { padding:16px 14px; border-radius:5px; }
+  .stat-card.teal { background:rgba(75,173,184,0.08); border:1px solid rgba(75,173,184,0.2); }
+  .stat-card.orange { background:rgba(240,120,48,0.08); border:1px solid rgba(240,120,48,0.2); }
+  .stat-n { font-family:'Playfair Display',serif; font-size:36px; font-weight:900; line-height:1; margin-bottom:4px; }
+  .stat-card.teal .stat-n { color:#4BADB8; }
+  .stat-card.orange .stat-n { color:#F07830; }
+  .stat-l { font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.35); letter-spacing:0.05em; line-height:1.4; }
+
+  /* Abbey */
+  .abbey-wrap { display:flex; align-items:flex-end; gap:12px; }
+  .abbey-img { height:110px; width:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 24px rgba(75,173,184,0.45)); }
+  .abbey-txt { flex:1; }
+  .abbey-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:5px; }
+  .abbey-line { font-size:11px; color:rgba(255,255,255,0.35); font-style:italic; line-height:1.55;
+    border-left:2px solid rgba(75,173,184,0.4); padding-left:10px; }
+
+  /* Bars */
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#4BADB8,#6EC5CE 40%,#F07830 85%); z-index:30; }
+  .corner-tl { position:absolute; top:0; left:0; width:3px; height:80px; background:#4BADB8; z-index:30; }
+
+  .hashtags { position:absolute; bottom:14px; left:56px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(75,173,184,0.4);
+    letter-spacing:0.05em; z-index:20; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow-a"></div><div class="glow-b"></div>
+  <div class="corner-tl"></div>
+
+  <div class="left">
+    <div class="logo-wrap">
+      <img src="../yedda-logo.png" alt="Yedda.ai" class="logo-img">
+      <div class="logo-sep"></div>
+      <div class="logo-ctx">Intelligence Augmentation · Apr 21</div>
+    </div>
+
+    <div class="eyebrow">Enterprise AI · April 2026 · MIT Study</div>
+
+    <div class="headline">
+      95% of pilots<br>
+      <span class="dim">never</span><br>
+      <span class="teal">scale.</span>
+    </div>
+
+    <p class="subtext">
+      Not because the technology doesn't work.<br>
+      Because it was never <strong>connected to the operation.</strong>
+    </p>
+
+    <div class="compare">
+      <div class="compare-row">
+        <div class="c-label old">Old way</div>
+        <div class="c-flow">
+          <span class="c-step dim">Pilot</span><span class="c-arr">→</span>
+          <span class="c-step dim">Dashboard</span><span class="c-arr">→</span>
+          <span class="c-step dim">Report</span><span class="c-arr">→</span>
+          <span class="c-step dim">Wait</span>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="compare-row">
+        <div class="c-label new">Yedda.ai</div>
+        <div class="c-flow">
+          <span class="c-step lit">Operation</span><span class="c-arr teal">→</span>
+          <span class="c-step lit">Decision</span><span class="c-arr teal">→</span>
+          <span class="c-step lit">Act ●</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-ref">Source: MIT Technology Review · April 16, 2026</div>
+  </div>
+
+  <div class="right">
+    <div class="big-stat">
+      <div class="big-num">5%</div>
+      <div class="big-ctx">deliver measurable profit impact</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card orange">
+        <div class="stat-n">95%</div>
+        <div class="stat-l">AI pilots fail<br>to scale</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">5%</div>
+        <div class="stat-l">connected to<br>the operation</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">7</div>
+        <div class="stat-l">Yedda.ai modules<br>inside your workflows</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">AI+IA</div>
+        <div class="stat-l">Intelligence<br>Augmentation</div>
+      </div>
+    </div>
+
+    <div class="abbey-wrap">
+      <img src="../abbey.png" alt="Abbey" class="abbey-img">
+      <div class="abbey-txt">
+        <div class="abbey-name">Abbey · Yedda AI Guide</div>
+        <div class="abbey-line">Not a dashboard<br>you visit. A decision<br>that reaches your team.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="hashtags">#IntelligenceAugmentation · #EnterpriseAI · #AI · #YeddaAI</div>
+</div>
+</body>
+</html>

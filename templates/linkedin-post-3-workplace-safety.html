@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Yedda.ai — Post 3: 2026 AI Stops Being a Pilot in Logistics</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#080c10; font-family:'DM Sans',sans-serif; }
+
+  .card {
+    width:1200px; height:628px; position:relative; overflow:hidden;
+    display:grid; grid-template-columns:1fr 420px;
+    background:linear-gradient(160deg,#080c10 55%,#0a0f14 100%);
+  }
+
+  /* Warehouse grid floor */
+  .card::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:
+      linear-gradient(rgba(75,173,184,0.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(75,173,184,0.04) 1px,transparent 1px);
+    background-size:60px 60px;
+    perspective:600px;
+  }
+
+  .glow-a { position:absolute; top:-80px; left:-60px; width:500px; height:500px; border-radius:50%;
+    background:radial-gradient(circle,rgba(75,173,184,0.08) 0%,transparent 65%); pointer-events:none; z-index:2; }
+  .glow-b { position:absolute; bottom:-60px; right:40px; width:380px; height:380px; border-radius:50%;
+    background:radial-gradient(circle,rgba(240,120,48,0.06) 0%,transparent 65%); pointer-events:none; z-index:2; }
+
+  /* Left */
+  .left { padding:40px 44px 36px 56px; display:flex; flex-direction:column; position:relative; z-index:10; }
+
+  .logo-wrap { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .logo-img { height:150px; width:auto; }
+  .logo-sep { width:1px; height:18px; background:rgba(255,255,255,0.1); }
+  .logo-ctx { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); }
+
+  .eyebrow { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.22em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:''; display:inline-block; width:20px; height:1px; background:#4BADB8; }
+
+  .headline { font-family:'Playfair Display',serif; font-size:50px; font-weight:900;
+    line-height:1.0; letter-spacing:-0.03em; color:#fff; margin-bottom:12px; }
+  .headline .teal { color:#4BADB8; }
+  .headline .year { color:#F07830; font-style:italic; }
+
+  .subtext { font-size:13px; color:rgba(255,255,255,0.42); line-height:1.7;
+    max-width:400px; margin-bottom:18px; }
+  .subtext strong { color:rgba(255,255,255,0.7); font-weight:600; }
+
+  /* Timeline comparison */
+  .timeline-wrap { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .tl-row { display:grid; grid-template-columns:80px 1fr; gap:12px; align-items:center; }
+  .tl-label { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.12em;
+    text-transform:uppercase; }
+  .tl-label.bad { color:rgba(255,255,255,0.22); }
+  .tl-label.good { color:#4BADB8; }
+  .tl-steps { display:flex; align-items:center; gap:6px; }
+  .tl-step { font-size:9px; padding:4px 9px; border-radius:3px; white-space:nowrap;
+    font-family:'Fira Code',monospace; display:flex; align-items:center; gap:4px; }
+  .tl-step.bad { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    color:rgba(255,255,255,0.25); }
+  .tl-step.good { background:rgba(75,173,184,0.1); border:1px solid rgba(75,173,184,0.25);
+    color:#6EC5CE; }
+  .tl-arr { font-size:9px; color:rgba(255,255,255,0.12); }
+  .tl-arr.teal { color:#4BADB8; }
+  .tl-x { color:rgba(255,60,60,0.6); font-size:10px; }
+  .tl-check { color:#4BADB8; font-size:10px; }
+
+  .sep { height:1px; background:rgba(255,255,255,0.04); margin:2px 0; }
+
+  .source-ref { font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.2);
+    letter-spacing:0.08em; margin-top:auto; }
+
+  /* Right */
+  .right { display:flex; flex-direction:column; justify-content:space-between;
+    align-items:center; padding:36px 44px 36px 16px; position:relative; z-index:10; }
+
+  /* Zone map */
+  .zone-map { width:100%; }
+  .zone-label { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.16em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); margin-bottom:10px; }
+  .zones { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .zone { padding:10px 12px; border-radius:5px; position:relative; }
+  .zone.safe { background:rgba(75,173,184,0.08); border:1px solid rgba(75,173,184,0.2); }
+  .zone.alert { background:rgba(240,120,48,0.12); border:1px solid rgba(240,120,48,0.35); }
+  .zone-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.1em;
+    text-transform:uppercase; margin-bottom:4px; }
+  .zone.safe .zone-name { color:rgba(75,173,184,0.7); }
+  .zone.alert .zone-name { color:#F07830; }
+  .zone-status { font-size:10px; font-weight:600; }
+  .zone.safe .zone-status { color:rgba(75,173,184,0.9); }
+  .zone.alert .zone-status { color:#F07830; }
+  .pulse { display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:#F07830; box-shadow:0 0 8px rgba(240,120,48,1);
+    animation:pulse 1s ease-in-out infinite; margin-right:4px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Stat cards */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .stat-card { padding:14px 12px; border-radius:5px; }
+  .stat-card.teal { background:rgba(75,173,184,0.08); border:1px solid rgba(75,173,184,0.2); }
+  .stat-card.orange { background:rgba(240,120,48,0.08); border:1px solid rgba(240,120,48,0.2); }
+  .stat-n { font-family:'Playfair Display',serif; font-size:30px; font-weight:900; line-height:1; margin-bottom:4px; }
+  .stat-card.teal .stat-n { color:#4BADB8; }
+  .stat-card.orange .stat-n { color:#F07830; }
+  .stat-l { font-family:'Fira Code',monospace; font-size:8px; color:rgba(255,255,255,0.35); letter-spacing:0.05em; line-height:1.4; }
+
+  /* Kai */
+  .kai-wrap { display:flex; align-items:flex-end; gap:12px; }
+  .kai-img { height:110px; width:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 24px rgba(75,173,184,0.4)); }
+  .kai-txt { flex:1; }
+  .kai-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:5px; }
+  .kai-line { font-size:11px; color:rgba(255,255,255,0.35); font-style:italic; line-height:1.55;
+    border-left:2px solid rgba(75,173,184,0.4); padding-left:10px; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#4BADB8,#6EC5CE 40%,#F07830 85%); z-index:30; }
+  .corner-tl { position:absolute; top:0; left:0; width:3px; height:80px; background:#4BADB8; z-index:30; }
+
+  .hashtags { position:absolute; bottom:14px; left:56px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(75,173,184,0.4);
+    letter-spacing:0.05em; z-index:20; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow-a"></div><div class="glow-b"></div>
+  <div class="corner-tl"></div>
+
+  <div class="left">
+    <div class="logo-wrap">
+      <img src="../yedda-logo.png" alt="Yedda.ai" class="logo-img">
+      <div class="logo-sep"></div>
+      <div class="logo-ctx">Workplace Safety · Apr 24</div>
+    </div>
+
+    <div class="eyebrow">MODEX 2026 · ILO Report · Logistics AI</div>
+
+    <div class="headline">
+      <span class="year">2026:</span> AI stops<br>
+      being a pilot<br>
+      <span class="teal">in logistics.</span>
+    </div>
+
+    <p class="subtext">
+      MODEX confirmed it. The ILO confirmed it.<br>
+      The question is whether your team gets the information<br>
+      <strong>before the incident — or after.</strong>
+    </p>
+
+    <div class="timeline-wrap">
+      <div class="tl-row">
+        <div class="tl-label bad">Reactive</div>
+        <div class="tl-steps">
+          <div class="tl-step bad"><span class="tl-x">✕</span> Incident</div>
+          <div class="tl-arr">→</div>
+          <div class="tl-step bad"><span class="tl-x">✕</span> Report filed</div>
+          <div class="tl-arr">→</div>
+          <div class="tl-step bad"><span class="tl-x">✕</span> Review scheduled</div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="tl-row">
+        <div class="tl-label good">Predictive</div>
+        <div class="tl-steps">
+          <div class="tl-step good"><span class="tl-check">✓</span> Risk identified</div>
+          <div class="tl-arr teal">→</div>
+          <div class="tl-step good"><span class="tl-check">✓</span> Alert sent</div>
+          <div class="tl-arr teal">→</div>
+          <div class="tl-step good"><span class="tl-check">✓</span> Team responds</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-ref">Source: MODEX 2026 · ILO · RoboticsTomorrow · April 14, 2026</div>
+  </div>
+
+  <div class="right">
+    <div class="zone-map">
+      <div class="zone-label">// live floor map · APAC DC</div>
+      <div class="zones">
+        <div class="zone safe">
+          <div class="zone-name">Zone A · Receiving</div>
+          <div class="zone-status">● Compliant</div>
+        </div>
+        <div class="zone alert">
+          <div class="zone-name">Zone B · Loading</div>
+          <div class="zone-status"><span class="pulse"></span>PPE Alert · Now</div>
+        </div>
+        <div class="zone safe">
+          <div class="zone-name">Zone C · Storage</div>
+          <div class="zone-status">● Compliant</div>
+        </div>
+        <div class="zone safe">
+          <div class="zone-name">Zone D · Dispatch</div>
+          <div class="zone-status">● Compliant</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card teal">
+        <div class="stat-n">38%</div>
+        <div class="stat-l">incident reduction<br>in one quarter</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-n">2026</div>
+        <div class="stat-l">Deployment<br>Year One · MODEX</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">0hr</div>
+        <div class="stat-l">delay on<br>risk alerts</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">AI+IA</div>
+        <div class="stat-l">predictive safety<br>intelligence</div>
+      </div>
+    </div>
+
+    <div class="kai-wrap">
+      <img src="../kai-new.png" alt="Kai" class="kai-img">
+      <div class="kai-txt">
+        <div class="kai-name">Kai · Yedda AI Analyst</div>
+        <div class="kai-line">Not by changing<br>the workforce. By changing<br>when they get information.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="hashtags">#WorkplaceSafety · #Logistics · #APAC · #YeddaAI</div>
+</div>
+</body>
+</html>

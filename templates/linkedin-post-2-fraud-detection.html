@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Yedda.ai — Post 2: 3 in 10 Fraud Attempts Are AI-Generated</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#0a0a0f; font-family:'DM Sans',sans-serif; }
+
+  .card {
+    width:1200px; height:628px; position:relative; overflow:hidden;
+    display:grid; grid-template-columns:1fr 400px;
+    background:linear-gradient(135deg,#0a0a0f 60%,#0d0f14 100%);
+  }
+
+  .card::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:linear-gradient(rgba(75,173,184,0.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(75,173,184,0.025) 1px,transparent 1px);
+    background-size:48px 48px;
+  }
+
+  .glow-a { position:absolute; top:-60px; left:-40px; width:460px; height:460px; border-radius:50%;
+    background:radial-gradient(circle,rgba(240,120,48,0.08) 0%,transparent 65%); pointer-events:none; z-index:2; }
+  .glow-b { position:absolute; bottom:-80px; right:60px; width:360px; height:360px; border-radius:50%;
+    background:radial-gradient(circle,rgba(75,173,184,0.08) 0%,transparent 65%); pointer-events:none; z-index:2; }
+
+  .left { padding:40px 48px 36px 56px; display:flex; flex-direction:column; position:relative; z-index:10; }
+
+  .logo-wrap { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .logo-img { height:150px; width:auto; }
+  .logo-sep { width:1px; height:18px; background:rgba(255,255,255,0.1); }
+  .logo-ctx { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); }
+
+  .alert-badge { display:inline-flex; align-items:center; gap:6px; margin-bottom:14px;
+    background:rgba(240,120,48,0.1); border:1px solid rgba(240,120,48,0.3);
+    padding:4px 12px; border-radius:20px; width:fit-content; }
+  .alert-dot { width:6px; height:6px; border-radius:50%; background:#F07830;
+    box-shadow:0 0 6px rgba(240,120,48,1); }
+  .alert-text { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#F07830; }
+
+  .headline { font-family:'Playfair Display',serif; font-size:52px; font-weight:900;
+    line-height:0.98; letter-spacing:-0.03em; color:#fff; margin-bottom:14px; }
+  .headline .orange { color:#F07830; }
+
+  .subtext { font-size:13px; color:rgba(255,255,255,0.42); line-height:1.7;
+    max-width:420px; margin-bottom:22px; }
+  .subtext strong { color:rgba(255,255,255,0.7); font-weight:600; }
+
+  .compare { display:flex; flex-direction:column; gap:0; margin-bottom:20px;
+    border:1px solid rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; }
+
+  .compare-row { display:grid; grid-template-columns:100px 1fr; align-items:center;
+    padding:10px 14px; gap:12px; }
+  .compare-row.before { background:rgba(255,255,255,0.02); }
+  .compare-row.after { background:rgba(75,173,184,0.07); }
+
+  .c-label { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.12em;
+    text-transform:uppercase; line-height:1.4; }
+  .c-label.before { color:rgba(255,255,255,0.25); }
+  .c-label.after { color:#4BADB8; }
+
+  .c-stats { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .c-stat { font-size:10px; display:flex; align-items:baseline; gap:4px; }
+  .c-stat.dim { color:rgba(255,255,255,0.28); }
+  .c-stat.lit { color:#6EC5CE; }
+  .c-stat .val { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; }
+  .c-stat.dim .val { color:rgba(255,255,255,0.4); }
+  .c-stat.lit .val { color:#4BADB8; }
+
+  .sep { height:1px; background:rgba(255,255,255,0.04); }
+
+  .source-ref { font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.2);
+    letter-spacing:0.08em; margin-top:auto; }
+
+  .right { display:flex; flex-direction:column; justify-content:space-between;
+    align-items:center; padding:36px 40px 36px 16px; position:relative; z-index:10; }
+
+  .big-stat { text-align:center; }
+  .big-num { font-family:'Playfair Display',serif; font-size:90px; font-weight:900;
+    color:rgba(240,120,48,0.15); line-height:1; letter-spacing:-0.04em; }
+  .big-ctx { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; color:rgba(240,120,48,0.35); margin-top:-4px; }
+
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .stat-card { padding:14px 12px; border-radius:5px; }
+  .stat-card.teal { background:rgba(75,173,184,0.08); border:1px solid rgba(75,173,184,0.2); }
+  .stat-card.orange { background:rgba(240,120,48,0.08); border:1px solid rgba(240,120,48,0.2); }
+  .stat-n { font-family:'Playfair Display',serif; font-size:32px; font-weight:900; line-height:1; margin-bottom:4px; }
+  .stat-card.teal .stat-n { color:#4BADB8; }
+  .stat-card.orange .stat-n { color:#F07830; }
+  .stat-l { font-family:'Fira Code',monospace; font-size:8px; color:rgba(255,255,255,0.35); letter-spacing:0.05em; line-height:1.4; }
+
+  .kai-wrap { display:flex; align-items:flex-end; gap:12px; }
+  .kai-img { height:110px; width:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 24px rgba(240,120,48,0.35)); }
+  .kai-txt { flex:1; }
+  .kai-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#F07830; margin-bottom:5px; }
+  .kai-line { font-size:11px; color:rgba(255,255,255,0.35); font-style:italic; line-height:1.55;
+    border-left:2px solid rgba(240,120,48,0.4); padding-left:10px; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#F07830,#F07830 30%,#4BADB8 75%,#6EC5CE); z-index:30; }
+  .corner-tl { position:absolute; top:0; left:0; width:3px; height:80px; background:#F07830; z-index:30; }
+
+  .hashtags { position:absolute; bottom:14px; left:56px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(240,120,48,0.4);
+    letter-spacing:0.05em; z-index:20; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow-a"></div><div class="glow-b"></div>
+  <div class="corner-tl"></div>
+
+  <div class="left">
+    <div class="logo-wrap">
+      <img src="../yedda-logo.png" alt="Yedda.ai" class="logo-img">
+      <div class="logo-sep"></div>
+      <div class="logo-ctx">Fraud Detection · Apr 22</div>
+    </div>
+
+    <div class="alert-badge">
+      <div class="alert-dot"></div>
+      <div class="alert-text">Live threat · April 2026 · PYMNTS Report</div>
+    </div>
+
+    <div class="headline">
+      3 in 10 fraud<br>
+      attempts are<br>
+      <span class="orange">AI-generated.</span>
+    </div>
+
+    <p class="subtext">
+      Not a future problem. <strong>That's this quarter.</strong><br>
+      Fraudsters upgraded their tools. Most retailers haven't.
+    </p>
+
+    <div class="compare">
+      <div class="compare-row before">
+        <div class="c-label before">Without<br>Yedda.ai</div>
+        <div class="c-stats">
+          <div class="c-stat dim"><span class="val">4%</span>&nbsp;intervention</div>
+          <div class="c-stat dim"><span class="val">Month-end</span>&nbsp;discovery</div>
+          <div class="c-stat dim"><span class="val">&lt;5%</span>&nbsp;reviewed</div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="compare-row after">
+        <div class="c-label after">With<br>Yedda.ai</div>
+        <div class="c-stats">
+          <div class="c-stat lit"><span class="val">61%</span>&nbsp;intervention</div>
+          <div class="c-stat lit"><span class="val">Real-time</span>&nbsp;alerts</div>
+          <div class="c-stat lit"><span class="val">100%</span>&nbsp;monitored</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-ref">Source: PYMNTS.com · April 2026</div>
+  </div>
+
+  <div class="right">
+    <div class="big-stat">
+      <div class="big-num">3/10</div>
+      <div class="big-ctx">fraud attempts now AI-generated</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card orange">
+        <div class="stat-n">1K+</div>
+        <div class="stat-l">AI bot calls<br>per day</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">52%</div>
+        <div class="stat-l">shrinkage down<br>in 90 days</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-n">7mo</div>
+        <div class="stat-l">payback<br>period</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-n">61%</div>
+        <div class="stat-l">intervention<br>rate achieved</div>
+      </div>
+    </div>
+
+    <div class="kai-wrap">
+      <img src="../kai-new.png" alt="Kai" class="kai-img">
+      <div class="kai-txt">
+        <div class="kai-name">Kai · Yedda AI Analyst</div>
+        <div class="kai-line">The team didn't change.<br>The timing did.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="hashtags">#LossPrevention · #RetailTech · #FraudDetection · #YeddaAI</div>
+</div>
+</body>
+</html>
