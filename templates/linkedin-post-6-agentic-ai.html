@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Yedda.ai — Post 6: GE Appliances 800 AI Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:628px; overflow:hidden; background:#0a0a0f; font-family:'DM Sans',sans-serif; }
+
+  .card {
+    width:1200px; height:628px; position:relative; overflow:hidden;
+    display:grid; grid-template-columns:1fr 400px;
+    background:linear-gradient(135deg,#0a0a0f 60%,#0d0f14 100%);
+  }
+
+  .card::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:linear-gradient(rgba(75,173,184,0.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(75,173,184,0.025) 1px,transparent 1px);
+    background-size:48px 48px;
+  }
+
+  .glow-a { position:absolute; top:-60px; left:-40px; width:500px; height:500px; border-radius:50%;
+    background:radial-gradient(circle,rgba(75,173,184,0.07) 0%,transparent 65%); pointer-events:none; z-index:2; }
+  .glow-b { position:absolute; bottom:-80px; right:40px; width:400px; height:400px; border-radius:50%;
+    background:radial-gradient(circle,rgba(240,120,48,0.06) 0%,transparent 65%); pointer-events:none; z-index:2; }
+
+  .left { padding:40px 44px 36px 56px; display:flex; flex-direction:column; position:relative; z-index:10; }
+
+  .logo-wrap { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .logo-img { height:150px; width:auto; }
+  .logo-sep { width:1px; height:18px; background:rgba(255,255,255,0.1); }
+  .logo-ctx { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.18em;
+    text-transform:uppercase; color:rgba(255,255,255,0.25); }
+
+  .eyebrow { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.22em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:''; display:inline-block; width:20px; height:1px; background:#4BADB8; }
+
+  .headline { font-family:'Playfair Display',serif; font-size:52px; font-weight:900;
+    line-height:1.0; letter-spacing:-0.03em; color:#fff; margin-bottom:12px; }
+  .headline .teal { color:#4BADB8; }
+  .headline .orange { color:#F07830; }
+
+  .subtext { font-size:13px; color:rgba(255,255,255,0.42); line-height:1.7;
+    max-width:420px; margin-bottom:18px; }
+  .subtext strong { color:rgba(255,255,255,0.7); font-weight:600; }
+
+  /* Model compare */
+  .model-compare { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+  .model-card { padding:12px 14px; border-radius:5px; }
+  .model-card.old { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+  .model-card.new { background:rgba(75,173,184,0.09); border:1px solid rgba(75,173,184,0.25); }
+  .model-title { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.14em;
+    text-transform:uppercase; margin-bottom:8px; }
+  .model-card.old .model-title { color:rgba(255,255,255,0.25); }
+  .model-card.new .model-title { color:#4BADB8; }
+  .model-step { font-size:10px; color:rgba(255,255,255,0.28); margin-bottom:3px;
+    display:flex; align-items:center; gap:6px; }
+  .model-step.lit { color:rgba(75,173,184,0.85); }
+  .model-step::before { content:'→'; font-size:9px; color:rgba(255,255,255,0.15); }
+  .model-step.lit::before { color:#4BADB8; }
+
+  .source-ref { font-family:'Fira Code',monospace; font-size:9px; color:rgba(255,255,255,0.2);
+    letter-spacing:0.08em; margin-top:auto; }
+
+  /* Right */
+  .right { display:flex; flex-direction:column; justify-content:space-between;
+    align-items:center; padding:36px 44px 36px 16px; position:relative; z-index:10; }
+
+  .big-stat { text-align:center; }
+  .big-num { font-family:'Playfair Display',serif; font-size:86px; font-weight:900;
+    color:rgba(75,173,184,0.12); line-height:1; letter-spacing:-0.04em; }
+  .big-ctx { font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.14em;
+    text-transform:uppercase; color:rgba(75,173,184,0.3); margin-top:-4px; }
+
+  /* Module wheel */
+  .module-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; width:100%; }
+  .mod { padding:8px 6px; border-radius:4px; text-align:center;
+    background:rgba(75,173,184,0.07); border:1px solid rgba(75,173,184,0.18); }
+  .mod-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.08em;
+    text-transform:uppercase; color:rgba(75,173,184,0.8); }
+  .mod-dot { width:4px; height:4px; border-radius:50%; background:#F07830;
+    margin:3px auto 0; }
+
+  .kai-wrap { display:flex; align-items:flex-end; gap:12px; }
+  .kai-img { height:110px; width:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 24px rgba(75,173,184,0.4)); }
+  .kai-txt { flex:1; }
+  .kai-name { font-family:'Fira Code',monospace; font-size:8px; letter-spacing:0.14em;
+    text-transform:uppercase; color:#4BADB8; margin-bottom:5px; }
+  .kai-line { font-size:11px; color:rgba(255,255,255,0.35); font-style:italic; line-height:1.55;
+    border-left:2px solid rgba(75,173,184,0.4); padding-left:10px; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#4BADB8,#6EC5CE 40%,#F07830 85%); z-index:30; }
+  .corner-tl { position:absolute; top:0; left:0; width:3px; height:80px; background:#4BADB8; z-index:30; }
+
+  .hashtags { position:absolute; bottom:14px; left:56px;
+    font-family:'Fira Code',monospace; font-size:9px; color:rgba(75,173,184,0.4);
+    letter-spacing:0.05em; z-index:20; }
+
+  .stat-badge { position:absolute; top:32px; right:52px;
+    background:rgba(75,173,184,0.1); border:1px solid rgba(75,173,184,0.3);
+    padding:5px 14px; border-radius:20px; z-index:20;
+    font-family:'Fira Code',monospace; font-size:9px; letter-spacing:0.12em;
+    text-transform:uppercase; color:#4BADB8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="glow-a"></div><div class="glow-b"></div>
+  <div class="corner-tl"></div>
+  <div class="stat-badge">Agentic AI +31.5% YoY · Futurum 2026</div>
+
+  <div class="left">
+    <div class="logo-wrap">
+      <img src="../yedda-logo.png" alt="Yedda.ai" class="logo-img">
+      <div class="logo-sep"></div>
+      <div class="logo-ctx">Agentic AI · Apr 29</div>
+    </div>
+
+    <div class="eyebrow">Google Cloud · Futurum Research · April 22, 2026</div>
+
+    <div class="headline">
+      <span class="orange">800</span> AI agents.<br>
+      One manufacturing<br>
+      <span class="teal">operation.</span>
+    </div>
+
+    <p class="subtext">
+      GE Appliances — manufacturing, logistics, supply chain.<br>
+      <strong>Not a pilot. Embedded in the operation.</strong><br>
+      The era of AI-as-observation is ending.
+    </p>
+
+    <div class="model-compare">
+      <div class="model-card old">
+        <div class="model-title">AI as Observation</div>
+        <div class="model-step">Sees pattern</div>
+        <div class="model-step">Generates report</div>
+        <div class="model-step">Waits for action</div>
+      </div>
+      <div class="model-card new">
+        <div class="model-title">AI as Action</div>
+        <div class="model-step lit">Sees pattern</div>
+        <div class="model-step lit">Triggers response</div>
+        <div class="model-step lit">Result achieved ✓</div>
+      </div>
+    </div>
+
+    <div class="source-ref">Source: Google Cloud Press Corner · Futurum Research · April 2026</div>
+  </div>
+
+  <div class="right">
+    <div class="big-stat">
+      <div class="big-num">800</div>
+      <div class="big-ctx">agents · one operation</div>
+    </div>
+
+    <div class="module-grid">
+      <div class="mod"><div class="mod-name">Operations</div><div class="mod-dot"></div></div>
+      <div class="mod"><div class="mod-name">Fraud</div><div class="mod-dot"></div></div>
+      <div class="mod"><div class="mod-name">Safety</div><div class="mod-dot"></div></div>
+      <div class="mod"><div class="mod-name">Sales</div><div class="mod-dot"></div></div>
+      <div class="mod"><div class="mod-name">Analytics</div><div class="mod-dot"></div></div>
+      <div class="mod"><div class="mod-name">Service</div><div class="mod-dot"></div></div>
+      <div class="mod" style="grid-column:1/-1;"><div class="mod-name">Marketing</div><div class="mod-dot"></div></div>
+    </div>
+
+    <div class="kai-wrap">
+      <img src="../kai-new.png" alt="Kai" class="kai-img">
+      <div class="kai-txt">
+        <div class="kai-name">Kai · Yedda AI Analyst</div>
+        <div class="kai-line">800 agents or 7 modules —<br>the logic is the same.<br>AI embedded in the operation.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="hashtags">#AgenticAI · #IntelligenceAugmentation · #EnterpriseAI · #YeddaAI</div>
+</div>
+</body>
+</html>

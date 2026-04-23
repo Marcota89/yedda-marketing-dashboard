@@ -6,6 +6,10 @@ const posts = [
   'linkedin-post-2-fraud-detection',
   'linkedin-post-3-workplace-safety',
   'linkedin-post-4-decision-intelligence',
+  'linkedin-post-5-adoption-gap',
+  'linkedin-post-6-agentic-ai',
+  'linkedin-post-7-retail-supply-chain',
+  'linkedin-post-8-sales-intelligence',
 ];
 
 (async () => {
