@@ -1092,6 +1092,153 @@ h1,h2,h3,h4 {
 }
 .li-prompt-btn:hover { background: var(--orange); color: #fff; }
 .li-prompt-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; }
+
+/* ── Rating bar ── */
+.li-rating-bar {
+  padding: 10px 16px;
+  background: #F8FAFB;
+  border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.li-rating-label { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-right: 4px; }
+.rate-btn {
+  font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: 20px;
+  border: 1.5px solid; cursor: pointer; font-family: inherit; transition: all .15s;
+  background: none;
+}
+.rate-btn.approve { border-color: #16a34a; color: #16a34a; }
+.rate-btn.approve:hover, .rate-btn.approve.active { background: #16a34a; color: #fff; }
+.rate-btn.revise { border-color: var(--orange); color: var(--orange); }
+.rate-btn.revise:hover, .rate-btn.revise.active { background: var(--orange); color: #fff; }
+.rate-btn.reject { border-color: #dc2626; color: #dc2626; }
+.rate-btn.reject:hover, .rate-btn.reject.active { background: #dc2626; color: #fff; }
+.rating-saved-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-left: auto; }
+.rating-saved-tag.approved { background: #dcfce7; color: #16a34a; }
+.rating-saved-tag.revise { background: var(--orange-light); color: var(--orange); }
+.rating-saved-tag.rejected { background: #fee2e2; color: #dc2626; }
+
+/* ── Rating dots in calendar ── */
+.rdot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: #d1d5db;
+}
+.rdot.approved { background: #16a34a; }
+.rdot.revise { background: var(--orange); }
+.rdot.rejected { background: #dc2626; }
+
+/* ── Schedule generator ── */
+.sched-gen-btn {
+  margin-top: 14px; padding: 9px 18px; border-radius: 999px;
+  background: var(--teal-xl); border: 1.5px solid rgba(75,173,184,0.3);
+  color: var(--teal-deep); font-weight: 700; font-size: 13px;
+  cursor: pointer; font-family: inherit; transition: background .15s;
+}
+.sched-gen-btn:hover { background: var(--teal-light); color: #fff; }
+.sched-panel { margin-bottom: 32px; }
+.sched-panel-inner {
+  background: var(--white); border: 1.5px solid var(--line);
+  border-radius: var(--r-lg); padding: 28px; box-shadow: var(--shadow-sm);
+}
+.sched-title { font-size: 17px; margin-bottom: 6px; }
+.sched-desc { font-size: 13px; color: var(--text-soft); margin-bottom: 18px; }
+.sched-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.sched-field { display: flex; flex-direction: column; gap: 4px; }
+.sched-field label { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: .05em; }
+.sched-input {
+  padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--line);
+  font-family: inherit; font-size: 13px; color: var(--text);
+  background: var(--bg); outline: none;
+}
+.sched-input:focus { border-color: var(--teal); }
+.sched-pillars { margin-bottom: 6px; }
+.sched-pillar-label { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 8px; }
+.sched-pillar-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.sched-pillar-checks label { font-size: 13px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.sched-gen-run {
+  padding: 9px 20px; border-radius: 999px; background: var(--teal);
+  color: #fff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; font-family: inherit;
+}
+.sched-gen-cancel {
+  padding: 9px 16px; border-radius: 999px; background: none;
+  color: var(--text-soft); font-weight: 600; font-size: 13px;
+  border: 1.5px solid var(--line); cursor: pointer; font-family: inherit;
+}
+.sched-output { margin-top: 16px; }
+.sched-output-label { font-size: 12px; font-weight: 600; color: var(--teal-deep); margin-bottom: 8px; }
+.sched-textarea {
+  width: 100%; height: 160px; border-radius: 10px; border: 1.5px solid var(--line);
+  padding: 12px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text);
+  background: var(--bg); resize: vertical; outline: none;
+}
+.sched-copy-prompt {
+  margin-top: 8px; padding: 8px 16px; border-radius: 999px;
+  background: var(--teal-xl); border: 1.5px solid rgba(75,173,184,0.3);
+  color: var(--teal-deep); font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+
+/* ── Queue section ── */
+.queue-list { display: flex; flex-direction: column; gap: 12px; }
+.queue-item {
+  background: var(--white); border: 1.5px solid var(--line);
+  border-radius: var(--r-md); padding: 16px 20px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+  box-shadow: var(--shadow-sm); transition: box-shadow .15s;
+}
+.queue-item:hover { box-shadow: var(--shadow-md); }
+.queue-item-date { font-family: var(--font-mono); font-size: 11px; color: var(--teal-deep); font-weight: 700; white-space: nowrap; }
+.queue-item-body {}
+.queue-item-hook { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.queue-item-meta { font-size: 12px; color: var(--text-soft); }
+.queue-item-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.q-copy-btn {
+  padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--teal);
+  color: var(--teal-deep); background: none; font-weight: 700; font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+}
+.q-copy-btn:hover { background: var(--teal); color: #fff; }
+.q-buffer-btn {
+  padding: 7px 14px; border-radius: 999px; border: none;
+  background: #0a66c2; color: #fff; font-weight: 700; font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: opacity .15s; white-space: nowrap;
+}
+.q-buffer-btn:hover { opacity: .85; }
+.q-buffer-btn:disabled { background: #6b7280; cursor: not-allowed; opacity: .7; }
+.q-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.q-status.sent { background: #dcfce7; color: #16a34a; }
+.queue-empty { text-align: center; padding: 48px 24px; color: var(--text-soft); }
+.queue-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.q-unrate-btn {
+  padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--line);
+  color: var(--text-soft); background: none; font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.q-unrate-btn:hover { border-color: #dc2626; color: #dc2626; }
+
+/* ── Settings modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(14,27,30,0.55);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-box {
+  background: var(--white); border-radius: var(--r-xl); padding: 32px;
+  max-width: 480px; width: 100%; box-shadow: var(--shadow-lg);
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-title { font-size: 18px; }
+.modal-close { font-size: 18px; background: none; border: none; cursor: pointer; color: var(--text-soft); }
+.modal-section-title { font-size: 14px; font-weight: 700; color: var(--teal-deep); margin-bottom: 8px; }
+.modal-desc { font-size: 13px; color: var(--text-soft); margin-bottom: 14px; line-height: 1.6; }
+.modal-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.modal-field label { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: .05em; }
+.modal-input { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--line); font-family: inherit; font-size: 13px; }
+.modal-input:focus { outline: none; border-color: var(--teal); }
+.modal-hint { font-size: 11px; color: var(--muted); margin-bottom: 14px; font-family: var(--font-mono); }
+.modal-save-btn {
+  padding: 9px 20px; border-radius: 999px; background: var(--teal);
+  color: #fff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; font-family: inherit;
+}
+.modal-status { margin-top: 10px; font-size: 13px; font-weight: 600; }
 .li-meta-bar {
   border-top: 1px solid #E7EAEC;
   padding: 10px 16px;
@@ -1504,8 +1651,10 @@ footer {
       <a href="#modules">Modules</a>
       <a href="#cases">Cases</a>
       <a href="#content">Content</a>
+      <a href="#queue">Queue <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
       <a href="#characters">Characters</a>
       <a href="#competitive">Market</a>
+      <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:16px;padding:0;display:flex;align-items:center;" title="Settings">⚙️</button>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
       <span class="nav-live"><span class="nav-live-dot"></span>SESSION ACTIVE</span>
@@ -2006,7 +2155,54 @@ footer {
       <div>
         <span class="eyebrow">LinkedIn · 8 posts ready to publish</span>
         <h2 class="sec-title">Live content calendar.</h2>
-        <p class="sec-lede">Click a post on the left to see the formatted preview on the right.</p>
+        <p class="sec-lede">Click a post to preview → rate it → approved posts go to your Queue.</p>
+        <button class="sched-gen-btn" onclick="toggleScheduleGen()">✨ Generate New Schedule</button>
+      </div>
+    </div>
+
+    <!-- Schedule Generator Panel -->
+    <div id="scheduleGenPanel" style="display:none;" class="sched-panel reveal">
+      <div class="sched-panel-inner">
+        <h3 class="sched-title">✨ Generate New Posting Schedule</h3>
+        <p class="sched-desc">Fill in the fields below and click <strong>Generate Prompt</strong>. Copy the result and paste it into Claude.ai to get a ready-to-publish post batch.</p>
+        <div class="sched-form">
+          <div class="sched-field"><label>Start date</label><input type="date" id="sgStart" class="sched-input"></div>
+          <div class="sched-field"><label>End date</label><input type="date" id="sgEnd" class="sched-input"></div>
+          <div class="sched-field"><label>Posts per week</label>
+            <select id="sgFreq" class="sched-input">
+              <option value="2">2 per week</option>
+              <option value="3" selected>3 per week</option>
+              <option value="5">5 per week</option>
+            </select>
+          </div>
+          <div class="sched-field"><label>Persona</label>
+            <select id="sgPersona" class="sched-input">
+              <option value="Mixed" selected>Mixed (Abbey + Kai)</option>
+              <option value="Abbey">Abbey only</option>
+              <option value="Kai">Kai only</option>
+            </select>
+          </div>
+        </div>
+        <div class="sched-pillars">
+          <label class="sched-pillar-label">Content pillars:</label>
+          <div class="sched-pillar-checks">
+            <label><input type="checkbox" value="Thought Leadership" checked> Thought Leadership</label>
+            <label><input type="checkbox" value="Social Proof" checked> Social Proof</label>
+            <label><input type="checkbox" value="Education" checked> Education</label>
+            <label><input type="checkbox" value="Engagement"> Engagement / Poll</label>
+            <label><input type="checkbox" value="Case Study"> Case Study</label>
+          </div>
+        </div>
+        <div class="sched-field" style="margin-top:8px;"><label>Custom topic or keyword (optional)</label><input type="text" id="sgTopic" class="sched-input" placeholder="e.g. shrinkage prevention, LATAM expansion, safety compliance"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button class="sched-gen-run" onclick="generateSchedulePrompt()">🚀 Generate Prompt</button>
+          <button class="sched-gen-cancel" onclick="toggleScheduleGen()">Cancel</button>
+        </div>
+        <div id="sgOutput" style="display:none;" class="sched-output">
+          <div class="sched-output-label">📋 Prompt ready — paste this into Claude.ai:</div>
+          <textarea id="sgPromptText" class="sched-textarea" readonly></textarea>
+          <button class="sched-copy-prompt" onclick="copySchedulePrompt()">📋 Copy Prompt</button>
+        </div>
       </div>
     </div>
 
@@ -2017,7 +2213,8 @@ footer {
         <div class="week-section">
           <div class="week-header"><span class="week-dot"></span>Week Apr 19–25 · 2026</div>
 
-          <div class="post-row active" onclick="showPost(0, this)">
+          <div class="post-row active" id="prow-0" onclick="showPost(0, this)">
+            <span class="rdot" id="rdot-0"></span>
             <div class="post-date"><div class="post-day">21</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"95% of enterprise AI pilots fail to scale."</div>
@@ -2025,7 +2222,8 @@ footer {
             </div>
             <span class="post-tag">Educational</span>
           </div>
-          <div class="post-row" onclick="showPost(1, this)">
+          <div class="post-row" id="prow-1" onclick="showPost(1, this)">
+            <span class="rdot" id="rdot-1"></span>
             <div class="post-date"><div class="post-day">22</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"3 in 10 retail fraud attempts are AI-generated."</div>
@@ -2033,7 +2231,8 @@ footer {
             </div>
             <span class="post-tag or">Social Proof</span>
           </div>
-          <div class="post-row" onclick="showPost(2, this)">
+          <div class="post-row" id="prow-2" onclick="showPost(2, this)">
+            <span class="rdot" id="rdot-2"></span>
             <div class="post-date"><div class="post-day">24</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"2026 is the year AI stops being a pilot in logistics."</div>
@@ -2041,7 +2240,8 @@ footer {
             </div>
             <span class="post-tag">Educational</span>
           </div>
-          <div class="post-row" onclick="showPost(3, this)">
+          <div class="post-row" id="prow-3" onclick="showPost(3, this)">
+            <span class="rdot" id="rdot-3"></span>
             <div class="post-date"><div class="post-day">25</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"80% get results. Two-thirds haven't even started."</div>
@@ -2054,7 +2254,8 @@ footer {
         <div class="week-section">
           <div class="week-header or"><span class="week-dot"></span>Week Apr 28 – May 2 · 2026</div>
 
-          <div class="post-row" onclick="showPost(4, this)">
+          <div class="post-row" id="prow-4" onclick="showPost(4, this)">
+            <span class="rdot" id="rdot-4"></span>
             <div class="post-date"><div class="post-day">28</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"79% of companies struggle to adopt AI."</div>
@@ -2062,7 +2263,8 @@ footer {
             </div>
             <span class="post-tag">Educational</span>
           </div>
-          <div class="post-row" onclick="showPost(5, this)">
+          <div class="post-row" id="prow-5" onclick="showPost(5, this)">
+            <span class="rdot" id="rdot-5"></span>
             <div class="post-date"><div class="post-day">29</div><div class="post-month">Apr</div></div>
             <div>
               <div class="post-hook">"GE Appliances deployed 800 AI agents."</div>
@@ -2070,7 +2272,8 @@ footer {
             </div>
             <span class="post-tag or">Social Proof</span>
           </div>
-          <div class="post-row" onclick="showPost(6, this)">
+          <div class="post-row" id="prow-6" onclick="showPost(6, this)">
+            <span class="rdot" id="rdot-6"></span>
             <div class="post-date"><div class="post-day">01</div><div class="post-month">May</div></div>
             <div>
               <div class="post-hook">"9 in 10 retailers increasing AI. 64% say it got worse."</div>
@@ -2078,7 +2281,8 @@ footer {
             </div>
             <span class="post-tag">Educational</span>
           </div>
-          <div class="post-row" onclick="showPost(7, this)">
+          <div class="post-row" id="prow-7" onclick="showPost(7, this)">
+            <span class="rdot" id="rdot-7"></span>
             <div class="post-date"><div class="post-day">02</div><div class="post-month">May</div></div>
             <div>
               <div class="post-hook">"AI-enabled sales teams generate 77% more revenue per rep."</div>
@@ -2102,6 +2306,43 @@ footer {
 
   </div>
 </section>
+
+<!-- ═══ QUEUE ═══ -->
+<section class="section" id="queue">
+  <div class="container">
+    <div class="sec-head flex reveal">
+      <div>
+        <span class="eyebrow">Publish Queue · Approved posts</span>
+        <h2 class="sec-title">Ready to publish.</h2>
+        <p class="sec-lede">Posts you rated ✅ Approved appear here. Copy each one or send directly to Buffer to schedule on LinkedIn.</p>
+      </div>
+    </div>
+    <div id="queueList" class="queue-list reveal"></div>
+    <div id="queueEmpty" class="queue-empty" style="display:none;">
+      <div class="queue-empty-icon">📭</div>
+      <div>No approved posts yet. Go to the content calendar, preview a post, and rate it ✅ Approve.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div id="settingsModal" class="modal-backdrop" style="display:none;" onclick="closeSettingsOutside(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title">⚙️ Settings</h3>
+      <button onclick="closeSettings()" class="modal-close">✕</button>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">📡 Buffer Integration</div>
+      <p class="modal-desc">Connect Buffer to send approved posts directly to your LinkedIn schedule. Get your Access Token at <strong>buffer.com/account/access-token</strong>.</p>
+      <div class="modal-field"><label>Buffer Access Token</label><input type="password" id="bufferToken" class="modal-input" placeholder="Enter your Buffer access token"></div>
+      <div class="modal-field"><label>Buffer Profile ID (LinkedIn Page)</label><input type="text" id="bufferProfileId" class="modal-input" placeholder="e.g. 5d9a8f..."></div>
+      <p class="modal-hint">To find your Profile ID: buffer.com/api/1/profiles.json?access_token=YOUR_TOKEN</p>
+      <button class="modal-save-btn" onclick="saveBufferSettings()">💾 Save Buffer Settings</button>
+      <div id="bufferStatus" class="modal-status"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ VISUALS GALLERY ═══ -->
 <section class="section">
@@ -2687,6 +2928,7 @@ function renderPost(i) {
       <div class="li-prompt-label">🎨 Gemini Image Prompt</div>
       <button class="li-prompt-btn" onclick="copyPrompt(this, ${i})">📸 Copy Image Prompt</button>
     </div>` : ''}
+    <div class="li-rating-bar" id="ratingBar-${i}">${renderRatingBar(i)}</div>
     <div class="li-meta-bar">
       <div class="li-meta-item">Time<strong>${p.meta.time}</strong></div>
       <div class="li-meta-item">Persona<strong>${p.meta.char}</strong></div>
@@ -2694,6 +2936,233 @@ function renderPost(i) {
       <div class="li-meta-item">Day<strong>${p.meta.day}</strong></div>
     </div>
   `;
+}
+
+/* ── RATING SYSTEM ── */
+const RATINGS_KEY = 'yedda_ratings';
+const BUFFER_KEY  = 'yedda_buffer';
+const QUEUE_SENT  = 'yedda_queue_sent';
+
+function getRatings() {
+  try { return JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function renderRatingBar(i) {
+  const r = getRatings()[i];
+  const savedTag = r ? `<span class="rating-saved-tag ${r}">${r === 'approved' ? '✅ Approved' : r === 'revise' ? '🔁 Needs Revision' : '❌ Skipped'}</span>` : '';
+  return `
+    <span class="li-rating-label">Rate this post:</span>
+    <button class="rate-btn approve ${r==='approved'?'active':''}" onclick="ratePost(${i},'approved')">✅ Approve</button>
+    <button class="rate-btn revise ${r==='revise'?'active':''}" onclick="ratePost(${i},'revise')">🔁 Needs Revision</button>
+    <button class="rate-btn reject ${r==='rejected'?'active':''}" onclick="ratePost(${i},'rejected')">❌ Skip</button>
+    ${savedTag}
+  `;
+}
+
+function ratePost(i, rating) {
+  const ratings = getRatings();
+  if (rating === null) { delete ratings[i]; } else { ratings[i] = rating; }
+  localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
+  const bar = document.getElementById(`ratingBar-${i}`);
+  if (bar) bar.innerHTML = renderRatingBar(i);
+  updateDot(i, rating);
+  renderQueue();
+  updateQueueBadge();
+}
+
+function updateDot(i, rating) {
+  const dot = document.getElementById(`rdot-${i}`);
+  if (!dot) return;
+  dot.className = 'rdot' + (rating ? ' ' + (rating === 'rejected' ? 'rejected' : rating) : '');
+}
+
+function loadRatings() {
+  const ratings = getRatings();
+  Object.entries(ratings).forEach(([i, r]) => updateDot(parseInt(i), r));
+  updateQueueBadge();
+}
+
+function updateQueueBadge() {
+  const ratings = getRatings();
+  const count = Object.values(ratings).filter(r => r === 'approved').length;
+  const badge = document.getElementById('queueBadge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+}
+
+/* ── QUEUE ── */
+const postDates = ['Apr 21','Apr 22','Apr 24','Apr 25','Apr 28','Apr 29','May 1','May 2'];
+const postTimes = ['9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT'];
+
+function renderQueue() {
+  const ratings = getRatings();
+  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const approved = Object.entries(ratings).filter(([i,r]) => r === 'approved');
+  const list = document.getElementById('queueList');
+  const empty = document.getElementById('queueEmpty');
+  if (!list) return;
+  if (approved.length === 0) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = approved.map(([i]) => {
+    const p = posts[parseInt(i)];
+    const hook = p.body.split('\n')[0].replace(/`/g,'');
+    const isSent = sent[i];
+    return `
+    <div class="queue-item">
+      <div class="queue-item-date">📅 ${postDates[i]}<br><span style="font-weight:400;color:var(--muted)">${postTimes[i]}</span></div>
+      <div class="queue-item-body">
+        <div class="queue-item-hook">${hook}</div>
+        <div class="queue-item-meta">${p.meta.char} · ${p.meta.target} · ${p.tags.split(' ').slice(0,2).join(' ')}</div>
+      </div>
+      <div class="queue-item-actions">
+        ${isSent ? `<span class="q-status sent">✅ Sent to Buffer</span>` : ''}
+        <button class="q-copy-btn" onclick="qCopyPost(this,${i})">📋 Copy</button>
+        <button class="q-buffer-btn" onclick="sendToBuffer(this,${i})" ${isSent?'disabled':''}>
+          ${isSent ? '✓ Scheduled' : '📡 Send to Buffer'}
+        </button>
+        <button class="q-unrate-btn" onclick="ratePost(${i},null)" title="Remove from queue">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function qCopyPost(btn, i) {
+  const p = posts[i];
+  navigator.clipboard.writeText(p.body + '\n\n' + p.tags).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+/* ── BUFFER API ── */
+function saveBufferSettings() {
+  const token = document.getElementById('bufferToken').value.trim();
+  const profileId = document.getElementById('bufferProfileId').value.trim();
+  if (!token || !profileId) { showBufferStatus('⚠️ Both fields are required.', '#dc2626'); return; }
+  localStorage.setItem(BUFFER_KEY, JSON.stringify({ token, profileId }));
+  showBufferStatus('✅ Settings saved!', '#16a34a');
+}
+
+function showBufferStatus(msg, color) {
+  const el = document.getElementById('bufferStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color;
+  setTimeout(() => el.textContent = '', 3000);
+}
+
+async function sendToBuffer(btn, i) {
+  const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
+  if (!cfg.token || !cfg.profileId) {
+    alert('Please configure your Buffer Access Token and Profile ID in ⚙️ Settings first.');
+    openSettings();
+    return;
+  }
+  const p = posts[i];
+  const text = p.body + '\n\n' + p.tags;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const body = new URLSearchParams({
+      access_token: cfg.token,
+      'profile_ids[]': cfg.profileId,
+      text: text,
+    });
+    const res = await fetch('https://api.bufferapp.com/1/updates/create.json', {
+      method: 'POST', body
+    });
+    const data = await res.json();
+    if (data.success || data.updates) {
+      const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+      sent[i] = true;
+      localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+      renderQueue();
+    } else {
+      btn.disabled = false;
+      btn.textContent = '📡 Send to Buffer';
+      alert('Buffer error: ' + (data.message || JSON.stringify(data)));
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '📡 Send to Buffer';
+    alert('Network error. Check your token and try again.');
+  }
+}
+
+/* ── SETTINGS MODAL ── */
+function openSettings() {
+  const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
+  if (cfg.token) document.getElementById('bufferToken').value = cfg.token;
+  if (cfg.profileId) document.getElementById('bufferProfileId').value = cfg.profileId;
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+function closeSettingsOutside(e) { if (e.target.id === 'settingsModal') closeSettings(); }
+
+/* ── SCHEDULE GENERATOR ── */
+function toggleScheduleGen() {
+  const panel = document.getElementById('scheduleGenPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function generateSchedulePrompt() {
+  const start = document.getElementById('sgStart').value;
+  const end   = document.getElementById('sgEnd').value;
+  const freq  = document.getElementById('sgFreq').value;
+  const persona = document.getElementById('sgPersona').value;
+  const topic = document.getElementById('sgTopic').value.trim();
+  const pillars = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
+  if (!start || !end) { alert('Please select a start and end date.'); return; }
+  const prompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise operational intelligence company.
+
+Generate a LinkedIn content calendar from ${start} to ${end}, publishing ${freq} posts per week.
+
+BRAND CONTEXT:
+- Yedda.ai turns existing CCTV infrastructure into real-time operational intelligence — no new hardware
+- Key results: 54% fraud reduction, 55s checkout wait reduction, ROI 180–400%, payback under 9 months
+- Markets: APAC, Middle East, Europe, LATAM (Malaysia, UAE, Germany, Spain, Philippines, Thailand, India, Brazil)
+- Persona(s): ${persona} — Abbey is the AI Guide (teal), Kai is the IA Analyst (orange)
+- Philosophy: Intelligence Augmentation (AI + IA) — AI processes data, humans make decisions
+- Brand voice: Direct, data-driven, bold claims with specific numbers, operational (not technical)
+
+CONTENT PILLARS TO USE: ${pillars.join(', ')}
+${topic ? `SPECIAL FOCUS: ${topic}` : ''}
+
+For each post, provide EXACTLY this format:
+---
+DATE: [YYYY-MM-DD]
+TYPE: [Text Post / Image Post / Carousel / Poll]
+PILLAR: [pillar name]
+PERSONA: [Abbey or Kai]
+HOOK: [first line — the grabber]
+BODY: [full post text, LinkedIn-formatted, max 300 words]
+TAGS: [5-8 hashtags]
+IMAGE PROMPT: [one-paragraph Gemini/Imagen prompt using brand colors teal #4BADB8 and orange #F07830]
+---
+
+Write ALL posts in English. Use the brand voice: contrast structure ("Not X. Y."), arrow bullets for problems, checkmark bullets for solutions, end each post with a question.`;
+
+  const output = document.getElementById('sgOutput');
+  const textarea = document.getElementById('sgPromptText');
+  textarea.value = prompt;
+  output.style.display = 'block';
+  output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copySchedulePrompt() {
+  const text = document.getElementById('sgPromptText').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.sched-copy-prompt');
+    btn.textContent = '✅ Copied! Paste into Claude.ai';
+    setTimeout(() => btn.textContent = '📋 Copy Prompt', 2500);
+  });
 }
 
 function copyPrompt(btn, i) {
@@ -2755,6 +3224,8 @@ document.querySelectorAll('.comp-table').forEach(el => barObserver.observe(el));
 
 /* Init */
 renderPost(0);
+loadRatings();
+renderQueue();
 
 /* Open first case by default for discoverability */
 setTimeout(() => {
