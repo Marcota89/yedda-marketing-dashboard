@@ -1077,6 +1077,21 @@ h1,h2,h3,h4 {
 }
 .li-copy-btn:hover { background: var(--teal-xl); }
 .li-copy-btn.copied { color: #16a34a; }
+.li-prompt-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--orange-xl);
+  border-top: 1px solid var(--orange-light);
+}
+.li-prompt-label { font-size: 12px; font-weight: 600; color: var(--orange); }
+.li-prompt-btn {
+  font-size: 12px; font-weight: 700; color: var(--orange);
+  background: none; border: 1.5px solid var(--orange); border-radius: 6px;
+  padding: 5px 12px; cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.li-prompt-btn:hover { background: var(--orange); color: #fff; }
+.li-prompt-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; }
 .li-meta-bar {
   border-top: 1px solid #E7EAEC;
   padding: 10px 16px;
@@ -2378,7 +2393,20 @@ That's what we call Intelligence Augmentation.
 Not a dashboard you visit.
 A decision that reaches your team at the moment it matters.
 
-→ Is your AI running alongside your operation, or inside it?` },
+→ Is your AI running alongside your operation, or inside it?`,
+    prompt:`Abstract conceptual image for a thought leadership LinkedIn post about AI integration in enterprise operations.
+
+Scene: A human hand (right side, mid-frame) and a translucent teal data-form hand (left side, #4BADB8 particles forming a hand shape — not robotic, not cartoonish) reaching toward each other. A luminous gap between them glows teal — the collaboration space, not a collision.
+
+Background: Clean white (#FAFCFC) with a very subtle teal radial gradient from center.
+
+Bottom-center: Yedda.ai logo (teal wordmark) small and clean on white.
+
+Mood: Thoughtful. Sophisticated. The moment before AI and human judgment meet.
+Style: High-end fintech editorial illustration — not sci-fi, not stock hands-on-laptop. Premium and enterprise-grade.
+Aspect ratio: 4:5
+
+BRAND: Primary teal #4BADB8, accent orange #F07830. Logo always on flat color field, never on complex background.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 22 · 🌐", tags:"#LossPrevention #RetailTech #FraudDetection #YeddaAI",
@@ -2397,7 +2425,25 @@ When Yedda.ai Fraud Detection was deployed across a major retail chain in Southe
 
 The team didn't change. The timing did.
 
-→ What percentage of your flagged events does your team actually review today?` },
+→ What percentage of your flagged events does your team actually review today?`,
+    prompt:`Bold typographic stat card image for LinkedIn — loss prevention / fraud reduction result.
+
+Background: Deep ink (#0E1B1E), full bleed.
+
+Center: "54%" in massive bold rounded typeface — teal (#4BADB8), taking up ~60% of card height.
+Below: Clean white text — "Shrinkage reduction in 90 days" / "Southeast Asia retail chain"
+
+Top-left: Small orange (#F07830) tag reading "VERIFIED RESULT" in monospaced all-caps.
+Subtle background: Ghost watermark of a store floor heatmap behind the text — barely visible, adds depth.
+
+Bottom strip (last 12% of height): Dark teal gradient (#2A7A84) with Yedda.ai logo centered in white.
+
+Typography: Nunito-style — rounded, modern. Heavy weight for stat, light for supporting text. No serif.
+Mood: Proof, not promise. The number is the hero.
+Style: High-contrast data journalism — Bloomberg/NYT stat card quality.
+Aspect ratio: 1:1 (square)
+
+BRAND: Teal #4BADB8, orange #F07830, dark #0E1B1E.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 24 · 🌐", tags:"#WorkplaceSafety #Logistics #APAC #YeddaAI",
@@ -2416,7 +2462,24 @@ Not by changing the workforce. By changing when the workforce gets the informati
 Intelligence Augmentation for workplace safety means one thing:
 Your team responds at the moment of risk — not the moment of consequence.
 
-→ Where in your operation is safety data arriving too late?` },
+→ Where in your operation is safety data arriving too late?`,
+    prompt:`Editorial photograph for a workplace safety LinkedIn post — logistics distribution center.
+
+Scene: Interior of a large DC — warehouse floor, shelving, forklifts in background, loading bay doors open. Bright commercial lighting. No staged danger, no people in distress. Normal operational environment.
+
+AI intelligence overlay (composited on photo):
+- Orange (#F07830) bounding box around a forklift path intersection: "NEAR-MISS RISK · Loading Bay 3 · Zone Violation"
+- Teal data strip at top: "YEDDA SAFETY · SHIFT MONITORING ACTIVE · 0 INCIDENTS"
+- Timestamp in monospaced white: "2026-04-24 · 07:41"
+
+The warehouse is normal. The system sees what humans miss in the operational noise.
+
+Bottom-right: Yedda.ai logo (white) on small teal badge.
+Mood: Prevention, not reaction. Calm operational precision.
+Style: Industrial editorial photography + clean enterprise UI overlay.
+Aspect ratio: 16:9
+
+BRAND: Teal #4BADB8, orange #F07830, dark overlays #0E1B1E.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 25 · 🌐", tags:"#IntelligenceAugmentation #EnterpriseAI #YeddaAI",
@@ -2436,7 +2499,27 @@ At Yedda.ai, we built 7 modules around one framework:
 Sales. Operations. Fraud. Safety. Analytics. Service. Marketing.
 Each makes your team faster without replacing them.
 
-Which module would change your operation most if your team had intelligence today?` },
+Which module would change your operation most if your team had intelligence today?`,
+    prompt:`Clean UI mockup image for a B2B SaaS operational intelligence platform — 7-module dashboard.
+
+Scene: Large monitor (dark mode, #0E1B1E background) displaying the Yedda.ai command center:
+
+Top row — 7 module tiles in teal outline, each with an icon and label:
+Operations · Fraud · Safety · Sales · Analytics · Service · Marketing
+
+Center: A live heatmap of a retail floor — warm orange zones (high traffic), cool teal zones (staff position), overlaid on simplified floor plan. One orange pulsing dot: "ANOMALY DETECTED."
+
+Bottom: Activity timeline — teal bars for clean shifts, orange spikes for flagged events. Last 7 days.
+
+Top-right of screen: "Abbey — AI Guide" profile with teal "LIVE" dot.
+
+The monitor sits on a clean desk. Professional, not staged.
+Yedda.ai logo on monitor taskbar bottom-left and on monitor bezel (small white on dark).
+
+Style: Hyper-realistic product mockup. UI must look production-ready, not a wireframe.
+Aspect ratio: 4:5
+
+BRAND: Teal #4BADB8, orange #F07830, dark #0E1B1E.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 28 · 🌐", tags:"#IntelligenceAugmentation #EnterpriseAI #YeddaAI",
@@ -2453,7 +2536,23 @@ The bridge is the layer between data and the decision that changes an outcome.
 
 That's what Intelligence Augmentation means at Yedda.ai.
 
-→ Where in your organization is AI producing data that nobody acts on?` },
+→ Where in your organization is AI producing data that nobody acts on?`,
+    prompt:`Abstract conceptual split-composition image for a B2B LinkedIn post about the gap between AI investment and results.
+
+Left half (60%): Warm golden light — a confident executive at a desk reviewing documents. Successful, established. Traditional data stack visible on screen in background.
+
+Right half (40%): Dark (#0E1B1E) — a clean teal (#4BADB8) data stream flowing downward but hitting a gap — a visible break in the flow — where the data stops before reaching an action/decision below.
+
+The gap between left and right is the story: investment happening, decisions not being reached.
+
+No text overlay. No people in distress.
+Bottom-right: Yedda.ai logo (teal) on white badge.
+
+Mood: The pause before the decision. The cost of the gap.
+Style: Premium editorial composite — financial magazine quality.
+Aspect ratio: 4:5
+
+BRAND: Teal #4BADB8, orange #F07830.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 29 · 🌐", tags:"#AgenticAI #IntelligenceAugmentation #YeddaAI",
@@ -2471,7 +2570,24 @@ Operations. Fraud. Safety. Sales. Analytics. Service. Marketing.
 800 agents or 7 modules — the logic is the same.
 AI embedded in the operation, not alongside it.
 
-→ Which part of your operation is still running on observation?` },
+→ Which part of your operation is still running on observation?`,
+    prompt:`Industrial-scale editorial image for a LinkedIn post about agentic AI in manufacturing and logistics.
+
+Scene: Wide shot of a modern manufacturing or large logistics facility — conveyor belts, robotic arms in background, floor staff moving purposefully. Scale and complexity are visible. Bright, clean industrial lighting.
+
+AI intelligence overlay (composited):
+- Multiple teal (#4BADB8) bounding boxes around key zones: "MODULE ACTIVE · Operations" / "MODULE ACTIVE · Safety"
+- Small orange (#F07830) counter badge top-right: "7 MODULES · LIVE"
+- Teal data stream connecting zones — like a network map over the floor plan
+
+The factory is real. The intelligence layer shows everything is connected.
+
+Bottom-right: Yedda.ai logo (white) on teal badge.
+Mood: Scale. Embedded intelligence. Not a pilot — a live operation.
+Style: Industrial editorial photography + clean enterprise overlay. No sci-fi aesthetic.
+Aspect ratio: 16:9
+
+BRAND: Teal #4BADB8, orange #F07830, dark overlays #0E1B1E.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"May 1 · 🌐", tags:"#RetailAI #SupplyChain #Operations #YeddaAI",
@@ -2489,7 +2605,24 @@ A regional retail chain in Southeast Asia — Yedda.ai Operations module deploye
 → Stockout rate reduced by 34% in 60 days
 → No new headcount. No new systems. Same data — better decisions.
 
-→ In your supply chain, how far does the forecast travel before someone acts on it?` },
+→ In your supply chain, how far does the forecast travel before someone acts on it?`,
+    prompt:`Photorealistic retail scene for a LinkedIn post about supply chain and retail AI.
+
+Scene: Interior of a modern large-format grocery or hypermarket — wide aisles, product shelves fully stocked, moderate customer density. Clean commercial lighting. Southeast Asia visual cues welcome (multilingual signage, diverse staff).
+
+AI intelligence overlay (semi-transparent, composited):
+- Teal (#4BADB8) bounding highlights on shelf zones with stock labels: "REPLENISHMENT SIGNAL · Aisle 7 · 2.3h to stockout"
+- A small dashboard panel bottom-left: "STOCKOUT RATE ↓ 34% · 60 days" in teal monospaced text
+- Orange (#F07830) pulse on one zone: "ACTION REQUIRED"
+
+The store is real. The system sees the supply chain beneath the surface.
+
+Bottom-right: Yedda.ai logo (white) on teal badge.
+Mood: Invisible intelligence making the operation flow.
+Style: Photorealistic editorial + enterprise SaaS overlay. Clean, not cluttered.
+Aspect ratio: 4:5
+
+BRAND: Teal #4BADB8, orange #F07830, dark overlays #0E1B1E.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"May 2 · 🌐", tags:"#SalesIntelligence #RevenueOperations #YeddaAI",
@@ -2508,7 +2641,22 @@ That's what Yedda.ai Sales Intelligence delivers.
 AI + IA. Not AI instead of your team.
 AI that makes your team faster where it counts most.
 
-→ Is your sales team using AI to move faster — or just to look busier?` },
+→ Is your sales team using AI to move faster — or just to look busier?`,
+    prompt:`Conceptual editorial image for a B2B LinkedIn post about AI-powered sales intelligence.
+
+Scene: A modern open-plan sales floor — standing desks, large monitors, professionals in motion. Warm but focused atmosphere. No staged poses.
+
+Visual overlay (AI intelligence layer): Teal (#4BADB8) bounding highlights around two monitors showing real-time pipeline data. A floating badge reads "SIGNAL DETECTED · Buying Intent · Account: [REDACTED]" in teal monospaced font. An orange (#F07830) dot pulses next to "LIVE."
+
+The overlay is semi-transparent — real environment beneath, intelligence layer on top.
+
+Bottom-right corner: Yedda.ai logo (white wordmark) on a small teal badge.
+
+Mood: Speed. Precision. The moment a sales rep gets ahead of the conversation.
+Style: Enterprise editorial photography + clean SaaS UI overlay. No stock photo clichés.
+Aspect ratio: 4:5 (LinkedIn single image post)
+
+BRAND: Primary teal #4BADB8, accent orange #F07830, dark background #0E1B1E for overlays.` },
 ];
 
 function renderPost(i) {
@@ -2535,6 +2683,10 @@ function renderPost(i) {
       <div class="li-act">🔁 Repost</div>
       <button class="li-copy-btn" onclick="copyPost(this, ${i})">📋 Copy Post</button>
     </div>
+    ${p.prompt ? `<div class="li-prompt-bar">
+      <div class="li-prompt-label">🎨 Gemini Image Prompt</div>
+      <button class="li-prompt-btn" onclick="copyPrompt(this, ${i})">📸 Copy Image Prompt</button>
+    </div>` : ''}
     <div class="li-meta-bar">
       <div class="li-meta-item">Time<strong>${p.meta.time}</strong></div>
       <div class="li-meta-item">Persona<strong>${p.meta.char}</strong></div>
@@ -2542,6 +2694,16 @@ function renderPost(i) {
       <div class="li-meta-item">Day<strong>${p.meta.day}</strong></div>
     </div>
   `;
+}
+
+function copyPrompt(btn, i) {
+  const p = posts[i];
+  if (!p.prompt) return;
+  navigator.clipboard.writeText(p.prompt).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📸 Copy Image Prompt'; btn.classList.remove('copied'); }, 2000);
+  });
 }
 
 function copyPost(btn, i) {
