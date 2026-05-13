@@ -1065,6 +1065,18 @@ h1,h2,h3,h4 {
   font-size: 13px; color: #666; font-weight: 600;
   border-radius: 4px;
 }
+.li-copy-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px;
+  font-size: 13px; font-weight: 700;
+  color: var(--teal-deep);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  border: none; background: none; font-family: inherit; width: 100%;
+}
+.li-copy-btn:hover { background: var(--teal-xl); }
+.li-copy-btn.copied { color: #16a34a; }
 .li-meta-bar {
   border-top: 1px solid #E7EAEC;
   padding: 10px 16px;
@@ -2521,7 +2533,7 @@ function renderPost(i) {
       <div class="li-act">👍 Like</div>
       <div class="li-act">💬 Comment</div>
       <div class="li-act">🔁 Repost</div>
-      <div class="li-act">✉️ Send</div>
+      <button class="li-copy-btn" onclick="copyPost(this, ${i})">📋 Copy Post</button>
     </div>
     <div class="li-meta-bar">
       <div class="li-meta-item">Time<strong>${p.meta.time}</strong></div>
@@ -2530,6 +2542,16 @@ function renderPost(i) {
       <div class="li-meta-item">Day<strong>${p.meta.day}</strong></div>
     </div>
   `;
+}
+
+function copyPost(btn, i) {
+  const p = posts[i];
+  const text = p.body + '\n\n' + p.tags;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = '📋 Copy Post'; btn.classList.remove('copied'); }, 2000);
+  });
 }
 
 function showPost(i, el) {
