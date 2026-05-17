@@ -1053,18 +1053,51 @@ h1,h2,h3,h4 {
   font-size: 9.5px; font-weight: 700;
   letter-spacing: 0.12em; text-transform: uppercase;
   color: #888; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 5px;
 }
-.li-actions {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+/* Option A — preview label replaces mock buttons */
+.li-preview-tag {
+  padding: 6px 16px;
   border-top: 1px solid #E7EAEC;
-  padding: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: #aab;
+  display: flex; align-items: center; gap: 6px;
 }
-.li-act {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 10px;
-  font-size: 13px; color: #666; font-weight: 600;
-  border-radius: 4px;
+.li-preview-tag::before {
+  content: ""; display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%; background: #d1d5db;
 }
+
+/* Option C — two-block action layout */
+.li-action-block {
+  padding: 10px 16px;
+  border-top: 1px solid #E7EAEC;
+}
+.li-action-block-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--teal-deep);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+}
+.li-action-btns {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+
+/* Option D — tooltip "?" badge */
+.tip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--line); color: var(--text-soft);
+  font-size: 9px; font-weight: 700; cursor: help;
+  flex-shrink: 0;
+}
+
+/* Option B — clickable source link */
+.li-src-link {
+  color: #0a66c2; font-size: 12px; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  line-height: 1.5;
+}
+.li-src-link:hover { text-decoration: underline; }
 .li-copy-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 10px;
@@ -1093,13 +1126,7 @@ h1,h2,h3,h4 {
 .li-prompt-btn:hover { background: var(--orange); color: #fff; }
 .li-prompt-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; }
 
-/* ── Rating bar ── */
-.li-rating-bar {
-  padding: 10px 16px;
-  background: #F8FAFB;
-  border-top: 1px solid var(--line);
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
+/* ── Rating label (kept for backward compat) ── */
 .li-rating-label { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-right: 4px; }
 .rate-btn {
   font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: 20px;
@@ -2902,6 +2929,7 @@ BRAND: Primary teal #4BADB8, accent orange #F07830, dark background #0E1B1E for 
 
 function renderPost(i) {
   const p = posts[i];
+  const srcSearch = 'https://www.google.com/search?q=' + encodeURIComponent(p.src);
   document.getElementById('liPreview').innerHTML = `
     <div class="li-header">
       <div class="li-avatar"><img src="assets/yedda-logo.png" alt=""></div>
@@ -2914,21 +2942,42 @@ function renderPost(i) {
     </div>
     <div class="li-body">${p.body}</div>
     <div class="li-tags">${p.tags}</div>
+
+    <!-- Option B: clickable source -->
     <div class="li-src">
-      <div class="li-src-h">Source</div>
-      ${p.src}
+      <div class="li-src-h">
+        📰 Source
+        <span class="tip" title="Reference article used as factual basis for this post. Click to open source in Google.">?</span>
+      </div>
+      <a class="li-src-link" href="${srcSearch}" target="_blank" rel="noopener">
+        ${p.src} ↗
+      </a>
     </div>
-    <div class="li-actions">
-      <div class="li-act">👍 Like</div>
-      <div class="li-act">💬 Comment</div>
-      <div class="li-act">🔁 Repost</div>
-      <button class="li-copy-btn" onclick="copyPost(this, ${i})">📋 Copy Post</button>
+
+    <!-- Option A: replace mock buttons with label -->
+    <div class="li-preview-tag">LinkedIn Post Preview — copy content below to publish</div>
+
+    <!-- Option C: Publish actions block -->
+    <div class="li-action-block">
+      <div class="li-action-block-label">
+        Publish actions
+        <span class="tip" title="Copy the post text to clipboard, then paste into LinkedIn or Buffer to schedule.">?</span>
+      </div>
+      <div class="li-action-btns">
+        <button class="li-copy-btn" onclick="copyPost(this, ${i})" title="Copy full post text + hashtags to clipboard">📋 Copy Post</button>
+        ${p.prompt ? `<button class="li-prompt-btn" onclick="copyPrompt(this, ${i})" title="Copy the Gemini image generation prompt to clipboard — paste into Gemini to create the visual for this post">📸 Copy Image Prompt</button>` : ''}
+      </div>
     </div>
-    ${p.prompt ? `<div class="li-prompt-bar">
-      <div class="li-prompt-label">🎨 Gemini Image Prompt</div>
-      <button class="li-prompt-btn" onclick="copyPrompt(this, ${i})">📸 Copy Image Prompt</button>
-    </div>` : ''}
-    <div class="li-rating-bar" id="ratingBar-${i}">${renderRatingBar(i)}</div>
+
+    <!-- Option C + D: Rate block with tooltips -->
+    <div class="li-action-block" style="background:#F8FAFB;border-top:1px solid var(--line);">
+      <div class="li-action-block-label" style="color:var(--text-soft);">
+        Rate this post
+        <span class="tip" title="Approve to add to your Publish Queue. Needs Revision to flag for rewrite. Skip to exclude from queue.">?</span>
+      </div>
+      <div id="ratingBar-${i}">${renderRatingBar(i)}</div>
+    </div>
+
     <div class="li-meta-bar">
       <div class="li-meta-item">Time<strong>${p.meta.time}</strong></div>
       <div class="li-meta-item">Persona<strong>${p.meta.char}</strong></div>
@@ -2949,13 +2998,20 @@ function getRatings() {
 
 function renderRatingBar(i) {
   const r = getRatings()[i];
-  const savedTag = r ? `<span class="rating-saved-tag ${r}">${r === 'approved' ? '✅ Approved' : r === 'revise' ? '🔁 Needs Revision' : '❌ Skipped'}</span>` : '';
+  const savedTag = r ? `<span class="rating-saved-tag ${r}">${r === 'approved' ? '✅ Approved — in Queue' : r === 'revise' ? '🔁 Flagged for revision' : '❌ Skipped'}</span>` : '';
   return `
-    <span class="li-rating-label">Rate this post:</span>
-    <button class="rate-btn approve ${r==='approved'?'active':''}" onclick="ratePost(${i},'approved')">✅ Approve</button>
-    <button class="rate-btn revise ${r==='revise'?'active':''}" onclick="ratePost(${i},'revise')">🔁 Needs Revision</button>
-    <button class="rate-btn reject ${r==='rejected'?'active':''}" onclick="ratePost(${i},'rejected')">❌ Skip</button>
-    ${savedTag}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button class="rate-btn approve ${r==='approved'?'active':''}"
+        title="Mark as approved — this post moves to your Publish Queue for scheduling"
+        onclick="ratePost(${i},'approved')">✅ Approve</button>
+      <button class="rate-btn revise ${r==='revise'?'active':''}"
+        title="Flag for revision — good idea but needs rewriting before publishing"
+        onclick="ratePost(${i},'revise')">🔁 Needs Revision</button>
+      <button class="rate-btn reject ${r==='rejected'?'active':''}"
+        title="Skip this post — not relevant or not aligned with current strategy"
+        onclick="ratePost(${i},'rejected')">❌ Skip</button>
+      ${savedTag}
+    </div>
   `;
 }
 
