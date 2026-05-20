@@ -2233,8 +2233,8 @@ footer {
         <div style="margin-bottom:18px;padding:14px 16px;background:var(--teal-xl);border-radius:12px;border:1.5px solid rgba(75,173,184,0.25);">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div>
-              <div style="font-size:13px;font-weight:700;color:var(--teal-deep);">🔍 Fetch Latest News via Apify</div>
-              <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">Scrapes Google News for recent articles relevant to Yedda.ai topics</div>
+              <div style="font-size:13px;font-weight:700;color:var(--teal-deep);">🔍 Fetch Latest News</div>
+              <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">Pulls recent Google News articles on retail AI, loss prevention, logistics &amp; safety</div>
             </div>
             <button class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews()">🔍 Fetch News</button>
           </div>
@@ -3302,39 +3302,46 @@ function showApifyModalStatus(msg, color) {
 }
 
 async function fetchApifyNews() {
-  const token = localStorage.getItem(APIFY_KEY);
-  if (!token) {
-    alert('Please add your Apify API token in ⚙️ Settings → Apify News Integration first.');
-    openSettings();
-    return;
-  }
   const resultsEl = document.getElementById('apifyNewsResults');
-  resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching latest news — this takes ~30 seconds…</div>`;
+  resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching latest news from Google News…</div>`;
+
+  // Use RSS2JSON (free, no auth) to read Google News RSS feeds
+  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
+
+  const queries = [
+    'computer+vision+AI+retail+2026',
+    'AI+loss+prevention+shrinkage',
+    'operational+intelligence+logistics',
+    'AI+workplace+safety+manufacturing+2026',
+    'retail+technology+CCTV+analytics'
+  ];
 
   try {
-    // Start actor run
-    const input = {
-      queries: APIFY_QUERIES.join('\n'),
-      maxArticlesPerQuery: 3,
-      language: 'en'
-    };
-    const startRes = await fetch(
-      `https://api.apify.com/v2/acts/apify~google-news-scraper/runs?token=${token}&waitForFinish=120`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }
+    const fetches = queries.map(q =>
+      fetch(RSS2JSON + encodeURIComponent(gnBase + q))
+        .then(r => r.json())
+        .then(d => (d.items || []).slice(0, 3))
+        .catch(() => [])
     );
-    if (!startRes.ok) throw new Error(`Apify error ${startRes.status}`);
-    const runData = await startRes.json();
-    const datasetId = runData.data?.defaultDatasetId;
-    if (!datasetId) throw new Error('No dataset returned');
+    const results = await Promise.all(fetches);
+    const articles = results.flat().map(item => ({
+      title:       item.title,
+      url:         item.link,
+      publishedAt: item.pubDate,
+      text:        item.description ? item.description.replace(/<[^>]+>/g,'').slice(0,160) : ''
+    }));
 
-    // Fetch results
-    const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=15`
-    );
-    const articles = await itemsRes.json();
-    renderApifyResults(articles);
+    // deduplicate by title
+    const seen = new Set();
+    const unique = articles.filter(a => {
+      if (!a.title || seen.has(a.title)) return false;
+      seen.add(a.title); return true;
+    });
+
+    renderApifyResults(unique.slice(0, 15));
   } catch(e) {
-    resultsEl.innerHTML = `<div class="apify-error">⚠️ ${e.message}. Check your token in ⚙️ Settings.</div>`;
+    resultsEl.innerHTML = `<div class="apify-error">⚠️ Could not fetch news: ${e.message}</div>`;
   }
 }
 
