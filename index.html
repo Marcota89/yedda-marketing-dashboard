@@ -3489,7 +3489,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   const makeBody = (includeJsonMime) => JSON.stringify({
     contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
     generationConfig: {
-      maxOutputTokens: 1500,
+      maxOutputTokens: 4096,
       temperature: 0.7,
       ...(includeJsonMime ? { responseMimeType: 'application/json' } : {})
     }
