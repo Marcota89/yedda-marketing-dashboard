@@ -2426,10 +2426,10 @@ footer {
     </div>
     <hr class="modal-divider">
     <div class="modal-section">
-      <div class="modal-section-title">🤖 Claude AI — Auto Post Generator</div>
-      <p class="modal-desc">Add your Anthropic API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>console.anthropic.com → API Keys</strong>.</p>
-      <div class="modal-field"><label>Anthropic API Key</label><input type="password" id="claudeApiKey" class="modal-input" placeholder="sk-ant-..."></div>
-      <button class="modal-save-btn" style="background:#7C3AED;" onclick="saveClaudeSettings()">💾 Save Claude Settings</button>
+      <div class="modal-section-title">✨ Gemini AI — Auto Post Generator</div>
+      <p class="modal-desc">Add your Google Gemini API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>aistudio.google.com → Get API Key</strong>.</p>
+      <div class="modal-field"><label>Gemini API Key</label><input type="password" id="claudeApiKey" class="modal-input" placeholder="AIza..."></div>
+      <button class="modal-save-btn" style="background:#1A73E8;" onclick="saveClaudeSettings()">💾 Save Gemini Settings</button>
       <div id="claudeStatus" class="modal-status"></div>
     </div>
   </div>
@@ -3405,7 +3405,7 @@ async function useSelectedNews() {
   const apiKey = localStorage.getItem('yedda_claude_key');
   if (!apiKey) {
     document.getElementById('apifyNewsResults').insertAdjacentHTML('beforeend',
-      `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--orange);">⚠️ No Claude API key found — open Settings and add your Anthropic key to auto-generate posts. Sources added to the prompt form below.</div>`);
+      `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--orange);">⚠️ No Gemini API key found — open Settings and add your Google AI Studio key to auto-generate posts. Sources added to the prompt form below.</div>`);
     return;
   }
 
@@ -3472,21 +3472,18 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 
   const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's value proposition in retail AI / enterprise operations. Make the data feel urgent and relevant to operations directors, COOs, and loss prevention managers.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-calls': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: userPrompt }],
-      system: systemPrompt
-    })
-  });
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 1500, temperature: 0.7 }
+      })
+    }
+  );
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
@@ -3494,7 +3491,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   }
 
   const data = await response.json();
-  const raw = data.content[0].text.trim();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
   // extract JSON even if wrapped in code fences
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Invalid response format');
@@ -3579,10 +3576,10 @@ generateSchedulePrompt = function() {
 
 function saveClaudeSettings() {
   const key = document.getElementById('claudeApiKey').value.trim();
-  if (!key) { alert('Enter your Anthropic API key.'); return; }
+  if (!key) { alert('Enter your Gemini API key.'); return; }
   localStorage.setItem('yedda_claude_key', key);
   const s = document.getElementById('claudeStatus');
-  s.textContent = '✅ Claude API key saved.';
+  s.textContent = '✅ Gemini API key saved.';
   s.style.color = 'var(--teal-deep)';
   setTimeout(() => s.textContent = '', 3000);
 }
