@@ -1266,6 +1266,42 @@ h1,h2,h3,h4 {
   color: #fff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; font-family: inherit;
 }
 .modal-status { margin-top: 10px; font-size: 13px; font-weight: 600; }
+.modal-divider { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+
+/* ── Apify news results ── */
+.news-results { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.news-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid var(--line); background: var(--white);
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.news-item:hover { border-color: var(--teal); background: var(--teal-xl); }
+.news-item.selected { border-color: var(--teal); background: var(--teal-xl); }
+.news-item input[type=checkbox] { margin-top: 2px; accent-color: var(--teal); flex-shrink: 0; }
+.news-item-body { flex: 1; }
+.news-item-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; line-height: 1.4; }
+.news-item-meta { font-size: 11px; color: var(--text-soft); display: flex; gap: 8px; flex-wrap: wrap; }
+.news-item-meta a { color: #0a66c2; text-decoration: none; }
+.news-item-meta a:hover { text-decoration: underline; }
+.news-snippet { font-size: 12px; color: var(--text-soft); margin-top: 4px; line-height: 1.5; }
+.apify-loading {
+  padding: 20px; text-align: center; color: var(--text-soft);
+  font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.apify-spinner {
+  width: 16px; height: 16px; border: 2px solid var(--line);
+  border-top-color: var(--teal); border-radius: 50%;
+  animation: spin .7s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.news-use-btn {
+  margin-top: 10px; padding: 8px 18px; border-radius: 999px;
+  background: var(--teal); color: #fff; font-weight: 700; font-size: 13px;
+  border: none; cursor: pointer; font-family: inherit;
+}
+.news-use-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+.apify-error { color: #dc2626; font-size: 13px; padding: 10px 0; }
 .li-meta-bar {
   border-top: 1px solid #E7EAEC;
   padding: 10px 16px;
@@ -2191,7 +2227,19 @@ footer {
     <div id="scheduleGenPanel" style="display:none;" class="sched-panel reveal">
       <div class="sched-panel-inner">
         <h3 class="sched-title">✨ Generate New Posting Schedule</h3>
-        <p class="sched-desc">Fill in the fields below and click <strong>Generate Prompt</strong>. Copy the result and paste it into Claude.ai to get a ready-to-publish post batch.</p>
+        <p class="sched-desc">Optionally fetch live news from Apify first, then fill in the fields and click <strong>Generate Prompt</strong>.</p>
+
+        <!-- Apify news fetch -->
+        <div style="margin-bottom:18px;padding:14px 16px;background:var(--teal-xl);border-radius:12px;border:1.5px solid rgba(75,173,184,0.25);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--teal-deep);">🔍 Fetch Latest News via Apify</div>
+              <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">Scrapes Google News for recent articles relevant to Yedda.ai topics</div>
+            </div>
+            <button class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews()">🔍 Fetch News</button>
+          </div>
+          <div id="apifyNewsResults"></div>
+        </div>
         <div class="sched-form">
           <div class="sched-field"><label>Start date</label><input type="date" id="sgStart" class="sched-input"></div>
           <div class="sched-field"><label>End date</label><input type="date" id="sgEnd" class="sched-input"></div>
@@ -2367,6 +2415,14 @@ footer {
       <p class="modal-hint">To find your Profile ID: buffer.com/api/1/profiles.json?access_token=YOUR_TOKEN</p>
       <button class="modal-save-btn" onclick="saveBufferSettings()">💾 Save Buffer Settings</button>
       <div id="bufferStatus" class="modal-status"></div>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-section">
+      <div class="modal-section-title">🔍 Apify News Integration</div>
+      <p class="modal-desc">Connect Apify to automatically fetch recent news articles relevant to Yedda.ai before generating new posts. Get your token at <strong>console.apify.com → Settings → Integrations</strong>.</p>
+      <div class="modal-field"><label>Apify Personal API Token</label><input type="password" id="apifyToken" class="modal-input" placeholder="apify_api_..."></div>
+      <button class="modal-save-btn" style="background:var(--orange);" onclick="saveApifySettings()">💾 Save Apify Settings</button>
+      <div id="apifyStatus" class="modal-status"></div>
     </div>
   </div>
 </div>
@@ -3220,6 +3276,139 @@ function copySchedulePrompt() {
     setTimeout(() => btn.textContent = '📋 Copy Prompt', 2500);
   });
 }
+
+/* ── APIFY INTEGRATION ── */
+const APIFY_KEY = 'yedda_apify';
+const APIFY_QUERIES = [
+  'computer vision AI retail 2026',
+  'AI loss prevention shrinkage retail',
+  'operational intelligence logistics manufacturing',
+  'AI workplace safety 2026',
+  'retail technology CCTV analytics'
+];
+
+function saveApifySettings() {
+  const token = document.getElementById('apifyToken').value.trim();
+  if (!token) { showApifyModalStatus('⚠️ Token is required.', '#dc2626'); return; }
+  localStorage.setItem(APIFY_KEY, token);
+  showApifyModalStatus('✅ Apify token saved!', '#16a34a');
+}
+
+function showApifyModalStatus(msg, color) {
+  const el = document.getElementById('apifyStatus');
+  if (!el) return;
+  el.textContent = msg; el.style.color = color;
+  setTimeout(() => el.textContent = '', 3000);
+}
+
+async function fetchApifyNews() {
+  const token = localStorage.getItem(APIFY_KEY);
+  if (!token) {
+    alert('Please add your Apify API token in ⚙️ Settings → Apify News Integration first.');
+    openSettings();
+    return;
+  }
+  const resultsEl = document.getElementById('apifyNewsResults');
+  resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching latest news — this takes ~30 seconds…</div>`;
+
+  try {
+    // Start actor run
+    const input = {
+      queries: APIFY_QUERIES.join('\n'),
+      maxArticlesPerQuery: 3,
+      language: 'en'
+    };
+    const startRes = await fetch(
+      `https://api.apify.com/v2/acts/apify~google-news-scraper/runs?token=${token}&waitForFinish=120`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }
+    );
+    if (!startRes.ok) throw new Error(`Apify error ${startRes.status}`);
+    const runData = await startRes.json();
+    const datasetId = runData.data?.defaultDatasetId;
+    if (!datasetId) throw new Error('No dataset returned');
+
+    // Fetch results
+    const itemsRes = await fetch(
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}&limit=15`
+    );
+    const articles = await itemsRes.json();
+    renderApifyResults(articles);
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="apify-error">⚠️ ${e.message}. Check your token in ⚙️ Settings.</div>`;
+  }
+}
+
+function renderApifyResults(articles) {
+  const el = document.getElementById('apifyNewsResults');
+  if (!articles || articles.length === 0) {
+    el.innerHTML = '<div class="apify-error">No articles found. Try again or adjust search terms.</div>';
+    return;
+  }
+  const items = articles.map((a, i) => `
+    <div class="news-item" id="nitem-${i}" onclick="toggleNewsItem(${i})">
+      <input type="checkbox" id="ncheck-${i}" onclick="event.stopPropagation();toggleNewsItem(${i})">
+      <div class="news-item-body">
+        <div class="news-item-title">${a.title || 'No title'}</div>
+        <div class="news-item-meta">
+          <span>${a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : ''}</span>
+          ${a.url ? `<a href="${a.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View article ↗</a>` : ''}
+        </div>
+        ${a.text ? `<div class="news-snippet">${a.text.slice(0,140)}…</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="news-results">${items}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
+      <button class="news-use-btn" onclick="useSelectedNews()">✅ Use Selected as Sources</button>
+      <span style="font-size:12px;color:var(--text-soft);">Select articles above, then click to add them to your prompt</span>
+    </div>`;
+
+  // store for later use
+  window._apifyArticles = articles;
+}
+
+function toggleNewsItem(i) {
+  const item  = document.getElementById(`nitem-${i}`);
+  const check = document.getElementById(`ncheck-${i}`);
+  check.checked = !check.checked;
+  item.classList.toggle('selected', check.checked);
+}
+
+function useSelectedNews() {
+  const selected = (window._apifyArticles || []).filter((_, i) => {
+    const c = document.getElementById(`ncheck-${i}`);
+    return c && c.checked;
+  });
+  if (selected.length === 0) { alert('Select at least one article first.'); return; }
+  const sourceLines = selected.map(a => `- "${a.title}" (${a.url || 'source'})`).join('\n');
+  // inject into topic field
+  const topicEl = document.getElementById('sgTopic');
+  topicEl.value = selected.map(a => a.title).join(' / ');
+  // store for prompt enrichment
+  window._selectedSources = sourceLines;
+  // visual confirmation
+  document.getElementById('apifyNewsResults').insertAdjacentHTML('beforeend',
+    `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--teal-deep);">✅ ${selected.length} article(s) added as sources — scroll down and click Generate Prompt.</div>`);
+}
+
+/* patch generateSchedulePrompt to inject Apify sources */
+const _origGenPrompt = generateSchedulePrompt;
+generateSchedulePrompt = function() {
+  _origGenPrompt();
+  if (window._selectedSources) {
+    const ta = document.getElementById('sgPromptText');
+    ta.value = ta.value + `\n\nRECENT NEWS SOURCES (fetched via Apify — use these as factual basis for the posts):\n${window._selectedSources}`;
+  }
+};
+
+/* load Apify token into modal on open */
+const _origOpenSettings = openSettings;
+openSettings = function() {
+  _origOpenSettings();
+  const t = localStorage.getItem(APIFY_KEY);
+  if (t) document.getElementById('apifyToken').value = t;
+};
 
 function copyPrompt(btn, i) {
   const p = posts[i];
