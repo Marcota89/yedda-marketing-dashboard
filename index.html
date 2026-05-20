@@ -2410,12 +2410,15 @@ footer {
     </div>
     <div class="modal-section">
       <div class="modal-section-title">📡 Buffer Integration</div>
-      <p class="modal-desc">Connect Buffer to send approved posts directly to your LinkedIn schedule. Get your Access Token at <strong>buffer.com/account/access-token</strong>.</p>
-      <div class="modal-field"><label>Buffer Access Token</label><input type="password" id="bufferToken" class="modal-input" placeholder="Enter your Buffer access token"></div>
-      <div class="modal-field"><label>Buffer Profile ID (LinkedIn Page)</label><input type="text" id="bufferProfileId" class="modal-input" placeholder="e.g. 5d9a8f..."></div>
-      <p class="modal-hint">To find your Profile ID: buffer.com/api/1/profiles.json?access_token=YOUR_TOKEN</p>
-      <button class="modal-save-btn" onclick="saveBufferSettings()">💾 Save Buffer Settings</button>
-      <div id="bufferStatus" class="modal-status"></div>
+      <p class="modal-desc">Connect your Buffer account to send approved posts directly to your LinkedIn schedule.</p>
+      <div id="bufferConnectArea">
+        <button class="modal-save-btn" style="background:#1A73E8;" onclick="bufferOAuthConnect()">🔗 Connect Buffer Account</button>
+        <div id="bufferStatus" class="modal-status" style="margin-top:10px;"></div>
+      </div>
+      <div id="bufferConnectedArea" style="display:none;">
+        <div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:13px;color:#16a34a;font-weight:600;">✅ Buffer connected — <span id="bufferConnectedName"></span></div>
+        <button class="modal-save-btn" style="background:#dc2626;margin-top:10px;" onclick="bufferDisconnect()">Disconnect Buffer</button>
+      </div>
     </div>
     <hr class="modal-divider">
     <div class="modal-section">
@@ -3172,13 +3175,82 @@ function qCopyPost(btn, i) {
   });
 }
 
-/* ── BUFFER API ── */
-function saveBufferSettings() {
-  const token = document.getElementById('bufferToken').value.trim();
-  const profileId = document.getElementById('bufferProfileId').value.trim();
-  if (!token || !profileId) { showBufferStatus('⚠️ Both fields are required.', '#dc2626'); return; }
-  localStorage.setItem(BUFFER_KEY, JSON.stringify({ token, profileId }));
-  showBufferStatus('✅ Settings saved!', '#16a34a');
+/* ── BUFFER OAUTH PKCE ── */
+const BUFFER_CLIENT_ID = 'AJ-WVT0H-kgOAeoVqvrVlXkPs_kE5DP2-6PholQmaUb';
+const BUFFER_REDIRECT   = 'https://yedda-marketing-dashboard.vercel.app';
+
+function bufferOAuthConnect() {
+  // generate PKCE code_verifier + code_challenge
+  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2,'0')).join('');
+  sessionStorage.setItem('buffer_verifier', verifier);
+
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)).then(hash => {
+    const challenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+    const url = `https://bufferapp.com/oauth2/authorize?client_id=${BUFFER_CLIENT_ID}&redirect_uri=${encodeURIComponent(BUFFER_REDIRECT)}&response_type=code&code_challenge=${challenge}&code_challenge_method=S256`;
+    window.location.href = url;
+  });
+}
+
+async function bufferHandleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return;
+  // clean URL
+  window.history.replaceState({}, '', window.location.pathname);
+  const verifier = sessionStorage.getItem('buffer_verifier');
+  if (!verifier) return;
+
+  showBufferStatus('🔄 Connecting to Buffer…', '#1A73E8');
+  openSettings();
+
+  try {
+    const res = await fetch('https://api.bufferapp.com/1/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: BUFFER_CLIENT_ID,
+        redirect_uri: BUFFER_REDIRECT,
+        grant_type: 'authorization_code',
+        code,
+        code_verifier: verifier
+      })
+    });
+    const data = await res.json();
+    const token = data.access_token;
+    if (!token) throw new Error(data.error_description || 'No token received');
+
+    // fetch profile ID automatically
+    const profileRes = await fetch(`https://api.bufferapp.com/1/profiles.json?access_token=${token}`);
+    const profiles = await profileRes.json();
+    const linkedin = Array.isArray(profiles) ? profiles.find(p => p.service === 'linkedin') : null;
+    const profileId = linkedin?.id || '';
+    const name = linkedin?.service_username || 'LinkedIn';
+
+    localStorage.setItem(BUFFER_KEY, JSON.stringify({ token, profileId, name }));
+    sessionStorage.removeItem('buffer_verifier');
+    updateBufferUI();
+    showBufferStatus('✅ Buffer connected!', '#16a34a');
+  } catch(e) {
+    showBufferStatus('❌ ' + e.message, '#dc2626');
+  }
+}
+
+function bufferDisconnect() {
+  localStorage.removeItem(BUFFER_KEY);
+  updateBufferUI();
+}
+
+function updateBufferUI() {
+  const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
+  const connected = !!cfg.token;
+  const ca = document.getElementById('bufferConnectArea');
+  const da = document.getElementById('bufferConnectedArea');
+  const nm = document.getElementById('bufferConnectedName');
+  if (ca) ca.style.display = connected ? 'none' : 'block';
+  if (da) da.style.display = connected ? 'block' : 'none';
+  if (nm) nm.textContent = cfg.name || 'LinkedIn';
 }
 
 function showBufferStatus(msg, color) {
@@ -3186,8 +3258,14 @@ function showBufferStatus(msg, color) {
   if (!el) return;
   el.textContent = msg;
   el.style.color = color;
-  setTimeout(() => el.textContent = '', 3000);
+  setTimeout(() => el.textContent = '', 5000);
 }
+
+// run on page load to handle OAuth callback + restore UI
+(function() {
+  bufferHandleCallback();
+  setTimeout(updateBufferUI, 100);
+})();
 
 async function sendToBuffer(btn, i) {
   const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
@@ -3229,10 +3307,8 @@ async function sendToBuffer(btn, i) {
 
 /* ── SETTINGS MODAL ── */
 function openSettings() {
-  const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
-  if (cfg.token) document.getElementById('bufferToken').value = cfg.token;
-  if (cfg.profileId) document.getElementById('bufferProfileId').value = cfg.profileId;
   document.getElementById('settingsModal').style.display = 'flex';
+  updateBufferUI();
 }
 function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
 function closeSettingsOutside(e) { if (e.target.id === 'settingsModal') closeSettings(); }
