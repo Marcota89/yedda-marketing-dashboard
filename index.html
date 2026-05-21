@@ -2409,16 +2409,10 @@ footer {
       <button onclick="closeSettings()" class="modal-close">✕</button>
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">📡 Buffer Integration</div>
-      <p class="modal-desc">Connect your Buffer account to send approved posts directly to your LinkedIn schedule.</p>
-      <div id="bufferConnectArea">
-        <button class="modal-save-btn" style="background:#1A73E8;" onclick="bufferOAuthConnect()">🔗 Connect Buffer Account</button>
-        <div id="bufferStatus" class="modal-status" style="margin-top:10px;"></div>
-      </div>
-      <div id="bufferConnectedArea" style="display:none;">
-        <div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:13px;color:#16a34a;font-weight:600;">✅ Buffer connected — <span id="bufferConnectedName"></span></div>
-        <button class="modal-save-btn" style="background:#dc2626;margin-top:10px;" onclick="bufferDisconnect()">Disconnect Buffer</button>
-      </div>
+      <div class="modal-section-title">🔗 LinkedIn Publishing</div>
+      <p class="modal-desc">Click <strong>🔗 Post to LinkedIn</strong> in the Publish Queue to copy the post text and open LinkedIn in a new tab — then just paste and publish.</p>
+      <div style="padding:10px 14px;background:var(--teal-xl);border-radius:8px;font-size:13px;color:var(--teal-deep);font-weight:600;">✅ No setup needed — works instantly, zero configuration.</div>
+      <div id="bufferStatus" class="modal-status"></div>
     </div>
     <hr class="modal-divider">
     <div class="modal-section">
@@ -3155,10 +3149,10 @@ function renderQueue() {
         <div class="queue-item-meta">${p.meta.char} · ${p.meta.target} · ${p.tags.split(' ').slice(0,2).join(' ')}</div>
       </div>
       <div class="queue-item-actions">
-        ${isSent ? `<span class="q-status sent">✅ Sent to Buffer</span>` : ''}
+        ${isSent ? `<span class="q-status sent">✅ Published</span>` : ''}
         <button class="q-copy-btn" onclick="qCopyPost(this,${i})">📋 Copy</button>
-        <button class="q-buffer-btn" onclick="sendToBuffer(this,${i})" ${isSent?'disabled':''}>
-          ${isSent ? '✓ Scheduled' : '📡 Send to Buffer'}
+        <button class="q-buffer-btn" onclick="copyAndOpenLinkedIn(this,${i})" ${isSent?'disabled':''}>
+          ${isSent ? '✓ Done' : '🔗 Post to LinkedIn'}
         </button>
         <button class="q-unrate-btn" onclick="ratePost(${i},null)" title="Remove from queue">✕</button>
       </div>
@@ -3267,42 +3261,18 @@ function showBufferStatus(msg, color) {
   setTimeout(updateBufferUI, 100);
 })();
 
-async function sendToBuffer(btn, i) {
-  const cfg = JSON.parse(localStorage.getItem(BUFFER_KEY) || '{}');
-  if (!cfg.token || !cfg.profileId) {
-    alert('Please configure your Buffer Access Token and Profile ID in ⚙️ Settings first.');
-    openSettings();
-    return;
-  }
+async function copyAndOpenLinkedIn(btn, i) {
   const p = posts[i];
   const text = p.body + '\n\n' + p.tags;
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const body = new URLSearchParams({
-      access_token: cfg.token,
-      'profile_ids[]': cfg.profileId,
-      text: text,
-    });
-    const res = await fetch('https://api.bufferapp.com/1/updates/create.json', {
-      method: 'POST', body
-    });
-    const data = await res.json();
-    if (data.success || data.updates) {
-      const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
-      sent[i] = true;
-      localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
-      renderQueue();
-    } else {
-      btn.disabled = false;
-      btn.textContent = '📡 Send to Buffer';
-      alert('Buffer error: ' + (data.message || JSON.stringify(data)));
-    }
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '📡 Send to Buffer';
-    alert('Network error. Check your token and try again.');
-  }
+  // copy to clipboard
+  try { await navigator.clipboard.writeText(text); } catch(_) {}
+  // mark as sent
+  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  sent[i] = true;
+  localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+  renderQueue();
+  // open LinkedIn feed in new tab
+  window.open('https://www.linkedin.com/feed/', '_blank');
 }
 
 /* ── SETTINGS MODAL ── */
