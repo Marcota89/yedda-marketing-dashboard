@@ -3623,11 +3623,17 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 
   // Extract body text — handle nested JSON if model returned wrong structure
   let bodyText = parsed.body || parsed.content || '';
-  if (typeof bodyText === 'string' && bodyText.trim().startsWith('{')) {
+  // Unwrap up to 3 levels of JSON nesting (Gemini hallucination guard)
+  for (let d = 0; d < 3 && typeof bodyText === 'string' && bodyText.trim().startsWith('{'); d++) {
     try {
       const inner = JSON.parse(bodyText);
-      bodyText = inner.body || inner.content || inner.text || bodyText;
+      const extracted = inner.body || inner.content || inner.text;
+      if (extracted && typeof extracted === 'string') { bodyText = extracted; continue; }
     } catch(_) {}
+    // JSON.parse failed — extract with regex (handles unescaped chars)
+    const m = bodyText.match(/"(?:body|content|text)"\s*:\s*"([\s\S]*?)"\s*[,}]/);
+    if (m) bodyText = m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+    break;
   }
 
   return {
