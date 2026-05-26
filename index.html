@@ -3369,46 +3369,78 @@ function showApifyModalStatus(msg, color) {
 
 async function fetchApifyNews() {
   const resultsEl = document.getElementById('apifyNewsResults');
+  const token = localStorage.getItem(APIFY_KEY);
+
+  if (token) {
+    resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching news via Apify…</div>`;
+    try {
+      const articles = await fetchViaApify(token);
+      if (articles.length > 0) { renderApifyResults(articles); return; }
+    } catch(e) {
+      console.warn('Apify failed, falling back to RSS:', e.message);
+    }
+  }
+
+  // Fallback: RSS2JSON
   resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching latest news from Google News…</div>`;
-
-  // Use RSS2JSON (free, no auth) to read Google News RSS feeds
-  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
-  const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
-
-  const queries = [
-    'computer+vision+AI+retail+2026',
-    'AI+loss+prevention+shrinkage',
-    'operational+intelligence+logistics',
-    'AI+workplace+safety+manufacturing+2026',
-    'retail+technology+CCTV+analytics'
-  ];
-
   try {
-    const fetches = queries.map(q =>
-      fetch(RSS2JSON + encodeURIComponent(gnBase + q))
-        .then(r => r.json())
-        .then(d => (d.items || []).slice(0, 3))
-        .catch(() => [])
-    );
-    const results = await Promise.all(fetches);
-    const articles = results.flat().map(item => ({
-      title:       item.title,
-      url:         item.link,
-      publishedAt: item.pubDate,
-      text:        item.description ? item.description.replace(/<[^>]+>/g,'').slice(0,160) : ''
-    }));
-
-    // deduplicate by title
-    const seen = new Set();
-    const unique = articles.filter(a => {
-      if (!a.title || seen.has(a.title)) return false;
-      seen.add(a.title); return true;
-    });
-
-    renderApifyResults(unique.slice(0, 15));
+    const articles = await fetchViaRSS();
+    renderApifyResults(articles);
   } catch(e) {
     resultsEl.innerHTML = `<div class="apify-error">⚠️ Could not fetch news: ${e.message}</div>`;
   }
+}
+
+async function fetchViaApify(token) {
+  const runInput = {
+    queries: APIFY_QUERIES.map(q => ({ query: q, maxResults: 3 })),
+    outputFormat: 'camelCase',
+    maxCrawledPlacesPerSearch: 3,
+  };
+  const res = await fetch(
+    `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=30&memory=256`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        queries: APIFY_QUERIES.join('\n'),
+        resultsPerPage: 5,
+        maxPagesPerQuery: 1,
+        mobileResults: false,
+        languageCode: 'en',
+        countryCode: 'us',
+      })
+    }
+  );
+  if (!res.ok) throw new Error(`Apify HTTP ${res.status}`);
+  const items = await res.json();
+  const seen = new Set();
+  return (items || []).flatMap(item =>
+    (item.organicResults || []).map(r => ({
+      title: r.title,
+      url: r.url,
+      publishedAt: '',
+      text: r.description ? r.description.slice(0, 160) : ''
+    }))
+  ).filter(a => {
+    if (!a.title || seen.has(a.title)) return false;
+    seen.add(a.title); return true;
+  }).slice(0, 15);
+}
+
+async function fetchViaRSS() {
+  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
+  const queries  = APIFY_QUERIES.map(q => q.replace(/ /g, '+'));
+  const results  = await Promise.all(queries.map(q =>
+    fetch(RSS2JSON + encodeURIComponent(gnBase + q))
+      .then(r => r.json()).then(d => (d.items || []).slice(0, 3)).catch(() => [])
+  ));
+  const seen = new Set();
+  return results.flat().map(item => ({
+    title: item.title, url: item.link, publishedAt: item.pubDate,
+    text: item.description ? item.description.replace(/<[^>]+>/g,'').slice(0,160) : ''
+  })).filter(a => {
+    if (!a.title || seen.has(a.title)) return false;
+    seen.add(a.title); return true;
+  }).slice(0, 15);
 }
 
 function renderApifyResults(articles) {
@@ -3651,9 +3683,69 @@ function addGeneratedPostToCalendar(post) {
   newRow?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   loadRatings();
 
-  // success message
+  // success message + MAS review button
   document.getElementById('apifyNewsResults').insertAdjacentHTML('beforeend',
-    `<div style="margin-top:10px;font-size:13px;font-weight:700;color:var(--teal-deep);padding:10px 14px;background:var(--teal-xl);border-radius:8px;">✅ Post generated and added to calendar — see preview on the right.</div>`);
+    `<div style="margin-top:10px;padding:12px 14px;background:var(--teal-xl);border-radius:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--teal-deep);margin-bottom:8px;">✅ Post generated and added to calendar — see preview on the right.</div>
+      <button class="sched-gen-run" style="background:var(--ink);font-size:12px;padding:7px 16px;" onclick="reviewWithMAS(${idx})">🔍 Review with MAS</button>
+      <span style="font-size:11px;color:var(--text-soft);margin-left:8px;">Checks brand voice, forbidden vocabulary, rewrites if needed</span>
+      <div id="masReviewStatus-${idx}" style="margin-top:8px;font-size:12px;font-weight:600;"></div>
+    </div>`);
+}
+
+async function reviewWithMAS(idx) {
+  const statusEl = document.getElementById(`masReviewStatus-${idx}`);
+  const post = posts[idx];
+  if (!post) return;
+
+  statusEl.style.color = 'var(--teal-deep)';
+  statusEl.textContent = '🔄 Connecting to MAS Review API on localhost:8001…';
+
+  try {
+    const res = await fetch('http://localhost:8001/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_body: post.body,
+        post_tags: post.tags,
+        post_src: post.src
+      })
+    });
+
+    if (!res.ok) throw new Error(`MAS API returned HTTP ${res.status}`);
+    const data = await res.json();
+
+    // update post in array with reviewed content
+    posts[idx].body = data.post_body;
+    posts[idx].tags = data.post_tags;
+
+    // persist updated generated posts
+    const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
+    const genIdx = idx - (posts.length - saved.length);
+    if (genIdx >= 0 && saved[genIdx]) {
+      saved[genIdx].body = data.post_body;
+      saved[genIdx].tags = data.post_tags;
+      localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+    }
+
+    // refresh preview
+    renderPost(idx);
+
+    if (data.approved) {
+      statusEl.style.color = '#16a34a';
+      statusEl.textContent = `✅ ${data.message}${data.rewrites_done > 0 ? ' Post updated in preview.' : ''}`;
+    } else {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = `⚠️ ${data.message}`;
+    }
+  } catch(e) {
+    statusEl.style.color = '#dc2626';
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      statusEl.textContent = '❌ MAS API not running. Start it with: python scripts/review_api.py (in yedda-mas-step1)';
+    } else {
+      statusEl.textContent = `❌ ${e.message}`;
+    }
+  }
 }
 
 /* patch generateSchedulePrompt to inject Apify sources */
