@@ -3741,7 +3741,18 @@ async function reviewWithMAS(idx) {
     const data = await res.json();
 
     // update post in array with reviewed content (unescape \n from JSON transport)
-    const cleanBody = (data.post_body || '').replace(/\\n/g, '\n');
+    let cleanBody = (data.post_body || '').replace(/\\n/g, '\n');
+    // Unwrap JSON if MAS rewrite returned {"content":"..."} instead of plain text
+    for (let d = 0; d < 3 && cleanBody.trim().startsWith('{'); d++) {
+      try {
+        const inner = JSON.parse(cleanBody);
+        const extracted = inner.body || inner.content || inner.text;
+        if (extracted && typeof extracted === 'string') { cleanBody = extracted.replace(/\\n/g, '\n'); continue; }
+      } catch(_) {}
+      const m = cleanBody.match(/"(?:body|content|text)"\s*:\s*"([\s\S]*?)"\s*[,}]/);
+      if (m) cleanBody = m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      break;
+    }
     posts[idx].body = cleanBody;
     posts[idx].tags = data.post_tags;
 
