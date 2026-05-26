@@ -3562,7 +3562,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 
   const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's value proposition in retail AI / enterprise operations. Make the data feel urgent and relevant to operations directors, COOs, and loss prevention managers.`;
 
-  const models = [getGeminiModel(), 'gemini-2.0-flash', 'gemini-2.0-flash-001'];
+  const models = [getGeminiModel(), 'gemini-2.5-flash', 'gemini-1.5-flash-002'];
 
   const makeBody = (includeJsonMime) => JSON.stringify({
     contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
@@ -3621,6 +3621,15 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
     parsed = JSON.parse(m[1] || m[0]);
   }
 
+  // Extract body text — handle nested JSON if model returned wrong structure
+  let bodyText = parsed.body || parsed.content || '';
+  if (typeof bodyText === 'string' && bodyText.trim().startsWith('{')) {
+    try {
+      const inner = JSON.parse(bodyText);
+      bodyText = inner.body || inner.content || inner.text || bodyText;
+    } catch(_) {}
+  }
+
   return {
     name: "Yedda.ai",
     headline: "Intelligence Augmentation · AI + IA for Enterprise Operations",
@@ -3628,7 +3637,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
     tags: parsed.tags || '#YeddaAI #EnterpriseAI',
     src: parsed.src || articles[0].title,
     meta: { time: parsed.postingTime || '9–10AM', char: parsed.char || 'Abbey', target: parsed.postTarget || 'Operations Leaders', day: dayStr },
-    body: parsed.body.replace(/\\n/g, '\n'),
+    body: bodyText.replace(/\\n/g, '\n'),
     prompt: parsed.imagePrompt || '',
     _hookPreview: parsed.headline || articles[0].title,
     _pillar: parsed.pillar || 'Educational',
@@ -3701,12 +3710,22 @@ async function reviewWithMAS(idx) {
   statusEl.style.color = 'var(--teal-deep)';
   statusEl.textContent = '🔄 Connecting to MAS Review API on localhost:8001…';
 
+  // Sanitize post body — unwrap nested JSON if generation stored it raw
+  let masBody = post.body || '';
+  if (masBody.trim().startsWith('{')) {
+    try {
+      const inner = JSON.parse(masBody);
+      masBody = inner.body || inner.content || inner.text || masBody;
+      if (typeof masBody !== 'string') masBody = post.body;
+    } catch(_) {}
+  }
+
   try {
     const res = await fetch('http://localhost:8001/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        post_body: post.body,
+        post_body: masBody,
         post_tags: post.tags,
         post_src: post.src
       })
@@ -3715,15 +3734,16 @@ async function reviewWithMAS(idx) {
     if (!res.ok) throw new Error(`MAS API returned HTTP ${res.status}`);
     const data = await res.json();
 
-    // update post in array with reviewed content
-    posts[idx].body = data.post_body;
+    // update post in array with reviewed content (unescape \n from JSON transport)
+    const cleanBody = (data.post_body || '').replace(/\\n/g, '\n');
+    posts[idx].body = cleanBody;
     posts[idx].tags = data.post_tags;
 
     // persist updated generated posts
     const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
     const genIdx = idx - (posts.length - saved.length);
     if (genIdx >= 0 && saved[genIdx]) {
-      saved[genIdx].body = data.post_body;
+      saved[genIdx].body = cleanBody;
       saved[genIdx].tags = data.post_tags;
       localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
     }
