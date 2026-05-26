@@ -3516,6 +3516,26 @@ async function useSelectedNews() {
   }
 }
 
+function unwrapJsonBody(text) {
+  if (!text || typeof text !== 'string') return text || '';
+  let t = text.trim();
+  if (!t.startsWith('{')) return text;
+  // Try JSON.parse first
+  try {
+    const inner = JSON.parse(t);
+    const v = inner.body || inner.content || inner.text;
+    if (v && typeof v === 'string') return unwrapJsonBody(v);
+  } catch(_) {}
+  // Greedy regex — works even with truncated/malformed JSON
+  const m = t.match(/"(?:body|content|text)"\s*:\s*"([\s\S]+)/);
+  if (!m) return text;
+  let extracted = m[1];
+  // Strip trailing JSON artifacts: closing quote + optional comma/brace
+  extracted = extracted.replace(/"\s*[,}]?\s*$/, '');
+  // Unescape
+  return extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+}
+
 async function generatePostFromNews(articles, apiKey) {
   const today = new Date();
   const postDate = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days from now
@@ -3623,18 +3643,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 
   // Extract body text — handle nested JSON if model returned wrong structure
   let bodyText = parsed.body || parsed.content || '';
-  // Unwrap up to 3 levels of JSON nesting (Gemini hallucination guard)
-  for (let d = 0; d < 3 && typeof bodyText === 'string' && bodyText.trim().startsWith('{'); d++) {
-    try {
-      const inner = JSON.parse(bodyText);
-      const extracted = inner.body || inner.content || inner.text;
-      if (extracted && typeof extracted === 'string') { bodyText = extracted; continue; }
-    } catch(_) {}
-    // JSON.parse failed — extract with regex (handles unescaped chars)
-    const m = bodyText.match(/"(?:body|content|text)"\s*:\s*"([\s\S]*?)"\s*[,}]/);
-    if (m) bodyText = m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-    break;
-  }
+  bodyText = unwrapJsonBody(bodyText);
 
   return {
     name: "Yedda.ai",
@@ -3741,18 +3750,7 @@ async function reviewWithMAS(idx) {
     const data = await res.json();
 
     // update post in array with reviewed content (unescape \n from JSON transport)
-    let cleanBody = (data.post_body || '').replace(/\\n/g, '\n');
-    // Unwrap JSON if MAS rewrite returned {"content":"..."} instead of plain text
-    for (let d = 0; d < 3 && cleanBody.trim().startsWith('{'); d++) {
-      try {
-        const inner = JSON.parse(cleanBody);
-        const extracted = inner.body || inner.content || inner.text;
-        if (extracted && typeof extracted === 'string') { cleanBody = extracted.replace(/\\n/g, '\n'); continue; }
-      } catch(_) {}
-      const m = cleanBody.match(/"(?:body|content|text)"\s*:\s*"([\s\S]*?)"\s*[,}]/);
-      if (m) cleanBody = m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-      break;
-    }
+    let cleanBody = unwrapJsonBody((data.post_body || '').replace(/\\n/g, '\n'));
     posts[idx].body = cleanBody;
     posts[idx].tags = data.post_tags;
 
