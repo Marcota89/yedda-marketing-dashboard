@@ -4231,7 +4231,7 @@ function toggleWeekCollapse(header) {
   if (chevron) chevron.textContent = isCollapsed ? '▼' : '▶';
   // persist by week label text
   const label = header.textContent.trim();
-  const key = 'yedda_week_collapsed_' + btoa(label).slice(0, 12);
+  const key = 'yedda_week_collapsed_' + label.replace(/[^a-z0-9]/gi, '').slice(0, 16);
   localStorage.setItem(key, isCollapsed ? '0' : '1');
 }
 
@@ -4240,7 +4240,7 @@ function toggleWeekCollapse(header) {
   document.querySelectorAll('.week-header').forEach(header => {
     if (header.id === 'generated-week-section') return; // handled separately
     const label = header.textContent.trim();
-    const key = 'yedda_week_collapsed_' + btoa(label).slice(0, 12);
+    const key = 'yedda_week_collapsed_' + label.replace(/[^a-z0-9]/gi, '').slice(0, 16);
     if (localStorage.getItem(key) === '1') {
       const section = header.closest('.week-section');
       if (section) section.querySelectorAll('.post-row').forEach(r => r.style.display = 'none');
