@@ -3919,8 +3919,6 @@ async function generateRoiComment() {
   const apiKey = localStorage.getItem('yedda_claude_key') || '';
 
   if (!postText) { alert('Paste a LinkedIn post first.'); return; }
-
-  const apiKey = localStorage.getItem('yedda_claude_key');
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
 
   const styleGuides = {
