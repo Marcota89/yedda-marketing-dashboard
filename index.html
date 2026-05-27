@@ -3507,13 +3507,16 @@ function copySchedulePrompt() {
 
 /* ── APIFY INTEGRATION ── */
 const APIFY_KEY = 'yedda_apify';
-const APIFY_QUERIES = [
-  'computer vision AI retail 2026',
+const _APIFY_QUERIES_BASE = [
+  'computer vision AI retail',
   'AI loss prevention shrinkage retail',
   'operational intelligence logistics manufacturing',
-  'AI workplace safety 2026',
+  'AI workplace safety',
   'retail technology CCTV analytics'
 ];
+// Append current month so queries rotate monthly, busting any server-side cache
+const _YM = new Date().toISOString().slice(0, 7); // "2026-05"
+const APIFY_QUERIES = _APIFY_QUERIES_BASE.map(q => `${q} ${_YM}`);
 
 function saveApifySettings() {
   const token = document.getElementById('apifyToken').value.trim();
@@ -3590,9 +3593,10 @@ async function fetchViaApify(token) {
 async function fetchViaRSS() {
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
   const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
+  const bust     = `&t=${Date.now()}`;
   const queries  = APIFY_QUERIES.map(q => q.replace(/ /g, '+'));
   const results  = await Promise.all(queries.map(q =>
-    fetch(RSS2JSON + encodeURIComponent(gnBase + q))
+    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + bust)
       .then(r => r.json()).then(d => (d.items || []).slice(0, 3)).catch(() => [])
   ));
   const seen = new Set();
