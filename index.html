@@ -3667,8 +3667,11 @@ async function useSelectedNews() {
   resultsEl.insertAdjacentHTML('beforeend',
     `<div id="${loadingId}" style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--teal-xl);border-radius:10px;font-size:13px;font-weight:600;color:var(--teal-deep);"><div class="apify-spinner"></div>Generating LinkedIn post from selected articles…</div>`);
 
+  // read selected pillars from Schedule Generator checkboxes
+  const selectedPillars = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
+
   try {
-    const post = await generatePostFromNews(selected, apiKey);
+    const post = await generatePostFromNews(selected, apiKey, selectedPillars);
     document.getElementById(loadingId)?.remove();
     addGeneratedPostToCalendar(post);
   } catch(e) {
@@ -3698,7 +3701,7 @@ function unwrapJsonBody(text) {
   return extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 }
 
-async function generatePostFromNews(articles, apiKey) {
+async function generatePostFromNews(articles, apiKey, selectedPillars) {
   const today = new Date();
   const postDate = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000); // 2 days from now
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -3709,6 +3712,22 @@ async function generatePostFromNews(articles, apiKey) {
   const articlesText = articles.map((a, i) =>
     `Article ${i+1}:\nTitle: ${a.title}\nURL: ${a.url || 'N/A'}\nSnippet: ${a.snippet || a.description || 'N/A'}`
   ).join('\n\n');
+
+  const pillarGuides = {
+    'Celebrating': 'Milestone or achievement post. Celebrate a win WITHOUT mentioning any client names. Reference sector/region/scale only (e.g. "A leading retailer in SEA reduced shrinkage by 54%"). Positive, confident, grounded.',
+    'News Comment': 'Comment on the news article\'s key finding. Lead with the stat or event, then give Yedda\'s Visual AI perspective on what it means for enterprise operations. Drive conversation with a pointed question.',
+    'Who We Are': 'Culture, mission, or values post. Human side of Yedda.ai. Why we exist, what drives us, who is behind the Visual AI. Authentic, personal tone.',
+    'What We Offer': 'Module spotlight. Focus on ONE specific Yedda capability (fraud detection, workforce analytics, queue management, compliance, safety). Name the operational problem it solves and the measurable outcome.',
+    'Thought Leadership': 'Bold opinion or industry insight from Yedda\'s vantage point. Contrarian if warranted. Backed by data. No hedging.',
+    'Social Proof': 'Proof-point driven post. Lead with a client outcome metric, anchor in a real deployment context, explain the Visual AI mechanism that produced the result.',
+    'Education': 'Explain a Visual AI concept, operational challenge, or industry dynamic in plain language. Make it actionable for operations leaders.',
+    'Engagement': 'Poll or open question designed to generate comments and shares. Strategic question that reveals sophistication and drives debate among operations leaders.'
+  };
+
+  const activePillars = (selectedPillars && selectedPillars.length > 0) ? selectedPillars : ['Thought Leadership', 'Educational'];
+  const pillarInstruction = activePillars.length === 1
+    ? `CONTENT PILLAR — write this post as: ${activePillars[0]}\nGuidance: ${pillarGuides[activePillars[0]] || ''}`
+    : `CONTENT PILLARS AVAILABLE — choose the most appropriate one for this article:\n${activePillars.map(p => `- ${p}: ${pillarGuides[p] || ''}`).join('\n')}`;
 
   const systemPrompt = `You are a LinkedIn content writer for Yedda.ai, an enterprise Visual AI company specializing in Intelligence Augmentation (IA) for retail operations, loss prevention, queue management, and logistics.
 
@@ -3742,6 +3761,8 @@ POST FORMAT RULES:
 - Hashtags: 3–5, on final line, include #YeddaAI #VisualAI
 - No emojis in body text. No "excited to share". No "In today's world".
 
+${pillarInstruction}
+
 Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 {
   "body": "full post text with newlines as \\n",
@@ -3750,7 +3771,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   "char": "Abbey or Kai",
   "postingTime": "8–9AM or 12–1PM",
   "postTarget": "target audience description",
-  "pillar": "Educational or Social Proof or Thought Leadership or Engagement or Celebrating or News Comment or Who We Are or What We Offer",
+  "pillar": "${activePillars.length === 1 ? activePillars[0] : activePillars.join(' or ')}",
   "headline": "short 3–6 word hook for calendar preview",
   "imagePrompt": "detailed Gemini image generation prompt in Yedda brand style — include teal #4BADB8 and orange #F07830 accents, enterprise aesthetic, Yedda.ai logo bottom-right on flat color field, no sci-fi no cartoons, aspect ratio 4:5"
 }`;
