@@ -6,7 +6,9 @@
 
 ## Voice Summary
 
-Yedda.ai speaks like a seasoned operations insider who happens to understand AI deeply — not a tech vendor pushing features, but a trusted advisor who has seen what breaks on the floor and knows what actually fixes it. The voice is direct and data-driven, always anchoring claims in specific numbers, and consistently addresses operators, directors, and VPs who are too busy for jargon but too experienced to accept vague promises. The overarching message is: "You already have the infrastructure. We unlock what it's telling you."
+Yedda.ai speaks like a seasoned operations insider who happens to understand Visual AI deeply — not a tech vendor pushing features, but a trusted advisor who has seen what breaks on the floor and knows what actually fixes it. The voice is direct and data-driven, always anchoring claims in specific numbers, and consistently addresses CEOs, COOs, Board Members and operations leaders who are too busy for jargon but too experienced to accept vague promises. The overarching message is: "You already have the infrastructure. Visual AI unlocks what it's telling you."
+
+**CRITICAL TERMINOLOGY:** Yedda.ai works with **VISUAL AI** — not "AI" or "artificial intelligence" generically. This is a fundamental differentiator. Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI".
 
 ---
 
@@ -112,7 +114,7 @@ Beneath the authority is a step-by-step logic: "Here's the problem. Here's why e
 - activate, unlock, turn (passive → active), connect, flag, close (a gap), reduce, integrate
 
 **Descriptive words:**
-- real-time, existing, live, operational, passive, proven, measurable, week one
+- existing, continuously, operational, passive, proven, measurable, week one, visual
 
 **Value words:**
 - intelligence, visibility, results, efficiency, safety, compliance, accuracy
@@ -125,14 +127,32 @@ Beneath the authority is a step-by-step logic: "Here's the problem. Here's why e
 - Arrow bullets (→) for problem lists
 - Checkmark bullets (✦) for solution lists
 
-### Words We Avoid
+### Words We Avoid (FORBIDDEN)
 
+- **"AI" / "artificial intelligence"** — always say "Visual AI" or "Visual Intelligence" instead
 - "revolutionary," "game-changing," "disrupting" — too startup-generic
+- "real-time" — say "continuously," "automatically," or "end-to-end"
 - "leverage," "utilize," "synergize" — corporate filler
-- "AI-powered" as standalone claim — always connected to a specific outcome
-- "cutting-edge," "state-of-the-art" — unsubstantiated
+- "AI-powered" as standalone claim — say "Visual AI" + specific outcome
+- "cutting-edge," "state-of-the-art," "best-in-class," "seamless," "robust" — unsubstantiated
 - "solution" (standalone) — prefer "intelligence," "visibility," "answers"
 - "we believe" / "we think" / "might" — hedging language
+
+### Target Audience
+
+**Primary (write FOR these people):**
+- CEOs, COOs, Board Members, Chief Digital Officers at retail chains (100+ stores)
+- VP Operations, Chief Loss Prevention Officers at logistics companies (500+ vehicles)
+- Operations Directors, Managing Directors at F&B QSR operators (50+ locations)
+
+**Secondary:**
+- AI-aware investors and board advisors evaluating enterprise tech
+- Industry analysts covering retail technology and loss prevention
+- Chief Risk Officers and Safety Directors in manufacturing / logistics
+
+**Tone signal:** These are sophisticated leaders who have seen AI hype cycles. They do not need to be convinced AI exists — they need to see outcomes. Write peer-to-peer, not vendor-to-prospect.
+
+---
 
 ### Signature Phrases
 

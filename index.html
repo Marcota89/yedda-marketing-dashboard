@@ -2267,6 +2267,10 @@ footer {
             <label><input type="checkbox" value="Education" checked> Education</label>
             <label><input type="checkbox" value="Engagement"> Engagement / Poll</label>
             <label><input type="checkbox" value="Case Study"> Case Study</label>
+            <label><input type="checkbox" value="Celebrating"> 🎉 Celebrating</label>
+            <label><input type="checkbox" value="News Comment"> 📰 News Comment</label>
+            <label><input type="checkbox" value="Who We Are"> 👥 Who We Are</label>
+            <label><input type="checkbox" value="What We Offer"> 💡 What We Offer</label>
           </div>
         </div>
         <div class="sched-field" style="margin-top:8px;"><label>Custom topic or keyword (optional)</label><input type="text" id="sgTopic" class="sched-input" placeholder="e.g. shrinkage prevention, LATAM expansion, safety compliance"></div>
@@ -2380,6 +2384,88 @@ footer {
       </div>
     </div>
 
+  </div>
+</section>
+
+<!-- ═══ ROI COMMENT GENERATOR ═══ -->
+<section class="section" id="roi-comments" style="background:var(--surface);">
+  <div class="container">
+    <div class="sec-head flex reveal">
+      <div>
+        <span class="eyebrow">Roi's Account · LinkedIn Engagement</span>
+        <h2 class="sec-title">Comment Generator</h2>
+        <p class="sec-lede">Paste any LinkedIn post below. Generate an expert comment from Roi — Visual AI thought leader perspective, peer-to-peer tone.</p>
+      </div>
+    </div>
+    <div class="sched-gen-box reveal" style="max-width:720px;">
+      <div class="sched-field">
+        <label>Paste the LinkedIn post you want to comment on</label>
+        <textarea id="roiPostInput" rows="5" class="sched-input" style="width:100%;resize:vertical;" placeholder="Paste the full LinkedIn post text here..."></textarea>
+      </div>
+      <div class="sched-field" style="margin-top:12px;">
+        <label>Comment style</label>
+        <select id="roiCommentStyle" class="sched-input">
+          <option value="insight">Add insight — extend the conversation with data/experience</option>
+          <option value="challenge">Respectfully challenge — offer a different perspective</option>
+          <option value="agree">Agree + amplify — validate and add a Visual AI angle</option>
+          <option value="question">Ask a strategic question — drive further discussion</option>
+          <option value="experience">Share experience — reference a real operational outcome</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="sched-gen-run" style="background:var(--ink);" onclick="generateRoiComment()">💬 Generate Comment</button>
+      </div>
+      <div id="roiCommentOutput" style="display:none;margin-top:16px;">
+        <label style="font-size:12px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;">Generated Comment — copy and post as Roi on LinkedIn</label>
+        <textarea id="roiCommentText" rows="5" class="sched-input" style="width:100%;margin-top:8px;resize:vertical;background:#f8fffe;border-color:var(--teal);"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn-outline" onclick="copyRoiComment()" style="font-size:13px;padding:8px 18px;">📋 Copy Comment</button>
+          <button class="btn-outline" onclick="openLinkedIn()" style="font-size:13px;padding:8px 18px;">🔗 Open LinkedIn</button>
+        </div>
+        <p id="roiCommentStatus" style="font-size:12px;margin-top:8px;color:var(--teal-deep);"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ROI POST GENERATOR ═══ -->
+<section class="section" id="roi-posts" style="background:linear-gradient(135deg,#0E1B1E 0%,#1a2f35 100%);color:#fff;">
+  <div class="container">
+    <div class="sec-head flex reveal">
+      <div>
+        <span class="eyebrow" style="color:#F07830;">Roi's Account · Daily Posts</span>
+        <h2 class="sec-title" style="color:#fff;">Roi's LinkedIn Posts</h2>
+        <p class="sec-lede" style="color:rgba(255,255,255,0.7);">Generate Visual AI thought leadership posts for Roi's personal account. Expert tone, industry insights, polls to drive engagement.</p>
+      </div>
+    </div>
+    <div class="sched-gen-box reveal" style="max-width:720px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;">
+      <div class="sched-field">
+        <label style="color:rgba(255,255,255,0.8);">Post type</label>
+        <select id="roiPostType" class="sched-input">
+          <option value="thought_leadership">🧠 Visual AI Thought Leadership</option>
+          <option value="industry_insight">📊 Industry Insight + Data</option>
+          <option value="poll">📋 Poll — drive engagement</option>
+          <option value="personal_experience">💼 Personal Experience / Lesson</option>
+          <option value="challenge_status_quo">⚡ Challenge the Status Quo</option>
+        </select>
+      </div>
+      <div class="sched-field" style="margin-top:12px;">
+        <label style="color:rgba(255,255,255,0.8);">Topic or news hook (optional)</label>
+        <input type="text" id="roiPostTopic" class="sched-input" placeholder="e.g. computer vision in retail, AI governance, shrinkage prevention trends...">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="sched-gen-run" style="background:#F07830;" onclick="generateRoiPost()">✍️ Generate Roi Post</button>
+      </div>
+      <div id="roiPostOutput" style="display:none;margin-top:16px;">
+        <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;">Generated Post — review, edit, then post on LinkedIn as Roi</label>
+        <textarea id="roiPostText" rows="8" class="sched-input" style="width:100%;margin-top:8px;resize:vertical;background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(240,120,48,0.5);"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn-outline" onclick="copyRoiPost()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">📋 Copy Post</button>
+          <button class="btn-outline" onclick="openLinkedIn()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">🔗 Open LinkedIn</button>
+        </div>
+        <p id="roiPostStatus" style="font-size:12px;margin-top:8px;color:#F07830;"></p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -3298,20 +3384,35 @@ function generateSchedulePrompt() {
   const topic = document.getElementById('sgTopic').value.trim();
   const pillars = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
   if (!start || !end) { alert('Please select a start and end date.'); return; }
-  const prompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise operational intelligence company.
+  const pillarGuides = {
+    'Celebrating': 'Milestone or achievement post. Celebrate wins WITHOUT mentioning any client names (protect competitive intelligence). Reference sector/region/scale only. E.g. "A leading retailer in SEA just hit 52% shrinkage reduction."',
+    'News Comment': 'Comment on a real industry news article. State the headline/data, give Yedda\'s Visual AI perspective on what it means operationally. Drive conversation.',
+    'Who We Are': 'Culture, team, mission, values post. Human side of Yedda.ai. Why we exist. What drives us. Who is behind the technology.',
+    'What We Offer': 'Module spotlight post. Focus on ONE Yedda module (Sales, Operations, Fraud Detection, Health & Safety, Analytics, Service, Marketing). Explain the specific problem it solves with a concrete outcome.'
+  };
+  const pillarContext = pillars.filter(p => pillarGuides[p]).map(p => `${p}: ${pillarGuides[p]}`).join('\n');
+
+  const prompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise Visual AI company.
+
+CRITICAL: We work with VISUAL AI — not "AI" generically. Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI". Never use: revolutionary, game-changing, real-time, AI-powered, seamless, robust.
 
 Generate a LinkedIn content calendar from ${start} to ${end}, publishing ${freq} posts per week.
 
 BRAND CONTEXT:
-- Yedda.ai turns existing CCTV infrastructure into real-time operational intelligence — no new hardware
-- Key results: 54% fraud reduction, 55s checkout wait reduction, ROI 180–400%, payback under 9 months
+- Yedda.ai turns existing CCTV infrastructure into Visual AI operational intelligence — no new hardware needed
+- Key proof points: 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months
 - Markets: APAC, Middle East, Europe, LATAM (Malaysia, UAE, Germany, Spain, Philippines, Thailand, India, Brazil)
-- Persona(s): ${persona} — Abbey is the AI Guide (teal), Kai is the IA Analyst (orange)
-- Philosophy: Intelligence Augmentation (AI + IA) — AI processes data, humans make decisions
-- Brand voice: Direct, data-driven, bold claims with specific numbers, operational (not technical)
+- Persona(s): ${persona} — Abbey is the Visual AI Guide (teal), Kai is the IA Analyst (orange)
+- Philosophy: Intelligence Augmentation (IA) — Visual AI processes, humans decide
+
+TARGET AUDIENCE:
+Primary: CEOs, COOs, Board Members, Chief Digital Officers, VP Operations at retail chains (100+ stores), logistics companies (500+ vehicles), F&B QSR operators (50+ locations)
+Secondary: Chief Loss Prevention Officers, AI-aware investors, industry analysts
+Write peer-to-peer — they are sophisticated leaders who have seen AI hype. Show outcomes, not features.
 
 CONTENT PILLARS TO USE: ${pillars.join(', ')}
-${topic ? `SPECIAL FOCUS: ${topic}` : ''}
+${pillarContext ? `\nPILLAR GUIDELINES:\n${pillarContext}` : ''}
+${topic ? `\nSPECIAL FOCUS: ${topic}` : ''}
 
 For each post, provide EXACTLY this format:
 ---
@@ -3319,13 +3420,13 @@ DATE: [YYYY-MM-DD]
 TYPE: [Text Post / Image Post / Carousel / Poll]
 PILLAR: [pillar name]
 PERSONA: [Abbey or Kai]
-HOOK: [first line — the grabber]
-BODY: [full post text, LinkedIn-formatted, max 300 words]
-TAGS: [5-8 hashtags]
-IMAGE PROMPT: [one-paragraph Gemini/Imagen prompt using brand colors teal #4BADB8 and orange #F07830]
+HOOK: [first line — the grabber, opens with a stat or striking fact]
+BODY: [full post text, LinkedIn-formatted, max 300 words, ends with → question]
+TAGS: [5-8 hashtags, always include #YeddaAI #VisualAI]
+IMAGE PROMPT: [one-paragraph Gemini/Imagen prompt using brand colors teal #4BADB8 and orange #F07830, enterprise aesthetic, no sci-fi]
 ---
 
-Write ALL posts in English. Use the brand voice: contrast structure ("Not X. Y."), arrow bullets for problems, checkmark bullets for solutions, end each post with a question.`;
+Write ALL posts in English. Brand voice: contrast structure ("Not X. Y."), → for insights, ✓ for proof points.`;
 
   const output = document.getElementById('sgOutput');
   const textarea = document.getElementById('sgPromptText');
@@ -3548,39 +3649,52 @@ async function generatePostFromNews(articles, apiKey) {
     `Article ${i+1}:\nTitle: ${a.title}\nURL: ${a.url || 'N/A'}\nSnippet: ${a.snippet || a.description || 'N/A'}`
   ).join('\n\n');
 
-  const systemPrompt = `You are a LinkedIn content writer for Yedda.ai, an enterprise AI company specializing in Intelligence Augmentation (IA) for retail operations, loss prevention, queue management, and logistics.
+  const systemPrompt = `You are a LinkedIn content writer for Yedda.ai, an enterprise Visual AI company specializing in Intelligence Augmentation (IA) for retail operations, loss prevention, queue management, and logistics.
+
+CRITICAL LANGUAGE RULE: We work with VISUAL AI — not "AI" or "artificial intelligence" generically. Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI". This is a fundamental differentiator.
 
 BRAND VOICE: Authoritative but accessible. Bold, data-driven, never hype. Think McKinsey meets operational clarity.
-COMPANY: Yedda.ai — "Intelligence Augmentation · AI + IA for Enterprise Operations"
-CHARACTERS: Abbey (AI Guide, teal) and Kai (IA Analyst, orange)
+COMPANY: Yedda.ai — "Intelligence Augmentation · Visual AI for Enterprise Operations"
+CHARACTERS: Abbey (Visual AI Guide, teal) and Kai (IA Analyst, orange)
 COLORS: Teal #4BADB8, Orange #F07830
+
+PROOF POINTS (include at least one per post):
+- 54% improvement in operational reporting accuracy
+- 55-second automated report generation
+- ROI 180–400% within 12 months of deployment
+- Carrefour POC: 52% shrinkage reduction in 11 days
+
+TARGET AUDIENCE — write FOR these people:
+Primary: CEOs, COOs, Chief Digital Officers, VP Operations, Board Members at retail chains (100+ stores), logistics companies (500+ vehicles), F&B QSR operators (50+ locations)
+Secondary: AI-aware investors, industry analysts, Chief Loss Prevention Officers, Operations Directors
+Tone: Peer-to-peer — write as a trusted colleague, not a vendor. They are sophisticated. They have seen AI hype. Show them outcomes.
+
+FORBIDDEN WORDS (never use): revolutionary, game-changing, leverage, AI-powered, real-time, disruptive, cutting-edge, best-in-class, seamless, robust, artificial intelligence (use Visual AI instead)
 
 POST FORMAT RULES:
 - Open with a sharp stat or striking fact (1 line, no intro fluff)
 - 2nd line: short punchy follow-on (e.g. "That's not a future problem. That's this quarter.")
-- Body: 3–6 short paragraphs, mix of context and Yedda angle
+- Body: 3–6 short paragraphs, mix of context and Yedda Visual AI angle
 - Use → for rhetorical questions or CTA lines
 - Use ✓ for proof points / results (max 4)
-- Use arrow bullets (→) sparingly for key insight lines
 - Close with a single engaging question starting with →
-- Hashtags: 3–5, on final line, include #YeddaAI
+- Hashtags: 3–5, on final line, include #YeddaAI #VisualAI
 - No emojis in body text. No "excited to share". No "In today's world".
-- Yedda angle must feel natural, not forced
 
 Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 {
   "body": "full post text with newlines as \\n",
-  "tags": "#Tag1 #Tag2 #YeddaAI",
+  "tags": "#Tag1 #Tag2 #YeddaAI #VisualAI",
   "src": "Source Name · Article Title · Month Year",
   "char": "Abbey or Kai",
   "postingTime": "8–9AM or 12–1PM",
   "postTarget": "target audience description",
-  "pillar": "Educational or Social Proof or Thought Leadership or Engagement",
+  "pillar": "Educational or Social Proof or Thought Leadership or Engagement or Celebrating or News Comment or Who We Are or What We Offer",
   "headline": "short 3–6 word hook for calendar preview",
   "imagePrompt": "detailed Gemini image generation prompt in Yedda brand style — include teal #4BADB8 and orange #F07830 accents, enterprise aesthetic, Yedda.ai logo bottom-right on flat color field, no sci-fi no cartoons, aspect ratio 4:5"
 }`;
 
-  const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's value proposition in retail AI / enterprise operations. Make the data feel urgent and relevant to operations directors, COOs, and loss prevention managers.`;
+  const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's Visual AI value proposition in retail / enterprise operations. Make the data feel urgent and relevant to CEOs, COOs, Board Members and loss prevention leaders at large retail and logistics companies.`;
 
   const models = [getGeminiModel(), 'gemini-2.5-flash', 'gemini-1.5-flash-002'];
 
@@ -3715,6 +3829,166 @@ function addGeneratedPostToCalendar(post) {
       <span style="font-size:11px;color:var(--text-soft);margin-left:8px;">Checks brand voice, forbidden vocabulary, rewrites if needed</span>
       <div id="masReviewStatus-${idx}" style="margin-top:8px;font-size:12px;font-weight:600;"></div>
     </div>`);
+}
+
+async function generateRoiComment() {
+  const postText = document.getElementById('roiPostInput').value.trim();
+  const style = document.getElementById('roiCommentStyle').value;
+  const outputEl = document.getElementById('roiCommentOutput');
+  const textEl = document.getElementById('roiCommentText');
+  const statusEl = document.getElementById('roiCommentStatus');
+
+  if (!postText) { alert('Paste a LinkedIn post first.'); return; }
+
+  const apiKey = localStorage.getItem('yedda_claude_key');
+  if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+
+  const styleGuides = {
+    insight: 'Add a genuine insight that extends the conversation. Reference a specific data point, operational outcome, or experience with Visual AI in enterprise settings. Do not just agree — add something new.',
+    challenge: 'Respectfully offer a different or more nuanced perspective. Not confrontational — intellectually honest. Start with what you agree with, then pivot to your view.',
+    agree: 'Validate the post\'s core point and amplify it with a Visual AI or Intelligence Augmentation angle. Make it additive, not repetitive.',
+    question: 'Ask one sharp strategic question that will make the author and readers think. The question should reveal depth of expertise, not be superficial.',
+    experience: 'Share a brief, specific operational outcome or experience relevant to the post topic. Real context from enterprise Visual AI deployments. Never mention client names.'
+  };
+
+  const systemPrompt = `You are Roi, CEO and co-founder of Yedda.ai, writing a LinkedIn comment as a Visual AI thought leader and enterprise operations expert.
+
+YOUR IDENTITY:
+- Deep expertise in Visual AI applied to retail, logistics, F&B, manufacturing operations
+- You think about intelligence augmentation — how Visual AI gives operations leaders clarity they never had before
+- You have seen what works (and what fails) in enterprise AI deployments across APAC, LATAM, Middle East, Europe
+- You are building Yedda.ai to solve real operational problems, not to chase AI trends
+
+COMMENT RULES:
+- Max 3 sentences. Concise is powerful.
+- Peer-to-peer tone — you are talking to an equal, not pitching
+- Never mention Yedda.ai by name (you are engaging as a person, not as a company)
+- Never use: revolutionary, game-changing, real-time, AI-powered, seamless, robust, disruptive
+- Use "Visual AI" not "AI" when referencing the technology
+- End with a question only if style calls for it
+- No hashtags in comments
+- No emojis unless the post is casual/celebratory
+
+COMMENT STYLE: ${styleGuides[style]}
+
+Return ONLY the comment text. No quotes, no explanation, no JSON.`;
+
+  const userPrompt = `Write a LinkedIn comment responding to this post:\n\n${postText}`;
+
+  statusEl.textContent = '⏳ Generating comment...';
+  outputEl.style.display = 'block';
+  textEl.value = '';
+
+  try {
+    const model = window._geminiModel || 'gemini-2.5-flash';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
+        generationConfig: { maxOutputTokens: 512, temperature: 0.8 }
+      })
+    });
+    if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+    const data = await res.json();
+    const comment = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    if (!comment) throw new Error('Empty response');
+    textEl.value = comment;
+    statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
+    statusEl.style.color = '#16a34a';
+  } catch(e) {
+    statusEl.textContent = `❌ Error: ${e.message}`;
+    statusEl.style.color = '#dc2626';
+  }
+}
+
+async function generateRoiPost() {
+  const postType = document.getElementById('roiPostType').value;
+  const topic = document.getElementById('roiPostTopic').value.trim();
+  const outputEl = document.getElementById('roiPostOutput');
+  const textEl = document.getElementById('roiPostText');
+  const statusEl = document.getElementById('roiPostStatus');
+
+  const apiKey = localStorage.getItem('yedda_claude_key');
+  if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+
+  const typeGuides = {
+    thought_leadership: `Write a bold thought leadership post about Visual AI in enterprise operations. Share a non-obvious insight that challenges how operations leaders think about intelligence and decision-making. Not theoretical — grounded in operational reality.`,
+    industry_insight: `Share a compelling industry stat or trend and give your expert interpretation. What does it mean for operations leaders? What are most companies getting wrong? What does Visual AI make possible that wasn't possible before?`,
+    poll: `Create a LinkedIn poll post. Format:\n- Opening line that frames a real dilemma operations leaders face\n- 2-3 sentences of context\n- Then: "Quick poll — [question]?"\n- Provide 4 poll options (labeled A, B, C, D) that are genuinely interesting choices\n- End with: "Vote below — curious what you're seeing in the field."\nNote: User will set up the actual poll on LinkedIn; just provide the text and options.`,
+    personal_experience: `Share a personal insight or lesson learned from building Yedda.ai or working with enterprise operations leaders. Authentic, specific, not generic. What surprised you? What changed your thinking? What do you know now that you wish you knew earlier?`,
+    challenge_status_quo: `Challenge a widely-held belief about AI in enterprise operations. Be specific about what the conventional wisdom gets wrong and why Visual AI changes the equation. Be bold but grounded — back it up with operational reality.`
+  };
+
+  const systemPrompt = `You are Roi, CEO and co-founder of Yedda.ai, writing a LinkedIn post as a Visual AI expert and enterprise operations thought leader.
+
+YOUR IDENTITY:
+- 15+ years building and deploying technology for large-scale retail, logistics and F&B operations
+- Deep expertise in Visual AI applied to shrinkage prevention, queue management, safety compliance, operational intelligence
+- You think about intelligence augmentation — giving operations teams clarity they've never had
+- You have deployed Visual AI across APAC, LATAM, Middle East, and Europe
+- You are opinionated, data-driven, and not interested in AI hype — only outcomes
+
+WRITING RULES:
+- Write in first person as Roi (not as Yedda.ai the company)
+- Peer-to-peer with CEOs, COOs, board members — they are your equals
+- Never use: revolutionary, game-changing, real-time, AI-powered, seamless, robust, disruptive, artificial intelligence
+- Always say "Visual AI" not "AI" when referencing the technology
+- Open with a striking stat, observation, or bold statement — no warm-up
+- Max 250 words for regular posts, 150 words + poll options for polls
+- Include 3-4 hashtags: always #VisualAI #IntelligenceAugmentation — add 1-2 relevant ones
+- End non-poll posts with a → question to drive comments
+
+POST TYPE: ${typeGuides[postType]}
+${topic ? `TOPIC/HOOK TO USE: ${topic}` : ''}
+
+Return ONLY the post text (and poll options if poll type). No quotes, no explanation.`;
+
+  statusEl.textContent = '⏳ Generating Roi\'s post...';
+  outputEl.style.display = 'block';
+  textEl.value = '';
+
+  try {
+    const model = window._geminiModel || 'gemini-2.5-flash';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
+      })
+    });
+    if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+    const data = await res.json();
+    const post = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    if (!post) throw new Error('Empty response');
+    textEl.value = post;
+    statusEl.textContent = postType === 'poll'
+      ? '✅ Post ready — copy text, then create the poll on LinkedIn (LinkedIn → Create a post → Add a poll).'
+      : '✅ Post ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
+  } catch(e) {
+    statusEl.textContent = `❌ Error: ${e.message}`;
+  }
+}
+
+function copyRoiPost() {
+  const text = document.getElementById('roiPostText').value;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('roiPostStatus').textContent = '📋 Copied! Paste on LinkedIn as Roi.';
+  });
+}
+
+function copyRoiComment() {
+  const text = document.getElementById('roiCommentText').value;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('roiCommentStatus').textContent = '📋 Copied! Now paste it as a comment on LinkedIn.';
+  });
+}
+
+function openLinkedIn() {
+  window.open('https://www.linkedin.com/feed/', '_blank');
 }
 
 async function reviewWithMAS(idx) {
