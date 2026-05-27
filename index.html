@@ -3092,11 +3092,14 @@ BRAND: Primary teal #4BADB8, accent orange #F07830, dark background #0E1B1E for 
 const POSTS_BASELINE_COUNT = posts.length;
 
 function _genSectionHeaderHTML(count) {
+  const collapsed = localStorage.getItem('yedda_gen_collapsed') === '1';
+  const chevron = collapsed ? '▶' : '▼';
   return `
-    <div class="week-header" style="color:var(--teal-deep);flex-wrap:wrap;row-gap:6px;">
+    <div class="week-header" style="color:var(--teal-deep);flex-wrap:wrap;row-gap:6px;cursor:default;">
+      <button id="gen-collapse-btn" onclick="toggleGenCollapse()" title="${collapsed ? 'Expand' : 'Collapse'} posts" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--teal-deep);padding:0 4px 0 0;line-height:1;">${chevron}</button>
       <span class="week-dot"></span>Auto-Generated Posts ✨
       <span id="gen-count-badge" style="background:var(--teal);color:#fff;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;margin-left:2px;">${count > 0 ? count : ''}</span>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <div id="gen-controls" style="margin-left:auto;display:${collapsed ? 'none' : 'flex'};gap:6px;align-items:center;flex-wrap:wrap;">
         <div id="gen-filter-tabs" style="display:flex;gap:4px;">
           <button class="gen-filter-btn active" onclick="filterGeneratedPosts('all')" data-filter="all">All</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('approved')" data-filter="approved">✅ Approved</button>
@@ -4186,6 +4189,7 @@ function restoreGeneratedPosts() {
   });
 }
 restoreGeneratedPosts();
+_applyCollapseState();
 
 /* ── Generated Posts Management ── */
 function refreshGenHeader() {
@@ -4214,7 +4218,35 @@ function rebuildGeneratedSection() {
   const sec = document.getElementById('generated-week-section');
   if (sec) sec.remove();
   restoreGeneratedPosts();
+  _applyCollapseState();
   loadRatings();
+}
+
+function toggleGenCollapse() {
+  const sec = document.getElementById('generated-week-section');
+  if (!sec) return;
+  const collapsed = localStorage.getItem('yedda_gen_collapsed') === '1';
+  const next = !collapsed;
+  localStorage.setItem('yedda_gen_collapsed', next ? '1' : '0');
+  // toggle rows visibility
+  sec.querySelectorAll('.post-row').forEach(r => r.style.display = next ? 'none' : '');
+  // update chevron + controls
+  const btn = document.getElementById('gen-collapse-btn');
+  if (btn) { btn.textContent = next ? '▶' : '▼'; btn.title = next ? 'Expand posts' : 'Collapse posts'; }
+  const controls = document.getElementById('gen-controls');
+  if (controls) controls.style.display = next ? 'none' : 'flex';
+}
+
+// apply saved collapse state on restore
+function _applyCollapseState() {
+  if (localStorage.getItem('yedda_gen_collapsed') === '1') {
+    const sec = document.getElementById('generated-week-section');
+    if (sec) sec.querySelectorAll('.post-row').forEach(r => r.style.display = 'none');
+    const btn = document.getElementById('gen-collapse-btn');
+    if (btn) { btn.textContent = '▶'; btn.title = 'Expand posts'; }
+    const controls = document.getElementById('gen-controls');
+    if (controls) controls.style.display = 'none';
+  }
 }
 
 function filterGeneratedPosts(filter) {
