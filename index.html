@@ -927,6 +927,20 @@ h1,h2,h3,h4 {
   background: var(--teal);
 }
 .week-header.or .week-dot { background: var(--orange); }
+.gen-filter-btn {
+  padding: 3px 9px; border-radius: 999px; font-size: 10px; font-family: var(--font-mono);
+  letter-spacing: 0.08em; border: 1px solid var(--line); background: #fff;
+  color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.gen-filter-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+.gen-filter-btn:hover:not(.active) { background: var(--teal-bg); }
+.gen-del-btn {
+  background: none; border: 1px solid #ddd; border-radius: 50%; width: 20px; height: 20px;
+  font-size: 10px; cursor: pointer; color: #aaa; display: flex; align-items: center;
+  justify-content: center; transition: all 0.15s; flex-shrink: 0;
+}
+.gen-del-btn:hover { border-color: #e55; color: #e55; background: #fff0f0; }
+.post-row.gen-hidden { display: none !important; }
 
 .post-row {
   display: grid;
@@ -3075,6 +3089,25 @@ Aspect ratio: 4:5 (LinkedIn single image post)
 BRAND: Primary teal #4BADB8, accent orange #F07830, dark background #0E1B1E for overlays.` },
 ];
 
+const POSTS_BASELINE_COUNT = posts.length;
+
+function _genSectionHeaderHTML(count) {
+  return `
+    <div class="week-header" style="color:var(--teal-deep);flex-wrap:wrap;row-gap:6px;">
+      <span class="week-dot"></span>Auto-Generated Posts ✨
+      <span id="gen-count-badge" style="background:var(--teal);color:#fff;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;margin-left:2px;">${count > 0 ? count : ''}</span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <div id="gen-filter-tabs" style="display:flex;gap:4px;">
+          <button class="gen-filter-btn active" onclick="filterGeneratedPosts('all')" data-filter="all">All</button>
+          <button class="gen-filter-btn" onclick="filterGeneratedPosts('approved')" data-filter="approved">✅ Approved</button>
+          <button class="gen-filter-btn" onclick="filterGeneratedPosts('revise')" data-filter="revise">🔁 Revise</button>
+          <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
+        </div>
+        <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
+      </div>
+    </div>`;
+}
+
 function renderPost(i) {
   const p = posts[i];
   const srcSearch = 'https://www.google.com/search?q=' + encodeURIComponent(p.src);
@@ -3776,11 +3809,22 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 }
 
 function addGeneratedPostToCalendar(post) {
+  // assign stable id if missing
+  if (!post._id) post._id = Date.now().toString();
+
   const idx = posts.length;
   posts.push(post);
 
-  // persist generated posts to localStorage so they survive refresh
+  // cap at 30 — warn user, auto-trim oldest 10
   const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
+  if (saved.length >= 30) {
+    if (!confirm(`You have ${saved.length} auto-generated posts saved.\nRemove the 10 oldest to continue?`)) return;
+    saved.splice(0, 10);
+    // rebuild section after trim
+    localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+    rebuildGeneratedSection();
+    return addGeneratedPostToCalendar(post);
+  }
   saved.push(post);
   localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
 
@@ -3794,22 +3838,26 @@ function addGeneratedPostToCalendar(post) {
     weekSection = document.createElement('div');
     weekSection.className = 'week-section';
     weekSection.id = 'generated-week-section';
-    weekSection.innerHTML = `<div class="week-header" style="color:var(--teal-deep);"><span class="week-dot"></span>Auto-Generated Posts ✨</div>`;
-    // insert after last existing week-section
+    weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
     const allWeeks = document.querySelectorAll('.week-section');
     const lastWeek = allWeeks[allWeeks.length - 1];
     lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+  } else {
+    refreshGenHeader();
   }
 
   const rowHtml = `
-    <div class="post-row" id="prow-${idx}" onclick="showPost(${idx}, this)">
+    <div class="post-row" id="prow-${idx}" data-post-id="${post._id}" onclick="showPost(${idx}, this)">
       <span class="rdot" id="rdot-${idx}"></span>
       <div class="post-date"><div class="post-day">${post._dateDay}</div><div class="post-month">${post._dateMonth}</div></div>
       <div>
         <div class="post-hook">"${post._hookPreview}"</div>
         <div class="post-angle">${post.src.split('·')[0].trim()} · ${post.meta.char} · Auto-generated</div>
       </div>
-      ${tagHtml}
+      <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
+        ${tagHtml}
+        <button class="gen-del-btn" onclick="deleteGeneratedPost('${post._id}')" title="Delete post">✕</button>
+      </div>
     </div>`;
   weekSection.insertAdjacentHTML('beforeend', rowHtml);
 
@@ -4103,10 +4151,11 @@ openSettings = function() {
   if (ck) document.getElementById('claudeApiKey').value = ck;
 };
 
-/* restore generated posts from localStorage on page load */
-(function restoreGeneratedPosts() {
+/* restore generated posts from localStorage — called on load and after rebuild */
+function restoreGeneratedPosts() {
   const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
-  saved.forEach(post => {
+  saved.forEach((post, saveIdx) => {
+    if (!post._id) post._id = (Date.now() + saveIdx).toString();
     const idx = posts.length;
     posts.push(post);
     const pillarClass = { 'Social Proof':'or', 'Engagement':'ink' }[post._pillar] || '';
@@ -4116,23 +4165,79 @@ openSettings = function() {
       weekSection = document.createElement('div');
       weekSection.className = 'week-section';
       weekSection.id = 'generated-week-section';
-      weekSection.innerHTML = `<div class="week-header" style="color:var(--teal-deep);"><span class="week-dot"></span>Auto-Generated Posts ✨</div>`;
+      weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
       const allWeeks = document.querySelectorAll('.week-section');
       const lastWeek = allWeeks[allWeeks.length - 1];
       lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
     }
     weekSection.insertAdjacentHTML('beforeend', `
-      <div class="post-row" id="prow-${idx}" onclick="showPost(${idx}, this)">
+      <div class="post-row" id="prow-${idx}" data-post-id="${post._id}" onclick="showPost(${idx}, this)">
         <span class="rdot" id="rdot-${idx}"></span>
         <div class="post-date"><div class="post-day">${post._dateDay || '—'}</div><div class="post-month">${post._dateMonth || '—'}</div></div>
         <div>
           <div class="post-hook">"${post._hookPreview || post.src}"</div>
           <div class="post-angle">${(post.src || '').split('·')[0].trim()} · ${(post.meta||{}).char || 'Abbey'} · Auto-generated</div>
         </div>
-        ${tagHtml}
+        <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
+          ${tagHtml}
+          <button class="gen-del-btn" onclick="deleteGeneratedPost('${post._id}')" title="Delete post">✕</button>
+        </div>
       </div>`);
   });
-})();
+}
+restoreGeneratedPosts();
+
+/* ── Generated Posts Management ── */
+function refreshGenHeader() {
+  const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
+  const badge = document.getElementById('gen-count-badge');
+  if (badge) badge.textContent = saved.length > 0 ? saved.length : '';
+}
+
+function deleteGeneratedPost(postId) {
+  let saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
+  saved = saved.filter(p => p._id !== postId);
+  localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+  rebuildGeneratedSection();
+}
+
+function clearAllGeneratedPosts() {
+  const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
+  if (!saved.length) return;
+  if (!confirm(`Remove all ${saved.length} auto-generated posts? This cannot be undone.`)) return;
+  localStorage.removeItem('yedda_generated_posts');
+  rebuildGeneratedSection();
+}
+
+function rebuildGeneratedSection() {
+  posts.splice(POSTS_BASELINE_COUNT);
+  const sec = document.getElementById('generated-week-section');
+  if (sec) sec.remove();
+  restoreGeneratedPosts();
+  loadRatings();
+}
+
+function filterGeneratedPosts(filter) {
+  document.querySelectorAll('.gen-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  const ratings = JSON.parse(localStorage.getItem('yedda_ratings') || '{}');
+  const sec = document.getElementById('generated-week-section');
+  if (!sec) return;
+  sec.querySelectorAll('.post-row').forEach(row => {
+    const idx = parseInt(row.id.replace('prow-', ''));
+    const rating = ratings[idx] || 'unrated';
+    if (filter === 'all') {
+      row.classList.remove('gen-hidden');
+    } else if (filter === 'approved') {
+      row.classList.toggle('gen-hidden', rating !== 'approved');
+    } else if (filter === 'revise') {
+      row.classList.toggle('gen-hidden', rating !== 'revise');
+    } else if (filter === 'rejected') {
+      row.classList.toggle('gen-hidden', rating !== 'rejected');
+    }
+  });
+}
 
 function copyPrompt(btn, i) {
   const p = posts[i];
