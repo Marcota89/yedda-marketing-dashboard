@@ -2305,7 +2305,7 @@ footer {
       <div>
 
         <div class="week-section">
-          <div class="week-header"><span class="week-dot"></span>Week Apr 19–25 · 2026</div>
+          <div class="week-header" onclick="toggleWeekCollapse(this)" style="cursor:pointer;" title="Collapse/Expand week"><span class="week-chevron" style="font-size:11px;margin-right:2px;">▼</span><span class="week-dot"></span>Week Apr 19–25 · 2026</div>
 
           <div class="post-row active" id="prow-0" onclick="showPost(0, this)">
             <span class="rdot" id="rdot-0"></span>
@@ -2346,7 +2346,7 @@ footer {
         </div>
 
         <div class="week-section">
-          <div class="week-header or"><span class="week-dot"></span>Week Apr 28 – May 2 · 2026</div>
+          <div class="week-header or" onclick="toggleWeekCollapse(this)" style="cursor:pointer;" title="Collapse/Expand week"><span class="week-chevron" style="font-size:11px;margin-right:2px;">▼</span><span class="week-dot"></span>Week Apr 28 – May 2 · 2026</div>
 
           <div class="post-row" id="prow-4" onclick="showPost(4, this)">
             <span class="rdot" id="rdot-4"></span>
@@ -4221,6 +4221,34 @@ function rebuildGeneratedSection() {
   _applyCollapseState();
   loadRatings();
 }
+
+function toggleWeekCollapse(header) {
+  const section = header.closest('.week-section');
+  const rows = section.querySelectorAll('.post-row');
+  const chevron = header.querySelector('.week-chevron');
+  const isCollapsed = chevron && chevron.textContent === '▶';
+  rows.forEach(r => r.style.display = isCollapsed ? '' : 'none');
+  if (chevron) chevron.textContent = isCollapsed ? '▼' : '▶';
+  // persist by week label text
+  const label = header.textContent.trim();
+  const key = 'yedda_week_collapsed_' + btoa(label).slice(0, 12);
+  localStorage.setItem(key, isCollapsed ? '0' : '1');
+}
+
+// restore week collapse states on load
+(function restoreWeekCollapseStates() {
+  document.querySelectorAll('.week-header').forEach(header => {
+    if (header.id === 'generated-week-section') return; // handled separately
+    const label = header.textContent.trim();
+    const key = 'yedda_week_collapsed_' + btoa(label).slice(0, 12);
+    if (localStorage.getItem(key) === '1') {
+      const section = header.closest('.week-section');
+      if (section) section.querySelectorAll('.post-row').forEach(r => r.style.display = 'none');
+      const chevron = header.querySelector('.week-chevron');
+      if (chevron) chevron.textContent = '▶';
+    }
+  });
+})();
 
 function toggleGenCollapse() {
   const sec = document.getElementById('generated-week-section');
