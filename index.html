@@ -1714,6 +1714,110 @@ footer {
   .char-body { padding: 18px 20px; }
   .char-name { font-size: 22px; }
 }
+
+/* ═══ TOAST NOTIFICATION ═══ */
+.yedda-toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(14,27,30,0.22);
+  font-size: 13.5px; font-weight: 600;
+  z-index: 9999;
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  max-width: 340px;
+}
+.yedda-toast.toast-success { background: #14532d; border-left: 4px solid #16a34a; }
+.yedda-toast.toast-error   { background: #7f1d1d; border-left: 4px solid #dc2626; }
+.yedda-toast.toast-info    { background: var(--ink); border-left: 4px solid var(--teal); }
+.yedda-toast.toast-out     { animation: toastOut 0.2s ease forwards; }
+@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut { to   { transform: translateX(110%); opacity: 0; } }
+
+/* ═══ UNIFIED SPINNER ═══ */
+.yd-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ydSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+.yd-spinner.dark {
+  border-color: var(--line);
+  border-top-color: var(--teal-deep);
+}
+@keyframes ydSpin { to { transform: rotate(360deg); } }
+
+/* ═══ SETTINGS PROGRESS BAR ═══ */
+.settings-progress {
+  display: flex; gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.settings-prog-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.settings-prog-item.ok  { background: #f0fdf4; color: #16a34a; border-color: #86efac; }
+.settings-prog-item.bad { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.settings-prog-item.opt { background: var(--teal-xl); color: var(--teal-deep); border-color: rgba(75,173,184,0.22); }
+
+/* ═══ TOKEN VISIBILITY TOGGLE ═══ */
+.token-field-wrap { display: flex; gap: 8px; align-items: center; }
+.token-field-wrap .modal-input { flex: 1; }
+.token-vis-btn {
+  background: var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-soft);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.token-vis-btn:hover { background: var(--teal-xl); color: var(--teal-deep); }
+
+/* ═══ MOBILE TOUCH TARGETS ═══ */
+@media (max-width: 480px) {
+  button { min-height: 40px; }
+  .rate-btn { padding: 10px 12px; font-size: 13px; }
+  .li-copy-btn, .q-copy-btn, .modal-save-btn, .sched-gen-run, .sched-copy-prompt,
+  .gen-del-btn, .gen-filter-btn, .news-use-btn { min-height: 44px; }
+  .news-use-btn { padding: 10px 18px; font-size: 14px; }
+  .modal-save-btn { padding: 12px 20px; font-size: 14px; }
+}
+
+/* ═══ BUTTON LOADING STATE ═══ */
+button[data-loading] {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ═══ NEWS EMPTY STATE ═══ */
+.news-empty-state {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-soft);
+}
+.news-empty-state h4 { font-size: 14px; margin-bottom: 8px; color: var(--ink); }
+.news-empty-state ul { text-align: left; display: inline-block; margin: 8px 0; font-size: 13px; line-height: 1.7; }
+.news-empty-retry {
+  margin-top: 12px;
+  background: var(--teal);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+}
 </style>
 </head>
 <body>
@@ -1740,6 +1844,13 @@ footer {
     </div>
   </div>
 </nav>
+
+<!-- M1 — Status bar -->
+<div id="statusBar" style="background:#f0f5f6;border-bottom:1px solid #e4edef;padding:6px 20px;display:flex;gap:16px;align-items:center;font-size:11px;position:sticky;top:61px;z-index:49">
+  <span id="geminiStatus" style="color:#8A9AA0">⬤ Gemini</span>
+  <span id="masStatus" style="color:#8A9AA0">⬤ MAS Review</span>
+  <span id="queueStatus" style="color:#8A9AA0">⬤ Queue: <span id="queueStatusCount">0</span></span>
+</div>
 
 <!-- ═══ HERO ═══ -->
 <section class="hero" id="top">
@@ -2251,7 +2362,7 @@ footer {
               <div style="font-size:13px;font-weight:700;color:var(--teal-deep);">🔍 Fetch Latest News</div>
               <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">Pulls recent Google News articles on retail AI, loss prevention, logistics &amp; safety</div>
             </div>
-            <button class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews()">🔍 Fetch News</button>
+            <button id="fetchNewsBtn" class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews(this)">🔍 Fetch News</button>
           </div>
           <div id="apifyNewsResults"></div>
         </div>
@@ -2427,7 +2538,7 @@ footer {
         </select>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button class="sched-gen-run" style="background:var(--ink);" onclick="generateRoiComment()">💬 Generate Comment</button>
+        <button id="roiCommentBtn" class="sched-gen-run" style="background:var(--ink);" onclick="generateRoiComment(this)">💬 Generate Comment</button>
       </div>
       <div id="roiCommentOutput" style="display:none;margin-top:16px;">
         <label style="font-size:12px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;">Generated Comment — copy and post as Roi on LinkedIn</label>
@@ -2468,7 +2579,7 @@ footer {
         <input type="text" id="roiPostTopic" class="sched-input" placeholder="e.g. computer vision in retail, AI governance, shrinkage prevention trends...">
       </div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button class="sched-gen-run" style="background:#F07830;" onclick="generateRoiPost()">✍️ Generate Roi Post</button>
+        <button id="roiPostBtn" class="sched-gen-run" style="background:#F07830;" onclick="generateRoiPost(this)">✍️ Generate Roi Post</button>
       </div>
       <div id="roiPostOutput" style="display:none;margin-top:16px;">
         <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;">Generated Post — review, edit, then post on LinkedIn as Roi</label>
@@ -2508,6 +2619,12 @@ footer {
       <h3 class="modal-title">⚙️ Settings</h3>
       <button onclick="closeSettings()" class="modal-close">✕</button>
     </div>
+    <!-- Settings progress indicator -->
+    <div class="settings-progress" id="settingsProgress">
+      <span class="settings-prog-item opt" id="spLinkedIn">✅ LinkedIn Ready</span>
+      <span class="settings-prog-item bad" id="spGemini">❌ Gemini Required</span>
+      <span class="settings-prog-item opt" id="spApify">⚪ Apify Optional</span>
+    </div>
     <div class="modal-section">
       <div class="modal-section-title">🔗 LinkedIn Publishing</div>
       <p class="modal-desc">Click <strong>🔗 Post to LinkedIn</strong> in the Publish Queue to copy the post text and open LinkedIn in a new tab — then just paste and publish.</p>
@@ -2516,19 +2633,31 @@ footer {
     </div>
     <hr class="modal-divider">
     <div class="modal-section">
-      <div class="modal-section-title">🔍 Apify News Integration</div>
-      <p class="modal-desc">Connect Apify to automatically fetch recent news articles relevant to Yedda.ai before generating new posts. Get your token at <strong>console.apify.com → Settings → Integrations</strong>.</p>
-      <div class="modal-field"><label>Apify Personal API Token</label><input type="password" id="apifyToken" class="modal-input" placeholder="apify_api_..."></div>
-      <button class="modal-save-btn" style="background:var(--orange);" onclick="saveApifySettings()">💾 Save Apify Settings</button>
-      <div id="apifyStatus" class="modal-status"></div>
+      <div class="modal-section-title">✨ Gemini AI — Auto Post Generator <span style="color:#dc2626;font-size:11px;font-weight:700;margin-left:6px;">REQUIRED</span></div>
+      <p class="modal-desc">Add your Google Gemini API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>aistudio.google.com → Get API Key</strong>.</p>
+      <div class="modal-field">
+        <label>Gemini API Key</label>
+        <div class="token-field-wrap">
+          <input type="password" id="claudeApiKey" class="modal-input" placeholder="AIza...">
+          <button type="button" class="token-vis-btn" onclick="toggleTokenVis('claudeApiKey', this)" title="Show/hide key">👁</button>
+        </div>
+      </div>
+      <button class="modal-save-btn" id="geminiSaveBtn" style="background:#1A73E8;" onclick="saveClaudeSettings()">💾 Save Gemini Settings</button>
+      <div id="claudeStatus" class="modal-status"></div>
     </div>
     <hr class="modal-divider">
     <div class="modal-section">
-      <div class="modal-section-title">✨ Gemini AI — Auto Post Generator</div>
-      <p class="modal-desc">Add your Google Gemini API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>aistudio.google.com → Get API Key</strong>.</p>
-      <div class="modal-field"><label>Gemini API Key</label><input type="password" id="claudeApiKey" class="modal-input" placeholder="AIza..."></div>
-      <button class="modal-save-btn" style="background:#1A73E8;" onclick="saveClaudeSettings()">💾 Save Gemini Settings</button>
-      <div id="claudeStatus" class="modal-status"></div>
+      <div class="modal-section-title">🔍 Apify News Integration <span style="color:var(--text-soft);font-size:11px;font-weight:600;margin-left:6px;">OPTIONAL</span></div>
+      <p class="modal-desc">Connect Apify to automatically fetch recent news articles relevant to Yedda.ai before generating new posts. Get your token at <strong>console.apify.com → Settings → Integrations</strong>.</p>
+      <div class="modal-field">
+        <label>Apify Personal API Token</label>
+        <div class="token-field-wrap">
+          <input type="password" id="apifyToken" class="modal-input" placeholder="apify_api_...">
+          <button type="button" class="token-vis-btn" onclick="toggleTokenVis('apifyToken', this)" title="Show/hide token">👁</button>
+        </div>
+      </div>
+      <button class="modal-save-btn" id="apifySaveBtn" style="background:var(--orange);" onclick="saveApifySettings()">💾 Save Apify Settings</button>
+      <div id="apifyStatus" class="modal-status"></div>
     </div>
   </div>
 </div>
@@ -3124,11 +3253,81 @@ function clipWrite(text, onSuccess) {
   navigator.clipboard.writeText(text).then(() => { if (onSuccess) onSuccess(); }).catch(fallback);
 }
 
+/* ── TOAST SYSTEM ── */
+function showToast(message, type = 'info', duration = 3000) {
+  const t = document.createElement('div');
+  t.className = `yedda-toast toast-${type}`;
+  t.textContent = message;
+  document.body.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('toast-out');
+    setTimeout(() => t.remove(), 220);
+  }, duration);
+}
+
+/* ── BUTTON LOADING STATE ── */
+function setLoading(btn, loading, loadText) {
+  if (!btn) return;
+  if (loading) {
+    btn.dataset.origText = btn.innerHTML;
+    btn.innerHTML = `<span class="yd-spinner"></span>${loadText || 'Loading…'}`;
+    btn.dataset.loading = '1';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = btn.dataset.origText || btn.innerHTML;
+    delete btn.dataset.loading;
+    btn.disabled = false;
+  }
+}
+
+/* ── TOKEN VISIBILITY TOGGLE ── */
+function toggleTokenVis(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+/* ── SETTINGS PROGRESS INDICATOR ── */
+function updateSettingsProgress() {
+  const hasGemini = !!localStorage.getItem('yedda_claude_key');
+  const hasApify  = !!localStorage.getItem('yedda_apify');
+  const gEl = document.getElementById('spGemini');
+  const aEl = document.getElementById('spApify');
+  if (gEl) {
+    gEl.textContent = hasGemini ? '✅ Gemini Ready' : '❌ Gemini Required';
+    gEl.className = `settings-prog-item ${hasGemini ? 'ok' : 'bad'}`;
+  }
+  if (aEl) {
+    aEl.textContent = hasApify ? '✅ Apify Ready' : '⚪ Apify Optional';
+    aEl.className = `settings-prog-item ${hasApify ? 'ok' : 'opt'}`;
+  }
+}
+
+/* ── ESCAPE KEY CLOSES MODAL ── */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('settingsModal');
+    if (m && m.style.display !== 'none') closeSettings();
+  }
+});
+
+/* ── IN-MEMORY CACHE FOR LOCALSTORAGE ── */
+let _genPostsCache = null;
+let _ratingsCache = null;
+
 function getGeneratedPosts() {
+  if (_genPostsCache !== null) return _genPostsCache;
   try {
     const v = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
-    return Array.isArray(v) ? v : [];
-  } catch(e) { return []; }
+    _genPostsCache = Array.isArray(v) ? v : [];
+  } catch(e) { _genPostsCache = []; }
+  return _genPostsCache;
+}
+
+function _saveGeneratedPosts(arr) {
+  _genPostsCache = arr;
+  localStorage.setItem('yedda_generated_posts', JSON.stringify(arr));
 }
 
 function esc(s) {
@@ -3202,7 +3401,14 @@ const BUFFER_KEY  = 'yedda_buffer';
 const QUEUE_SENT  = 'yedda_queue_sent';
 
 function getRatings() {
-  try { return JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}'); } catch(e) { return {}; }
+  if (_ratingsCache !== null) return _ratingsCache;
+  try { _ratingsCache = JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}'); } catch(e) { _ratingsCache = {}; }
+  return _ratingsCache;
+}
+
+function _saveRatings(obj) {
+  _ratingsCache = obj;
+  localStorage.setItem(RATINGS_KEY, JSON.stringify(obj));
 }
 
 function renderRatingBar(i) {
@@ -3227,7 +3433,7 @@ function renderRatingBar(i) {
 function ratePost(i, rating) {
   const ratings = getRatings();
   if (rating === null) { delete ratings[i]; } else { ratings[i] = rating; }
-  localStorage.setItem(RATINGS_KEY, JSON.stringify(ratings));
+  _saveRatings(ratings);
   const bar = document.getElementById(`ratingBar-${i}`);
   if (bar) bar.innerHTML = renderRatingBar(i);
   updateDot(i, rating);
@@ -3523,6 +3729,8 @@ function saveApifySettings() {
   if (!token) { showApifyModalStatus('⚠️ Token is required.', '#dc2626'); return; }
   localStorage.setItem(APIFY_KEY, token);
   showApifyModalStatus('✅ Apify token saved!', '#16a34a');
+  showToast('✅ Apify token saved', 'success');
+  updateSettingsProgress();
 }
 
 function showApifyModalStatus(msg, color) {
@@ -3532,31 +3740,54 @@ function showApifyModalStatus(msg, color) {
   setTimeout(() => el.textContent = '', 3000);
 }
 
-async function fetchApifyNews() {
+let _fetchNewsController = null;
+
+async function fetchApifyNews(btn) {
+  // Prevent double-fetch: cancel previous if running
+  if (_fetchNewsController) { _fetchNewsController.abort(); }
+  _fetchNewsController = new AbortController();
+  const signal = _fetchNewsController.signal;
+
   const resultsEl = document.getElementById('apifyNewsResults');
+  const fetchBtn = btn || document.getElementById('fetchNewsBtn');
+
+  setLoading(fetchBtn, true, '🔍 Fetching…');
+
   const token = localStorage.getItem(APIFY_KEY);
 
   if (token) {
-    resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching news via Apify…</div>`;
+    resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>`;
     try {
-      const articles = await fetchViaApify(token);
-      if (articles.length > 0) { renderApifyResults(articles); return; }
+      const articles = await fetchViaApify(token, signal);
+      if (articles.length > 0) { setLoading(fetchBtn, false); renderApifyResults(articles); return; }
     } catch(e) {
+      if (e.name === 'AbortError') { setLoading(fetchBtn, false); return; }
       console.warn('Apify failed, falling back to RSS:', e.message);
     }
   }
 
   // Fallback: RSS2JSON
-  resultsEl.innerHTML = `<div class="apify-loading"><div class="apify-spinner"></div>Fetching latest news from Google News…</div>`;
+  resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>`;
   try {
-    const articles = await fetchViaRSS();
+    const articles = await fetchViaRSS(signal);
+    setLoading(fetchBtn, false);
     renderApifyResults(articles);
   } catch(e) {
-    resultsEl.innerHTML = `<div class="apify-error">⚠️ Could not fetch news: ${e.message}</div>`;
+    setLoading(fetchBtn, false);
+    if (e.name === 'AbortError') return;
+    resultsEl.innerHTML = `<div class="news-empty-state">
+      <h4>⚠️ Could not fetch news</h4>
+      <ul>
+        <li>Check your internet connection</li>
+        <li>Try adding an Apify token in Settings for more reliable results</li>
+        <li>rss2json.com free tier may be temporarily unavailable</li>
+      </ul>
+      <button class="news-empty-retry" onclick="fetchApifyNews(document.getElementById('fetchNewsBtn'))">↻ Try Again</button>
+    </div>`;
   }
 }
 
-async function fetchViaApify(token) {
+async function fetchViaApify(token, signal) {
   const runInput = {
     queries: APIFY_QUERIES.map(q => ({ query: q, maxResults: 3 })),
     outputFormat: 'camelCase',
@@ -3564,7 +3795,7 @@ async function fetchViaApify(token) {
   };
   const res = await fetch(
     `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=30&memory=256`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal, body: JSON.stringify({
         queries: APIFY_QUERIES.join('\n'),
         resultsPerPage: 5,
         maxPagesPerQuery: 1,
@@ -3590,13 +3821,13 @@ async function fetchViaApify(token) {
   }).slice(0, 15);
 }
 
-async function fetchViaRSS() {
+async function fetchViaRSS(signal) {
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
   const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
   const bust     = `&t=${Date.now()}`;
   const queries  = APIFY_QUERIES.map(q => q.replace(/ /g, '+'));
   const results  = await Promise.all(queries.map(q =>
-    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + bust)
+    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + bust, signal ? { signal } : {})
       .then(r => r.json()).then(d => (d.items || []).slice(0, 3)).catch(() => [])
   ));
   const seen = new Set();
@@ -3612,7 +3843,15 @@ async function fetchViaRSS() {
 function renderApifyResults(articles) {
   const el = document.getElementById('apifyNewsResults');
   if (!articles || articles.length === 0) {
-    el.innerHTML = '<div class="apify-error">No articles found. Try again or adjust search terms.</div>';
+    el.innerHTML = `<div class="news-empty-state">
+      <h4>📰 No articles found</h4>
+      <ul>
+        <li>Check your Apify token in Settings (may have expired)</li>
+        <li>rss2json.com free tier caches results — try again in a few minutes</li>
+        <li>Check your internet connection</li>
+      </ul>
+      <button class="news-empty-retry" onclick="fetchApifyNews(document.getElementById('fetchNewsBtn'))">↻ Try Again</button>
+    </div>`;
     return;
   }
   const items = articles.map((a, i) => `
@@ -3631,7 +3870,7 @@ function renderApifyResults(articles) {
   el.innerHTML = `
     <div class="news-results">${items}</div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
-      <button class="news-use-btn" onclick="useSelectedNews()">✨ Generate Post from Selected</button>
+      <button id="genFromNewsBtn" class="news-use-btn" onclick="useSelectedNews(this)">✨ Generate Post from Selected</button>
       <span style="font-size:12px;color:var(--text-soft);">Select articles above — auto-generates a LinkedIn post in Yedda's style (requires Gemini API key in Settings)</span>
     </div>`;
 
@@ -3646,7 +3885,7 @@ function toggleNewsItem(i) {
   item.classList.toggle('selected', check.checked);
 }
 
-async function useSelectedNews() {
+async function useSelectedNews(btn) {
   const selected = (window._apifyArticles || []).filter((_, i) => {
     const c = document.getElementById(`ncheck-${i}`);
     return c && c.checked;
@@ -3668,8 +3907,9 @@ async function useSelectedNews() {
   // show loading state
   const resultsEl = document.getElementById('apifyNewsResults');
   const loadingId = 'newsGenLoading';
+  setLoading(btn, true, '⏳ Generating…');
   resultsEl.insertAdjacentHTML('beforeend',
-    `<div id="${loadingId}" style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--teal-xl);border-radius:10px;font-size:13px;font-weight:600;color:var(--teal-deep);"><div class="apify-spinner"></div>Generating LinkedIn post from selected articles…</div>`);
+    `<div id="${loadingId}" style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--teal-xl);border-radius:10px;font-size:13px;font-weight:600;color:var(--teal-deep);"><div class="yd-spinner dark"></div>Generating LinkedIn post from selected articles…</div>`);
 
   // read selected pillars from Schedule Generator checkboxes
   const selectedPillars = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
@@ -3678,10 +3918,14 @@ async function useSelectedNews() {
     const post = await generatePostFromNews(selected, apiKey, selectedPillars);
     document.getElementById(loadingId)?.remove();
     addGeneratedPostToCalendar(post);
+    showToast('✅ Post generated and added to calendar', 'success');
   } catch(e) {
     document.getElementById(loadingId)?.remove();
     resultsEl.insertAdjacentHTML('beforeend',
       `<div style="margin-top:8px;font-size:12px;font-weight:700;color:#dc2626;">❌ Generation failed: ${esc(e.message)}</div>`);
+    showToast('❌ Post generation failed', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
@@ -3874,7 +4118,7 @@ function addGeneratedPostToCalendar(post) {
   if (saved.length >= 30) {
     if (!confirm(`You have ${saved.length} auto-generated posts saved.\nRemove the 10 oldest to continue?`)) return;
     saved.splice(0, 10);
-    localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+    _saveGeneratedPosts(saved);
     rebuildGeneratedSection();
     return addGeneratedPostToCalendar(post); // posts[] is clean after rebuild
   }
@@ -3882,7 +4126,7 @@ function addGeneratedPostToCalendar(post) {
   const idx = posts.length;
   posts.push(post);
   saved.push(post);
-  localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+  _saveGeneratedPosts(saved);
 
   // pillar tag style
   const pillarClass = { 'Social Proof':'or', 'Engagement':'ink', 'Thought Leadership':'', 'Educational':'' }[post._pillar] || '';
@@ -3935,7 +4179,7 @@ function addGeneratedPostToCalendar(post) {
     </div>`);
 }
 
-async function generateRoiComment() {
+async function generateRoiComment(btn) {
   const postText = document.getElementById('roiPostInput').value.trim();
   const style = document.getElementById('roiCommentStyle').value;
   const outputEl = document.getElementById('roiCommentOutput');
@@ -3945,6 +4189,8 @@ async function generateRoiComment() {
 
   if (!postText) { alert('Paste a LinkedIn post first.'); return; }
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+
+  setLoading(btn, true, '⏳ Generating…');
 
   const styleGuides = {
     insight: 'Add a genuine insight that extends the conversation. Reference a specific data point, operational outcome, or experience with Visual AI in enterprise settings. Do not just agree — add something new.',
@@ -3999,13 +4245,17 @@ Return ONLY the comment text. No quotes, no explanation, no JSON.`;
     textEl.value = comment;
     statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
     statusEl.style.color = '#16a34a';
+    showToast('✅ Comment generated!', 'success');
   } catch(e) {
     statusEl.textContent = `❌ Error: ${e.message}`;
     statusEl.style.color = '#dc2626';
+    showToast('❌ Generation failed', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
-async function generateRoiPost() {
+async function generateRoiPost(btn) {
   const postType = document.getElementById('roiPostType').value;
   const topic = document.getElementById('roiPostTopic').value.trim();
   const outputEl = document.getElementById('roiPostOutput');
@@ -4014,6 +4264,8 @@ async function generateRoiPost() {
 
   const apiKey = localStorage.getItem('yedda_claude_key');
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+
+  setLoading(btn, true, '⏳ Generating…');
 
   const typeGuides = {
     thought_leadership: `Write a bold thought leadership post about Visual AI in enterprise operations. Share a non-obvious insight that challenges how operations leaders think about intelligence and decision-making. Not theoretical — grounded in operational reality.`,
@@ -4069,8 +4321,12 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
     statusEl.textContent = postType === 'poll'
       ? '✅ Post ready — copy text, then create the poll on LinkedIn (LinkedIn → Create a post → Add a poll).'
       : '✅ Post ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
+    showToast('✅ Post generated!', 'success');
   } catch(e) {
     statusEl.textContent = `❌ Error: ${e.message}`;
+    showToast('❌ Generation failed', 'error');
+  } finally {
+    setLoading(btn, false);
   }
 }
 
@@ -4090,11 +4346,18 @@ function openLinkedIn() {
   window.open('https://www.linkedin.com/feed/', '_blank');
 }
 
-async function reviewWithMAS(idx) {
-  const statusEl = document.getElementById(`masReviewStatus-${idx}`);
-  const post = posts[idx];
-  if (!post) return;
+const _masInProgress = {};
 
+async function reviewWithMAS(idx) {
+  if (_masInProgress[idx]) return; // prevent double-click
+  _masInProgress[idx] = true;
+
+  const statusEl = document.getElementById(`masReviewStatus-${idx}`);
+  const masBtn = document.querySelector(`[onclick="reviewWithMAS(${idx})"]`);
+  const post = posts[idx];
+  if (!post) { _masInProgress[idx] = false; return; }
+
+  setLoading(masBtn, true, '🔄 Reviewing…');
   statusEl.style.color = 'var(--teal-deep)';
   statusEl.textContent = '🔄 Connecting to MAS Review API on localhost:8001…';
 
@@ -4134,7 +4397,7 @@ async function reviewWithMAS(idx) {
     if (genIdx >= 0) {
       saved[genIdx].body = cleanBody;
       saved[genIdx].tags = data.post_tags;
-      localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+      _saveGeneratedPosts(saved);
     }
 
     // refresh preview
@@ -4142,7 +4405,11 @@ async function reviewWithMAS(idx) {
 
     if (data.approved) {
       statusEl.style.color = '#16a34a';
-      statusEl.textContent = `✅ ${data.message}${data.rewrites_done > 0 ? ' Post updated in preview.' : ''}`;
+      const rewriteNote = data.rewrites_done > 0
+        ? ` ${data.rewrites_done} revision${data.rewrites_done > 1 ? 's' : ''} applied — post updated in preview.`
+        : ' No revisions needed — post is brand-aligned.';
+      statusEl.textContent = `✅ Approved!${rewriteNote}`;
+      showToast(data.rewrites_done > 0 ? '✅ MAS rewrote ' + data.rewrites_done + ' violation(s)' : '✅ Post brand-aligned', 'success');
     } else {
       statusEl.style.color = '#dc2626';
       statusEl.textContent = `⚠️ ${data.message}`;
@@ -4154,6 +4421,9 @@ async function reviewWithMAS(idx) {
     } else {
       statusEl.textContent = `❌ ${e.message}`;
     }
+  } finally {
+    _masInProgress[idx] = false;
+    setLoading(masBtn, false);
   }
 }
 
@@ -4171,6 +4441,8 @@ generateSchedulePrompt = function() {
 async function saveClaudeSettings() {
   const key = document.getElementById('claudeApiKey').value.trim();
   if (!key) { alert('Enter your Gemini API key.'); return; }
+  const saveBtn = document.getElementById('geminiSaveBtn');
+  setLoading(saveBtn, true, '🔍 Verifying…');
   localStorage.setItem('yedda_claude_key', key);
   const s = document.getElementById('claudeStatus');
   s.style.color = 'var(--teal-deep)';
@@ -4178,15 +4450,23 @@ async function saveClaudeSettings() {
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, { headers: { 'x-goog-api-key': key } });
     const d = await r.json();
-    if (d.error) { s.style.color='#dc2626'; s.textContent = '❌ ' + d.error.message; return; }
+    if (d.error) { s.style.color='#dc2626'; s.textContent = '❌ ' + d.error.message; setLoading(saveBtn, false); return; }
     const names = (d.models || []).filter(m => m.supportedGenerationMethods?.includes('generateContent')).map(m => m.name.replace('models/',''));
-    if (names.length === 0) { s.style.color='#dc2626'; s.textContent = '❌ No generateContent models found for this key.'; return; }
+    if (names.length === 0) { s.style.color='#dc2626'; s.textContent = '❌ No generateContent models found for this key.'; setLoading(saveBtn, false); return; }
     window._geminiModel = names[0];
+    s.style.color = '#16a34a';
     s.textContent = `✅ Key saved. Using: ${names[0]}. Available: ${names.slice(0,4).join(', ')}`;
+    showToast('✅ Gemini key verified!', 'success');
+    updateSettingsProgress();
     setTimeout(() => s.textContent = '', 8000);
   } catch(e) {
+    s.style.color = '#16a34a';
     s.textContent = '✅ Key saved (could not verify models).';
+    showToast('✅ Gemini key saved', 'info');
+    updateSettingsProgress();
     setTimeout(() => s.textContent = '', 3000);
+  } finally {
+    setLoading(saveBtn, false);
   }
 }
 
@@ -4202,6 +4482,7 @@ openSettings = function() {
   if (t) document.getElementById('apifyToken').value = t;
   const ck = localStorage.getItem('yedda_claude_key');
   if (ck) document.getElementById('claudeApiKey').value = ck;
+  updateSettingsProgress();
 };
 
 /* restore generated posts from localStorage — called on load and after rebuild */
@@ -4253,9 +4534,9 @@ function refreshGenHeader() {
 }
 
 function deleteGeneratedPost(postId) {
-  let saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
-  saved = saved.filter(p => p._id !== postId);
-  localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
+  let saved = getGeneratedPosts().filter(p => p._id !== postId);
+  _saveGeneratedPosts(saved);
+  _genPostsCache = null; // invalidate so rebuild reads fresh
   rebuildGeneratedSection();
 }
 
@@ -4264,13 +4545,13 @@ function clearAllGeneratedPosts() {
   if (!saved.length) return;
   if (!confirm(`Remove all ${saved.length} auto-generated posts? This cannot be undone.`)) return;
   localStorage.removeItem('yedda_generated_posts');
+  _genPostsCache = null;
   rebuildGeneratedSection();
 }
 
 function rebuildGeneratedSection() {
   // Remap ratings by _id → new index before splicing, so ratings survive delete/rebuild
   const ratings = getRatings();
-  // Build _id → old rating map for generated posts
   const idRatingMap = {};
   for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
     if (posts[i]?._id && ratings[i]) idRatingMap[posts[i]._id] = ratings[i];
@@ -4279,21 +4560,20 @@ function rebuildGeneratedSection() {
   posts.splice(POSTS_BASELINE_COUNT);
   const sec = document.getElementById('generated-week-section');
   if (sec) sec.remove();
+  _genPostsCache = null; // force fresh read from localStorage
   restoreGeneratedPosts();
   _applyCollapseState();
 
-  // Rebuild ratings clean — keep baseline (0..POSTS_BASELINE_COUNT-1), re-map generated by _id
+  // Rebuild ratings clean — keep baseline, re-map generated by _id
   const cleanRatings = {};
-  const currentRatings = getRatings();
   for (let i = 0; i < POSTS_BASELINE_COUNT; i++) {
-    if (currentRatings[i]) cleanRatings[i] = currentRatings[i];
+    if (ratings[i]) cleanRatings[i] = ratings[i];
   }
   for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
-    if (posts[i]?._id && idRatingMap[posts[i]._id]) {
-      cleanRatings[i] = idRatingMap[posts[i]._id];
-    }
+    if (posts[i]?._id && idRatingMap[posts[i]._id]) cleanRatings[i] = idRatingMap[posts[i]._id];
   }
-  localStorage.setItem(RATINGS_KEY, JSON.stringify(cleanRatings));
+  _ratingsCache = null; // invalidate before save
+  _saveRatings(cleanRatings);
 
   loadRatings();
 }
@@ -4403,6 +4683,7 @@ function copyPrompt(btn, i) {
   clipWrite(p.prompt, () => {
     btn.textContent = '✅ Copied!';
     btn.classList.add('copied');
+    showToast('📸 Image prompt copied', 'info', 2000);
     setTimeout(() => { btn.textContent = '📸 Copy Image Prompt'; btn.classList.remove('copied'); }, 2000);
   });
 }
@@ -4413,6 +4694,7 @@ function copyPost(btn, i) {
   clipWrite(text, () => {
     btn.textContent = '✅ Copied!';
     btn.classList.add('copied');
+    showToast('📋 Post copied to clipboard', 'success', 2500);
     setTimeout(() => { btn.innerHTML = '📋 Copy Post'; btn.classList.remove('copied'); }, 2000);
   });
 }
@@ -4464,6 +4746,193 @@ setTimeout(() => {
   const first = document.querySelector('.case');
   if (first) first.classList.add('open');
 }, 400);
+
+/* ══════════════════════════════════════════════════
+   IMPROVEMENTS M1–M8 (2026-05-27)
+══════════════════════════════════════════════════ */
+
+/* M1 — Status bar live checks */
+async function checkApiStatus() {
+  const geminiOk = !!(window._geminiModel);
+  const geminiEl = document.getElementById('geminiStatus');
+  if (geminiEl) {
+    geminiEl.style.color = geminiOk ? '#16a34a' : '#dc2626';
+    geminiEl.textContent = (geminiOk ? '● ' : '○ ') + 'Gemini';
+  }
+  try {
+    const r = await fetch('http://localhost:8001/health', {signal: AbortSignal.timeout(2000)});
+    const masOk = r.ok;
+    const masEl = document.getElementById('masStatus');
+    if (masEl) {
+      masEl.style.color = masOk ? '#16a34a' : '#dc2626';
+      masEl.textContent = (masOk ? '● ' : '○ ') + 'MAS Review';
+    }
+  } catch {
+    const masEl = document.getElementById('masStatus');
+    if (masEl) { masEl.style.color = '#dc2626'; masEl.textContent = '○ MAS Review'; }
+  }
+  const qc = (window.postQueue || []).length;
+  const qEl = document.getElementById('queueStatusCount');
+  const qStatus = document.getElementById('queueStatus');
+  if (qEl) qEl.textContent = qc;
+  if (qStatus) qStatus.style.color = qc > 0 ? '#f59e0b' : '#8A9AA0';
+}
+setInterval(checkApiStatus, 30000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(checkApiStatus, 1000));
+
+/* M2 — Queue badge cleared state */
+function updateQueueBadgeV2(count) {
+  const badge = document.getElementById('queueBadge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline-block';
+    badge.style.background = '#F07830';
+    badge.style.color = '#fff';
+  } else {
+    badge.textContent = '✓';
+    badge.style.display = 'inline-block';
+    badge.style.background = '#16a34a';
+    badge.style.color = '#fff';
+    setTimeout(() => {
+      badge.textContent = '0';
+      badge.style.background = '#8A9AA0';
+      badge.style.color = '#fff';
+    }, 3000);
+  }
+}
+/* Patch existing updateQueueBadge to use new version */
+const _origUpdateQueueBadge = typeof updateQueueBadge !== 'undefined' ? updateQueueBadge : null;
+updateQueueBadge = function() {
+  if (_origUpdateQueueBadge) _origUpdateQueueBadge.apply(this, arguments);
+  const ratings = getRatings ? getRatings() : {};
+  const count = Object.values(ratings).filter(r => r === 'approved').length;
+  updateQueueBadgeV2(count);
+};
+
+/* M3 — Loading skeleton during generation */
+function showGenerationSkeleton() {
+  const container = document.getElementById('postsContainer') || document.querySelector('.posts-list') || document.querySelector('[id*="post"]');
+  if (!container) return;
+  container.innerHTML = [1,2,3].map(() => '<div style="height:120px;margin-bottom:12px;background:linear-gradient(90deg,#e8f6f8 25%,#f4fafb 50%,#e8f6f8 75%);background-size:200% 100%;animation:skshimmer 1.5s infinite;border-radius:8px"></div>').join('');
+}
+if (!document.getElementById('skshimmer-style')) {
+  const s = document.createElement('style');
+  s.id = 'skshimmer-style';
+  s.textContent = '@keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}';
+  document.head.appendChild(s);
+}
+
+/* M4 — Error toast */
+function showMarketingToast(message, type, duration) {
+  type = type || 'error'; duration = duration || 5000;
+  let container = document.getElementById('mktToastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'mktToastContainer';
+    container.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  const borderColor = type === 'success' ? '#16a34a' : type === 'info' ? '#4BADB8' : '#dc2626';
+  toast.style.cssText = 'background:#fff;border:1px solid ' + borderColor + ';color:#0E1B1E;padding:10px 16px;border-radius:8px;font-size:13px;max-width:320px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,0.1)';
+  toast.innerHTML = '<span style="flex:1">' + message + '</span><span style="cursor:pointer;color:#8A9AA0;flex-shrink:0" onclick="this.parentElement.remove()">✕</span>';
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), duration);
+}
+
+/* M5 — MAS review badge on post cards */
+const _origReviewWithMAS = reviewWithMAS;
+reviewWithMAS = async function(idx) {
+  await _origReviewWithMAS(idx);
+  // Badge update happens after original resolves — re-read post data
+  try {
+    const card = document.querySelector('[data-post-index="' + idx + '"]');
+    if (!card) return;
+    let badge = card.querySelector('.mas-review-badge');
+    if (!badge) { badge = document.createElement('div'); badge.className = 'mas-review-badge'; card.appendChild(badge); }
+    const statusEl = document.getElementById('masReviewStatus-' + idx);
+    const approved = statusEl && statusEl.style.color.includes('16a34a');
+    badge.style.cssText = 'margin-top:6px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block;' +
+      (approved ? 'color:#16a34a;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3)' : 'color:#dc2626;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3)');
+    badge.textContent = approved ? '✓ MAS APPROVED' : '✗ NEEDS REVISION';
+  } catch(_) {}
+};
+
+/* M6 — Mobile breakpoint for sticky preview */
+(function() {
+  const s = document.createElement('style');
+  s.textContent = '@media (max-width:720px){.post-preview-sticky{position:static!important}.content-split{flex-direction:column!important}}';
+  document.head.appendChild(s);
+})();
+
+/* M7 — Competitor refresh button */
+async function loadCompetitorData() {
+  const btn = document.getElementById('refreshCompetitors');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    const cacheKey = 'competitorData';
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try { renderCompetitorData && renderCompetitorData(JSON.parse(cached)); } catch(_) {}
+      return;
+    }
+    const lastUpdate = localStorage.getItem('competitorLastUpdate');
+    if (lastUpdate) {
+      const el = document.getElementById('competitorTimestamp');
+      if (el) el.textContent = 'Last updated: ' + new Date(lastUpdate).toLocaleString();
+    }
+  } catch(e) {
+    showMarketingToast('Could not load competitor data: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh'; }
+  }
+}
+
+/* Inject refresh button near competitor section */
+(function() {
+  const compSection = document.querySelector('#competitive') || document.querySelector('[id*="compet"]');
+  if (!compSection) return;
+  const h = compSection.querySelector('h2,h3,.section-eyebrow,.eyebrow');
+  if (!h) return;
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-left:12px;vertical-align:middle';
+  wrap.innerHTML = '<button id="refreshCompetitors" onclick="loadCompetitorData()" style="font-size:11px;padding:4px 10px;background:#f0f5f6;border:1px solid #e4edef;color:#5D7075;border-radius:6px;cursor:pointer">↻ Refresh</button>' +
+    '<span id="competitorTimestamp" style="font-size:10px;color:#8A9AA0"></span>';
+  h.parentNode.insertBefore(wrap, h.nextSibling);
+})();
+
+/* M8 — Keyboard shortcuts for approval queue */
+document.addEventListener('keydown', function(e) {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  const cards = Array.from(document.querySelectorAll('.queue-card, [data-queue-item], .queue-item'));
+  if (!cards.length) return;
+  let focused = cards.findIndex(c => c.classList.contains('focused'));
+  if (e.key === 'j' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (focused >= 0) cards[focused].classList.remove('focused');
+    focused = Math.min(focused + 1, cards.length - 1);
+    cards[focused].classList.add('focused');
+    cards[focused].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'k' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (focused >= 0) cards[focused].classList.remove('focused');
+    focused = Math.max(focused - 1, 0);
+    cards[focused].classList.add('focused');
+    cards[focused].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'a' && focused >= 0) {
+    cards[focused].querySelector('[data-action="approve"], .approve-btn, .btn-approve')?.click();
+  } else if (e.key === 'r' && focused >= 0) {
+    cards[focused].querySelector('[data-action="reject"], .reject-btn, .btn-reject')?.click();
+  } else if (e.key === '?') {
+    showMarketingToast('Shortcuts: J/K navigate · A approve · R reject', 'info', 4000);
+  }
+});
+(function() {
+  const s = document.createElement('style');
+  s.textContent = '.queue-card.focused,.queue-item.focused,[data-queue-item].focused{outline:2px solid #4BADB8;border-radius:8px}';
+  document.head.appendChild(s);
+})();
 </script>
 </body>
 </html>
