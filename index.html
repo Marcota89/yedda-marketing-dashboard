@@ -3111,21 +3111,26 @@ function _genSectionHeaderHTML(count) {
     </div>`;
 }
 
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function renderPost(i) {
   const p = posts[i];
+  if (!p) { console.warn('renderPost: no post at index', i); return; }
   const srcSearch = 'https://www.google.com/search?q=' + encodeURIComponent(p.src);
   document.getElementById('liPreview').innerHTML = `
     <div class="li-header">
       <div class="li-avatar"><img src="assets/yedda-logo.png" alt=""></div>
       <div class="li-meta">
-        <div class="li-name">${p.name}</div>
-        <div class="li-headline">${p.headline}</div>
-        <div class="li-time">${p.time}</div>
+        <div class="li-name">${esc(p.name)}</div>
+        <div class="li-headline">${esc(p.headline)}</div>
+        <div class="li-time">${esc(p.time)}</div>
       </div>
       <button class="li-follow">+ Follow</button>
     </div>
-    <div class="li-body">${p.body}</div>
-    <div class="li-tags">${p.tags}</div>
+    <div class="li-body">${esc(p.body).replace(/\n/g,'<br>')}</div>
+    <div class="li-tags">${esc(p.tags)}</div>
 
     <!-- Option B: clickable source -->
     <div class="li-src">
@@ -3134,7 +3139,7 @@ function renderPost(i) {
         <span class="tip" title="Reference article used as factual basis for this post. Click to open source in Google.">?</span>
       </div>
       <a class="li-src-link" href="${srcSearch}" target="_blank" rel="noopener">
-        ${p.src} ↗
+        ${esc(p.src)} ↗
       </a>
     </div>
 
@@ -3163,10 +3168,10 @@ function renderPost(i) {
     </div>
 
     <div class="li-meta-bar">
-      <div class="li-meta-item">Time<strong>${p.meta.time}</strong></div>
-      <div class="li-meta-item">Persona<strong>${p.meta.char}</strong></div>
-      <div class="li-meta-item">Audience<strong>${p.meta.target}</strong></div>
-      <div class="li-meta-item">Day<strong>${p.meta.day}</strong></div>
+      <div class="li-meta-item">Time<strong>${esc(p.meta.time)}</strong></div>
+      <div class="li-meta-item">Persona<strong>${esc(p.meta.char)}</strong></div>
+      <div class="li-meta-item">Audience<strong>${esc(p.meta.target)}</strong></div>
+      <div class="li-meta-item">Day<strong>${esc(p.meta.day)}</strong></div>
     </div>
   `;
 }
@@ -3261,14 +3266,15 @@ function renderQueue() {
   if (empty) empty.style.display = 'none';
   list.innerHTML = approved.map(([i]) => {
     const p = posts[parseInt(i)];
-    const hook = p.body.split('\n')[0].replace(/`/g,'');
+    if (!p) return '';
+    const hook = esc(p.body.split('\n')[0].replace(/`/g,''));
     const isSent = sent[i];
     return `
     <div class="queue-item">
-      <div class="queue-item-date">📅 ${getPostDate(i)}<br><span style="font-weight:400;color:var(--muted)">${getPostTime(i)}</span></div>
+      <div class="queue-item-date">📅 ${esc(getPostDate(i))}<br><span style="font-weight:400;color:var(--muted)">${esc(getPostTime(i))}</span></div>
       <div class="queue-item-body">
         <div class="queue-item-hook">${hook}</div>
-        <div class="queue-item-meta">${p.meta.char} · ${p.meta.target} · ${p.tags.split(' ').slice(0,2).join(' ')}</div>
+        <div class="queue-item-meta">${esc(p.meta.char)} · ${esc(p.meta.target)} · ${esc(p.tags.split(' ').slice(0,2).join(' '))}</div>
       </div>
       <div class="queue-item-actions">
         ${isSent ? `<span class="q-status sent">✅ Published</span>` : ''}
@@ -3590,12 +3596,12 @@ function renderApifyResults(articles) {
     <div class="news-item" id="nitem-${i}" onclick="toggleNewsItem(${i})">
       <input type="checkbox" id="ncheck-${i}" onclick="event.stopPropagation();toggleNewsItem(${i})">
       <div class="news-item-body">
-        <div class="news-item-title">${a.title || 'No title'}</div>
+        <div class="news-item-title">${esc(a.title || 'No title')}</div>
         <div class="news-item-meta">
           <span>${a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : ''}</span>
           ${a.url ? `<a href="${a.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View article ↗</a>` : ''}
         </div>
-        ${a.text ? `<div class="news-snippet">${a.text.slice(0,140)}…</div>` : ''}
+        ${a.text ? `<div class="news-snippet">${esc(a.text.slice(0,140))}…</div>` : ''}
       </div>
     </div>`).join('');
 
@@ -3649,7 +3655,7 @@ async function useSelectedNews() {
   } catch(e) {
     document.getElementById(loadingId)?.remove();
     resultsEl.insertAdjacentHTML('beforeend',
-      `<div style="margin-top:8px;font-size:12px;font-weight:700;color:#dc2626;">❌ Generation failed: ${e.message}</div>`);
+      `<div style="margin-top:8px;font-size:12px;font-weight:700;color:#dc2626;">❌ Generation failed: ${esc(e.message)}</div>`);
   }
 }
 
@@ -3698,7 +3704,7 @@ PROOF POINTS (include at least one per post):
 - 54% improvement in operational reporting accuracy
 - 55-second automated report generation
 - ROI 180–400% within 12 months of deployment
-- Carrefour POC: 52% shrinkage reduction in 11 days
+- Carrefour POC: 54% shrinkage reduction in 11 days
 
 TARGET AUDIENCE — write FOR these people:
 Primary: CEOs, COOs, Chief Digital Officers, VP Operations, Board Members at retail chains (100+ stores), logistics companies (500+ vehicles), F&B QSR operators (50+ locations)
@@ -3815,19 +3821,18 @@ function addGeneratedPostToCalendar(post) {
   // assign stable id if missing
   if (!post._id) post._id = Date.now().toString();
 
-  const idx = posts.length;
-  posts.push(post);
-
-  // cap at 30 — warn user, auto-trim oldest 10
+  // cap check BEFORE pushing to posts[] to avoid ghost index on rebuild
   const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
   if (saved.length >= 30) {
     if (!confirm(`You have ${saved.length} auto-generated posts saved.\nRemove the 10 oldest to continue?`)) return;
     saved.splice(0, 10);
-    // rebuild section after trim
     localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
     rebuildGeneratedSection();
-    return addGeneratedPostToCalendar(post);
+    return addGeneratedPostToCalendar(post); // posts[] is clean after rebuild
   }
+
+  const idx = posts.length;
+  posts.push(post);
   saved.push(post);
   localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
 
@@ -3931,7 +3936,7 @@ Return ONLY the comment text. No quotes, no explanation, no JSON.`;
   textEl.value = '';
 
   try {
-    const model = window._geminiModel || 'gemini-2.5-flash';
+    const model = getGeminiModel();
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4000,7 +4005,7 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
   textEl.value = '';
 
   try {
-    const model = window._geminiModel || 'gemini-2.5-flash';
+    const model = getGeminiModel();
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4079,10 +4084,11 @@ async function reviewWithMAS(idx) {
     posts[idx].body = cleanBody;
     posts[idx].tags = data.post_tags;
 
-    // persist updated generated posts
+    // persist updated generated posts — use _id for stable lookup
     const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
-    const genIdx = idx - (posts.length - saved.length);
-    if (genIdx >= 0 && saved[genIdx]) {
+    const postId = posts[idx]?._id;
+    const genIdx = postId ? saved.findIndex(p => p._id === postId) : -1;
+    if (genIdx >= 0) {
       saved[genIdx].body = cleanBody;
       saved[genIdx].tags = data.post_tags;
       localStorage.setItem('yedda_generated_posts', JSON.stringify(saved));
@@ -4158,34 +4164,38 @@ openSettings = function() {
 function restoreGeneratedPosts() {
   const saved = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
   saved.forEach((post, saveIdx) => {
-    if (!post._id) post._id = (Date.now() + saveIdx).toString();
-    const idx = posts.length;
-    posts.push(post);
-    const pillarClass = { 'Social Proof':'or', 'Engagement':'ink' }[post._pillar] || '';
-    const tagHtml = `<span class="post-tag ${pillarClass}">${post._pillar || 'Generated'}</span>`;
-    let weekSection = document.getElementById('generated-week-section');
-    if (!weekSection) {
-      weekSection = document.createElement('div');
-      weekSection.className = 'week-section';
-      weekSection.id = 'generated-week-section';
-      weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
-      const allWeeks = document.querySelectorAll('.week-section');
-      const lastWeek = allWeeks[allWeeks.length - 1];
-      lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+    try {
+      if (!post._id) post._id = (Date.now() + saveIdx).toString();
+      const idx = posts.length;
+      posts.push(post);
+      const pillarClass = { 'Social Proof':'or', 'Engagement':'ink' }[post._pillar] || '';
+      const tagHtml = `<span class="post-tag ${pillarClass}">${esc(post._pillar || 'Generated')}</span>`;
+      let weekSection = document.getElementById('generated-week-section');
+      if (!weekSection) {
+        weekSection = document.createElement('div');
+        weekSection.className = 'week-section';
+        weekSection.id = 'generated-week-section';
+        weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
+        const allWeeks = document.querySelectorAll('.week-section');
+        const lastWeek = allWeeks[allWeeks.length - 1];
+        lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+      }
+      weekSection.insertAdjacentHTML('beforeend', `
+        <div class="post-row" id="prow-${idx}" data-post-id="${esc(post._id)}" onclick="showPost(${idx}, this)">
+          <span class="rdot" id="rdot-${idx}"></span>
+          <div class="post-date"><div class="post-day">${esc(post._dateDay || '—')}</div><div class="post-month">${esc(post._dateMonth || '—')}</div></div>
+          <div>
+            <div class="post-hook">"${esc(post._hookPreview || post.src)}"</div>
+            <div class="post-angle">${esc((post.src || '').split('·')[0].trim())} · ${esc((post.meta||{}).char || 'Abbey')} · Auto-generated</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
+            ${tagHtml}
+            <button class="gen-del-btn" onclick="deleteGeneratedPost('${esc(post._id)}')" title="Delete post">✕</button>
+          </div>
+        </div>`);
+    } catch(err) {
+      console.error('restoreGeneratedPosts: failed to restore post', saveIdx, err);
     }
-    weekSection.insertAdjacentHTML('beforeend', `
-      <div class="post-row" id="prow-${idx}" data-post-id="${post._id}" onclick="showPost(${idx}, this)">
-        <span class="rdot" id="rdot-${idx}"></span>
-        <div class="post-date"><div class="post-day">${post._dateDay || '—'}</div><div class="post-month">${post._dateMonth || '—'}</div></div>
-        <div>
-          <div class="post-hook">"${post._hookPreview || post.src}"</div>
-          <div class="post-angle">${(post.src || '').split('·')[0].trim()} · ${(post.meta||{}).char || 'Abbey'} · Auto-generated</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
-          ${tagHtml}
-          <button class="gen-del-btn" onclick="deleteGeneratedPost('${post._id}')" title="Delete post">✕</button>
-        </div>
-      </div>`);
   });
 }
 restoreGeneratedPosts();
@@ -4214,11 +4224,31 @@ function clearAllGeneratedPosts() {
 }
 
 function rebuildGeneratedSection() {
+  // Remap ratings by _id → new index before splicing, so ratings survive delete/rebuild
+  const ratings = getRatings();
+  // Build _id → old rating map for generated posts
+  const idRatingMap = {};
+  for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
+    if (posts[i]?._id && ratings[i]) idRatingMap[posts[i]._id] = ratings[i];
+  }
+
   posts.splice(POSTS_BASELINE_COUNT);
   const sec = document.getElementById('generated-week-section');
   if (sec) sec.remove();
   restoreGeneratedPosts();
   _applyCollapseState();
+
+  // Re-apply ratings at new indices using _id map
+  if (Object.keys(idRatingMap).length) {
+    const newRatings = getRatings();
+    for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
+      if (posts[i]?._id && idRatingMap[posts[i]._id]) {
+        newRatings[i] = idRatingMap[posts[i]._id];
+      }
+    }
+    localStorage.setItem(RATINGS_KEY, JSON.stringify(newRatings));
+  }
+
   loadRatings();
 }
 
@@ -4238,7 +4268,7 @@ function toggleWeekCollapse(header) {
 // restore week collapse states on load
 (function restoreWeekCollapseStates() {
   document.querySelectorAll('.week-header').forEach(header => {
-    if (header.id === 'generated-week-section') return; // handled separately
+    if (header.closest('.week-section')?.id === 'generated-week-section') return; // handled separately
     const label = header.textContent.trim();
     const key = 'yedda_week_collapsed_' + label.replace(/[^a-z0-9]/gi, '').slice(0, 16);
     if (localStorage.getItem(key) === '1') {
@@ -4297,6 +4327,20 @@ function filterGeneratedPosts(filter) {
       row.classList.toggle('gen-hidden', rating !== 'rejected');
     }
   });
+  // empty state
+  const visible = [...sec.querySelectorAll('.post-row')].filter(r => !r.classList.contains('gen-hidden'));
+  let emptyEl = sec.querySelector('.gen-empty-state');
+  if (visible.length === 0 && filter !== 'all') {
+    if (!emptyEl) {
+      emptyEl = document.createElement('div');
+      emptyEl.className = 'gen-empty-state';
+      emptyEl.style.cssText = 'padding:16px 18px;color:var(--text-soft);font-size:13px;';
+      sec.appendChild(emptyEl);
+    }
+    emptyEl.textContent = `No posts with status "${filter}".`;
+  } else if (emptyEl) {
+    emptyEl.remove();
+  }
 }
 
 function copyPrompt(btn, i) {
