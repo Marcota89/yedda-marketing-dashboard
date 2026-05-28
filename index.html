@@ -1802,6 +1802,75 @@ button[data-loading] {
   pointer-events: none;
 }
 
+/* ═══ ACCESSIBILITY — FOCUS INDICATORS ═══ */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ═══ ACCESSIBILITY — REDUCED MOTION ═══ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .yedda-toast { animation: none !important; }
+}
+
+/* ═══ STATUS COLORS (replaces hardcoded JS hex) ═══ */
+.st-ok  { color: #16a34a !important; }
+.st-err { color: #dc2626 !important; }
+.st-warn { color: #f59e0b !important; }
+.st-info { color: var(--teal-deep) !important; }
+.st-muted { color: var(--muted) !important; }
+
+/* ═══ WORD BREAK — long content ═══ */
+.post-hook, .post-angle, .li-post-body, .news-item-title,
+.roi-output-text, .roiCommentText, .roiPostText {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ═══ PLACEHOLDER CONTRAST ═══ */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* ═══ TABLET BREAKPOINT 768px ═══ */
+@media (max-width: 768px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+  .hero h1 { font-size: clamp(34px, 7vw, 52px); }
+  .hero-sub { font-size: 15px; }
+  .sec-title { font-size: clamp(26px, 5vw, 36px); }
+  .post-layout { grid-template-columns: 1fr; }
+  .post-list { border-right: none; border-bottom: 1px solid var(--line); max-height: 320px; overflow-y: auto; }
+  .chars { grid-template-columns: 1fr; }
+  .score { flex-direction: column; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .nav-links { display: none; }
+  .dels { grid-template-columns: 1fr; }
+  .visuals-grid { grid-template-columns: repeat(2, 1fr); }
+  .modal-box { margin: 16px; border-radius: 12px; }
+  .roi-section-inner { padding: 20px 16px; }
+}
+
+/* ═══ WILL-CHANGE on animated elements ═══ */
+.nav-live-dot { will-change: box-shadow; }
+.hero-float-img { will-change: transform; }
+.hero-float-card { will-change: transform; }
+.yedda-toast { will-change: transform, opacity; }
+.yd-spinner { will-change: transform; }
+.apify-spinner { will-change: transform; }
+
 /* ═══ NEWS EMPTY STATE ═══ */
 .news-empty-state {
   padding: 20px 16px;
@@ -1826,7 +1895,7 @@ button[data-loading] {
 <nav class="nav">
   <div class="nav-inner">
     <a href="#top" class="nav-logo">
-      <img src="assets/yedda-logo.png" alt="Yedda.ai">
+      <img src="assets/yedda-logo.png" alt="Yedda.ai" width="120" height="34" loading="eager">
       <span class="nav-pill">Command Center</span>
     </a>
     <div class="nav-links">
@@ -1895,7 +1964,7 @@ button[data-loading] {
         <span class="hero-dot-1"></span>
         <span class="hero-dot-2"></span>
         <span class="hero-dot-3"></span>
-        <img class="abbey-img" src="assets/abbey.png" alt="Abbey — Yedda AI Guide">
+        <img class="abbey-img" src="assets/abbey.png" alt="Abbey — Yedda AI Guide" width="320" height="320" loading="lazy">
       </div>
       <div class="hero-float-card a">
         <div class="hero-float-ico teal">
@@ -2670,14 +2739,14 @@ button[data-loading] {
       <h2 class="sec-title">Weekly creatives.</h2>
     </div>
     <div class="visuals-grid reveal">
-      <div class="visual"><img src="assets/posts/post-1.png" alt=""><div class="visual-cap"><div class="visual-date">Mon Apr 21 · Abbey</div><div class="visual-hook">95% of AI pilots don't scale</div></div></div>
-      <div class="visual"><img src="assets/posts/post-2.png" alt=""><div class="visual-cap"><div class="visual-date or">Tue Apr 22 · Kai</div><div class="visual-hook">3 in 10 fraud attempts are AI-generated</div></div></div>
-      <div class="visual"><img src="assets/posts/post-3.png" alt=""><div class="visual-cap"><div class="visual-date">Thu Apr 24 · Kai</div><div class="visual-hook">2026: AI stops being a pilot in logistics</div></div></div>
-      <div class="visual"><img src="assets/posts/post-4.png" alt=""><div class="visual-cap"><div class="visual-date">Fri Apr 25 · Abbey</div><div class="visual-hook">80% with results · ⅔ haven't started</div></div></div>
-      <div class="visual"><img src="assets/posts/post-5.png" alt=""><div class="visual-cap"><div class="visual-date">Mon Apr 28 · Abbey</div><div class="visual-hook">79% struggle with AI adoption</div></div></div>
-      <div class="visual"><img src="assets/posts/post-6.png" alt=""><div class="visual-cap"><div class="visual-date or">Tue Apr 29 · Kai</div><div class="visual-hook">800 agents · one operation</div></div></div>
-      <div class="visual"><img src="assets/posts/post-7.png" alt=""><div class="visual-cap"><div class="visual-date">Thu May 1 · Kai</div><div class="visual-hook">9/10 retailers increasing AI</div></div></div>
-      <div class="visual"><img src="assets/posts/post-8.png" alt=""><div class="visual-cap"><div class="visual-date">Fri May 2 · Abbey</div><div class="visual-hook">77% more revenue per rep</div></div></div>
+      <div class="visual"><img src="assets/posts/post-1.png" alt="Post: 95% of AI pilots don't scale" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Mon Apr 21 · Abbey</div><div class="visual-hook">95% of AI pilots don't scale</div></div></div>
+      <div class="visual"><img src="assets/posts/post-2.png" alt="Post: 3 in 10 fraud attempts are AI-generated" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date or">Tue Apr 22 · Kai</div><div class="visual-hook">3 in 10 fraud attempts are AI-generated</div></div></div>
+      <div class="visual"><img src="assets/posts/post-3.png" alt="Post: 2026 AI stops being a pilot in logistics" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Thu Apr 24 · Kai</div><div class="visual-hook">2026: AI stops being a pilot in logistics</div></div></div>
+      <div class="visual"><img src="assets/posts/post-4.png" alt="Post: 80% with results" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Fri Apr 25 · Abbey</div><div class="visual-hook">80% with results · ⅔ haven't started</div></div></div>
+      <div class="visual"><img src="assets/posts/post-5.png" alt="Post: 79% struggle with AI adoption" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Mon Apr 28 · Abbey</div><div class="visual-hook">79% struggle with AI adoption</div></div></div>
+      <div class="visual"><img src="assets/posts/post-6.png" alt="Post: 800 agents one operation" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date or">Tue Apr 29 · Kai</div><div class="visual-hook">800 agents · one operation</div></div></div>
+      <div class="visual"><img src="assets/posts/post-7.png" alt="Post: 9 in 10 retailers increasing AI" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Thu May 1 · Kai</div><div class="visual-hook">9/10 retailers increasing AI</div></div></div>
+      <div class="visual"><img src="assets/posts/post-8.png" alt="Post: 77% more revenue per rep" width="400" height="500" loading="lazy"><div class="visual-cap"><div class="visual-date">Fri May 2 · Abbey</div><div class="visual-hook">77% more revenue per rep</div></div></div>
     </div>
   </div>
 </section>
@@ -2694,7 +2763,7 @@ button[data-loading] {
 
       <div class="char a">
         <div class="char-vis abbey">
-          <img src="assets/abbey.png" alt="Abbey">
+          <img src="assets/abbey.png" alt="Abbey" width="200" height="200" loading="lazy">
         </div>
         <div class="char-body">
           <div class="char-name">Abbey</div>
@@ -2705,7 +2774,7 @@ button[data-loading] {
 
       <div class="char k">
         <div class="char-vis kai">
-          <img src="assets/kai-new.png" alt="Kai">
+          <img src="assets/kai-new.png" alt="Kai" width="200" height="200" loading="lazy">
         </div>
         <div class="char-body">
           <div class="char-name">Kai</div>
@@ -2894,7 +2963,7 @@ button[data-loading] {
   <div class="container">
     <div class="footer-top">
       <div>
-        <div class="footer-logo"><img src="assets/yedda-logo.png" alt="Yedda.ai" style="filter:brightness(0) invert(1);opacity:0.9;"></div>
+        <div class="footer-logo"><img src="assets/yedda-logo.png" alt="Yedda.ai" width="120" height="34" loading="lazy" style="filter:brightness(0) invert(1);opacity:0.9;"></div>
         <p class="footer-brand-desc">Intelligence Augmentation for enterprise operations. AI + IA in retail, logistics, F&amp;B and manufacturing — active across APAC, Middle East, Europe and LATAM.</p>
       </div>
       <div class="footer-col">
@@ -3340,7 +3409,7 @@ function renderPost(i) {
   const srcSearch = 'https://www.google.com/search?q=' + encodeURIComponent(p.src);
   document.getElementById('liPreview').innerHTML = `
     <div class="li-header">
-      <div class="li-avatar"><img src="assets/yedda-logo.png" alt=""></div>
+      <div class="li-avatar"><img src="assets/yedda-logo.png" alt="Yedda.ai" width="48" height="48" loading="lazy"></div>
       <div class="li-meta">
         <div class="li-name">${esc(p.name)}</div>
         <div class="li-headline">${esc(p.headline)}</div>
@@ -4041,12 +4110,15 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   let lastError = '';
   for (let attempt = 0; attempt < 4; attempt++) {
     const model = models[Math.min(attempt, models.length - 1)];
-    const useJsonMime = attempt < 2; // first 2 attempts force JSON mime type
+    const useJsonMime = attempt < 2;
+    const ctrl = new AbortController();
+    const tId = setTimeout(() => ctrl.abort(), 15000); // 15s per attempt
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: makeBody(useJsonMime) }
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, signal: ctrl.signal, body: makeBody(useJsonMime) }
       );
+      clearTimeout(tId);
       if (response.status === 503 || response.status === 429) {
         lastError = 'Model overloaded';
         await new Promise(r => setTimeout(r, 3000));
@@ -4063,7 +4135,6 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
         continue;
       }
       const data = await response.json();
-      // check for safety block
       const candidate = data.candidates?.[0];
       if (!candidate) { lastError = 'No candidate returned'; continue; }
       if (candidate.finishReason === 'SAFETY') { lastError = 'Safety filter triggered'; continue; }
@@ -4071,6 +4142,8 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
       if (raw) break;
       lastError = 'Empty text in response';
     } catch(e) {
+      clearTimeout(tId);
+      if (e.name === 'AbortError') { lastError = 'Gemini timeout (15s) — model too slow, retrying'; continue; }
       lastError = e.message;
       if (attempt === 3) throw new Error(lastError);
     }
@@ -4228,27 +4301,32 @@ Return ONLY the comment text. No quotes, no explanation, no JSON.`;
   outputEl.style.display = 'block';
   textEl.value = '';
 
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), 20000);
   try {
     const model = getGeminiModel();
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      signal: ctrl.signal,
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
         generationConfig: { maxOutputTokens: 512, temperature: 0.8 }
       })
     });
+    clearTimeout(tId);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     const data = await res.json();
     const comment = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
     if (!comment) throw new Error('Empty response');
     textEl.value = comment;
+    statusEl.className = 'modal-status st-ok';
     statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
-    statusEl.style.color = '#16a34a';
     showToast('✅ Comment generated!', 'success');
   } catch(e) {
-    statusEl.textContent = `❌ Error: ${e.message}`;
-    statusEl.style.color = '#dc2626';
+    clearTimeout(tId);
+    statusEl.className = 'modal-status st-err';
+    statusEl.textContent = e.name === 'AbortError' ? '❌ Timeout — Gemini took too long. Try again.' : `❌ Error: ${e.message}`;
     showToast('❌ Generation failed', 'error');
   } finally {
     setLoading(btn, false);
@@ -4304,26 +4382,34 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
   textEl.value = '';
 
   try {
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), 20000);
+  try {
     const model = getGeminiModel();
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      signal: ctrl.signal,
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
         generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
       })
     });
+    clearTimeout(tId);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     const data = await res.json();
     const post = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
     if (!post) throw new Error('Empty response');
     textEl.value = post;
+    statusEl.className = 'modal-status st-ok';
     statusEl.textContent = postType === 'poll'
       ? '✅ Post ready — copy text, then create the poll on LinkedIn (LinkedIn → Create a post → Add a poll).'
       : '✅ Post ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
     showToast('✅ Post generated!', 'success');
   } catch(e) {
-    statusEl.textContent = `❌ Error: ${e.message}`;
+    clearTimeout(tId);
+    statusEl.className = 'modal-status st-err';
+    statusEl.textContent = e.name === 'AbortError' ? '❌ Timeout — Gemini took too long. Try again.' : `❌ Error: ${e.message}`;
     showToast('❌ Generation failed', 'error');
   } finally {
     setLoading(btn, false);
@@ -4404,18 +4490,18 @@ async function reviewWithMAS(idx) {
     renderPost(idx);
 
     if (data.approved) {
-      statusEl.style.color = '#16a34a';
+      statusEl.className = 'mas-status st-ok';
       const rewriteNote = data.rewrites_done > 0
         ? ` ${data.rewrites_done} revision${data.rewrites_done > 1 ? 's' : ''} applied — post updated in preview.`
         : ' No revisions needed — post is brand-aligned.';
       statusEl.textContent = `✅ Approved!${rewriteNote}`;
       showToast(data.rewrites_done > 0 ? '✅ MAS rewrote ' + data.rewrites_done + ' violation(s)' : '✅ Post brand-aligned', 'success');
     } else {
-      statusEl.style.color = '#dc2626';
+      statusEl.className = 'mas-status st-err';
       statusEl.textContent = `⚠️ ${data.message}`;
     }
   } catch(e) {
-    statusEl.style.color = '#dc2626';
+    statusEl.className = 'mas-status st-err';
     if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
       statusEl.textContent = '❌ MAS API not running. Start it with: python scripts/review_api.py (in yedda-mas-step1)';
     } else {
@@ -4447,21 +4533,25 @@ async function saveClaudeSettings() {
   const s = document.getElementById('claudeStatus');
   s.style.color = 'var(--teal-deep)';
   s.textContent = '🔍 Testing key — checking available models…';
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, { headers: { 'x-goog-api-key': key } });
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, { headers: { 'x-goog-api-key': key }, signal: ctrl.signal });
+    clearTimeout(tId);
     const d = await r.json();
-    if (d.error) { s.style.color='#dc2626'; s.textContent = '❌ ' + d.error.message; setLoading(saveBtn, false); return; }
+    if (d.error) { s.className = 'modal-status st-err'; s.textContent = '❌ ' + d.error.message; setLoading(saveBtn, false); return; }
     const names = (d.models || []).filter(m => m.supportedGenerationMethods?.includes('generateContent')).map(m => m.name.replace('models/',''));
-    if (names.length === 0) { s.style.color='#dc2626'; s.textContent = '❌ No generateContent models found for this key.'; setLoading(saveBtn, false); return; }
+    if (names.length === 0) { s.className = 'modal-status st-err'; s.textContent = '❌ No generateContent models found for this key.'; setLoading(saveBtn, false); return; }
     window._geminiModel = names[0];
-    s.style.color = '#16a34a';
+    s.className = 'modal-status st-ok';
     s.textContent = `✅ Key saved. Using: ${names[0]}. Available: ${names.slice(0,4).join(', ')}`;
     showToast('✅ Gemini key verified!', 'success');
     updateSettingsProgress();
     setTimeout(() => s.textContent = '', 8000);
   } catch(e) {
-    s.style.color = '#16a34a';
-    s.textContent = '✅ Key saved (could not verify models).';
+    clearTimeout(tId);
+    s.className = 'modal-status st-ok';
+    s.textContent = e.name === 'AbortError' ? '✅ Key saved (verification timed out — key stored).' : '✅ Key saved (could not verify models).';
     showToast('✅ Gemini key saved', 'info');
     updateSettingsProgress();
     setTimeout(() => s.textContent = '', 3000);
@@ -4769,7 +4859,7 @@ async function checkApiStatus() {
     }
   } catch {
     const masEl = document.getElementById('masStatus');
-    if (masEl) { masEl.style.color = '#dc2626'; masEl.textContent = '○ MAS Review'; }
+    if (masEl) { masEl.className = 'st-err'; masEl.textContent = '○ MAS Review'; }
   }
   const qc = (window.postQueue || []).length;
   const qEl = document.getElementById('queueStatusCount');
@@ -4777,7 +4867,8 @@ async function checkApiStatus() {
   if (qEl) qEl.textContent = qc;
   if (qStatus) qStatus.style.color = qc > 0 ? '#f59e0b' : '#8A9AA0';
 }
-setInterval(checkApiStatus, 30000);
+const _apiStatusInterval = setInterval(checkApiStatus, 30000);
+window.addEventListener('beforeunload', () => clearInterval(_apiStatusInterval));
 document.addEventListener('DOMContentLoaded', () => setTimeout(checkApiStatus, 1000));
 
 /* M2 — Queue badge cleared state */
