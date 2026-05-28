@@ -4397,7 +4397,7 @@ async function generateRoiComment(btn) {
     experience: 'Share a brief, specific operational outcome or experience relevant to the post topic. Real context from enterprise Visual AI deployments. Never mention client names.'
   };
 
-  const systemPrompt = `You are Roi, CEO and co-founder of Yedda.ai, writing a LinkedIn comment as a Visual AI thought leader and enterprise operations expert.
+  const systemInstruction = `You are Roi, CEO and co-founder of Yedda.ai, writing a LinkedIn comment as a Visual AI thought leader and enterprise operations expert.
 
 YOUR IDENTITY:
 - Deep expertise in Visual AI applied to retail, logistics, F&B, manufacturing operations
@@ -4407,19 +4407,20 @@ YOUR IDENTITY:
 
 COMMENT RULES:
 - Max 3 sentences. Concise is powerful.
+- CRITICAL: Your comment MUST directly reference the specific topic, data, or situation described in the post — never give a generic response
 - Peer-to-peer tone — you are talking to an equal, not pitching
 - Never mention Yedda.ai by name (you are engaging as a person, not as a company)
 - Never use: revolutionary, game-changing, real-time, AI-powered, seamless, robust, disruptive
-- Use "Visual AI" not "AI" when referencing the technology
+- Use "Visual AI" only if it genuinely connects to the post topic — do not force it
 - End with a question only if style calls for it
 - No hashtags in comments
 - No emojis unless the post is casual/celebratory
 
 COMMENT STYLE: ${styleGuides[style]}
 
-Return ONLY the comment text. No quotes, no explanation, no JSON.`;
+Return ONLY the comment text. No quotes, no explanation, no JSON. Write complete sentences — never cut off mid-sentence.`;
 
-  const userPrompt = `Write a LinkedIn comment responding to this post:\n\n${postText}`;
+  const userPrompt = `First, identify the core claim, data point, or insight from this post. Then write a comment that directly engages with that specific content.\n\nPOST:\n${postText}`;
 
   statusEl.textContent = '⏳ Generating comment...';
   outputEl.style.display = 'block';
@@ -4434,15 +4435,18 @@ Return ONLY the comment text. No quotes, no explanation, no JSON.`;
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       signal: ctrl.signal,
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
-        generationConfig: { maxOutputTokens: 512, temperature: 0.8 }
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.75 }
       })
     });
     clearTimeout(tId);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     const data = await res.json();
-    const comment = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const candidate = data.candidates?.[0];
+    const comment = candidate?.content?.parts?.[0]?.text?.trim() || '';
     if (!comment) throw new Error('Empty response');
+    if (candidate?.finishReason === 'MAX_TOKENS') showToast('⚠️ Comment may be truncated — edit before posting', 'error', 5000);
     textEl.value = comment;
     statusEl.className = 'modal-status st-ok';
     statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
