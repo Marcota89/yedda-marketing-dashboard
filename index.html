@@ -2633,7 +2633,10 @@ textarea::placeholder {
     <div class="sched-gen-box reveal" style="max-width:720px;">
       <div class="sched-field">
         <label>Paste the LinkedIn post you want to comment on</label>
-        <textarea id="roiPostInput" rows="5" class="sched-input" style="width:100%;resize:vertical;" placeholder="Paste the full LinkedIn post text here..."></textarea>
+        <textarea id="roiPostInput" rows="5" class="sched-input" style="width:100%;resize:vertical;" placeholder="Paste the full text of the LinkedIn post here (not the URL — copy the actual post content)..." oninput="checkRoiPostInput(this)"></textarea>
+        <div id="roiPostUrlWarning" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(240,120,48,0.1);border:1px solid rgba(240,120,48,0.35);border-radius:6px;font-size:12px;color:#c2540a;">
+          ⚠️ <strong>URL detected.</strong> The Comment Generator needs the <em>post text</em>, not a link — Gemini cannot open URLs. Open the LinkedIn post, select all the text, copy and paste it here.
+        </div>
       </div>
       <div class="sched-field" style="margin-top:12px;">
         <label>Comment style</label>
@@ -4363,6 +4366,14 @@ function addGeneratedPostToCalendar(post) {
     </div>`);
 }
 
+function checkRoiPostInput(el) {
+  const val = el.value.trim();
+  const warn = document.getElementById('roiPostUrlWarning');
+  if (!warn) return;
+  const isUrl = /^https?:\/\//i.test(val) && !val.includes('\n') && val.length < 500;
+  warn.style.display = isUrl ? 'block' : 'none';
+}
+
 async function generateRoiComment(btn) {
   const postText = document.getElementById('roiPostInput').value.trim();
   const style = document.getElementById('roiCommentStyle').value;
@@ -4372,6 +4383,8 @@ async function generateRoiComment(btn) {
   const apiKey = localStorage.getItem('yedda_claude_key') || '';
 
   if (!postText) { alert('Paste a LinkedIn post first.'); return; }
+  const isUrl = /^https?:\/\//i.test(postText) && !postText.includes('\n') && postText.length < 500;
+  if (isUrl) { alert('Please paste the post text, not the URL.\n\nOpen the LinkedIn post → select all text → copy → paste here.'); return; }
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
 
   setLoading(btn, true, '⏳ Generating…');
