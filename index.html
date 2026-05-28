@@ -4663,11 +4663,12 @@ async function saveClaudeSettings() {
     clearTimeout(tId);
     const d = await r.json();
     if (d.error) { s.className = 'modal-status st-err'; s.textContent = '❌ ' + d.error.message; setLoading(saveBtn, false); return; }
-    const names = (d.models || []).filter(m => m.supportedGenerationMethods?.includes('generateContent')).map(m => m.name.replace('models/',''));
+    const names = (d.models || []).filter(m => m.supportedGenerationMethods?.includes('generateContent')).map(m => m.name.replace('models/','')).filter(n => !_DEPRECATED_GEMINI_MODELS.some(d => n.includes(d)));
     if (names.length === 0) { s.className = 'modal-status st-err'; s.textContent = '❌ No generateContent models found for this key.'; setLoading(saveBtn, false); return; }
-    window._geminiModel = names[0];
+    const preferred = names.find(n => n.includes('2.5-flash') || n.includes('2.0-flash')) || names[0];
+    window._geminiModel = preferred;
     s.className = 'modal-status st-ok';
-    s.textContent = `✅ Key saved. Using: ${names[0]}. Available: ${names.slice(0,4).join(', ')}`;
+    s.textContent = `✅ Key saved. Using: ${preferred}. Available: ${names.slice(0,4).join(', ')}`;
     showToast('✅ Gemini key verified!', 'success');
     updateSettingsProgress();
     setTimeout(() => s.textContent = '', 8000);
@@ -4683,8 +4684,11 @@ async function saveClaudeSettings() {
   }
 }
 
+const _DEPRECATED_GEMINI_MODELS = ['gemini-1.5-flash-002','gemini-1.5-flash-001','gemini-1.5-pro-002','gemini-1.5-pro-001','gemini-1.0-pro'];
 function getGeminiModel() {
-  return window._geminiModel || 'gemini-2.5-flash';
+  const m = window._geminiModel || '';
+  if (!m || _DEPRECATED_GEMINI_MODELS.some(d => m.includes(d))) return 'gemini-2.5-flash';
+  return m;
 }
 
 /* load Apify token + Claude key into modal on open */
