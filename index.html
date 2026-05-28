@@ -4389,63 +4389,126 @@ async function generateRoiComment(btn) {
 
   setLoading(btn, true, '⏳ Generating…');
 
-  const styleGuides = {
-    insight: 'Add a genuine insight that extends the conversation. Reference a specific data point, operational outcome, or experience with Visual AI in enterprise settings. Do not just agree — add something new.',
-    challenge: 'Respectfully offer a different or more nuanced perspective. Not confrontational — intellectually honest. Start with what you agree with, then pivot to your view.',
-    agree: 'Validate the post\'s core point and amplify it with a Visual AI or Intelligence Augmentation angle. Make it additive, not repetitive.',
-    question: 'Ask one sharp strategic question that will make the author and readers think. The question should reveal depth of expertise, not be superficial.',
-    experience: 'Share a brief, specific operational outcome or experience relevant to the post topic. Real context from enterprise Visual AI deployments. Never mention client names.'
+  // ── FASE 4: Anti-AI phrase detector ──────────────────────────────────
+  const _AI_TELLS = [
+    'great point','absolutely','this resonates','well said','insightful',
+    'thank you for sharing','spot on','indeed','certainly','absolutely right',
+    'i couldn\'t agree more','fascinating','thought-provoking','valuable insight',
+    'kudos','bravo','well articulated','perfectly said','couldn\'t have said'
+  ];
+  function _hasAiTells(text) {
+    const lower = text.toLowerCase();
+    return _AI_TELLS.some(phrase => lower.includes(phrase));
+  }
+
+  // ── FASE 1: Chain-of-thought prompt ──────────────────────────────────
+  // Step 1 runs internally via JSON output — model extracts the key moment first
+  // Step 2 uses that anchor to write a grounded comment
+
+  const styleInstructions = {
+    insight: 'Add one specific insight not already in the post — a data point, operational pattern, or consequence the author may not have considered. Do not just agree.',
+    challenge: 'Start by acknowledging the strongest part of their argument, then offer a concrete counter-perspective. Stay collegial — this is intellectual honesty, not criticism.',
+    agree: 'Validate their core point in one sentence, then build on it with a specific angle or implication they did not mention. Additive, not repetitive.',
+    question: 'Ask exactly one question that reveals depth of expertise and will make the author and readers think harder. Not a softball — a question only someone with real experience would ask.',
+    experience: 'Share one concrete operational situation (no client names) that directly parallels what the post describes. Be specific about the context and outcome.'
   };
 
-  const systemInstruction = `You are Roi, CEO and co-founder of Yedda.ai, writing a LinkedIn comment as a Visual AI thought leader and enterprise operations expert.
+  // ── FASE 3: Few-shot examples of Roi's real voice ─────────────────────
+  const fewShotExamples = `
+EXAMPLES OF ROI'S VOICE (study the pattern, do not copy the content):
 
-YOUR IDENTITY:
-- Deep expertise in Visual AI applied to retail, logistics, F&B, manufacturing operations
-- You think about intelligence augmentation — how Visual AI gives operations leaders clarity they never had before
-- You have seen what works (and what fails) in enterprise AI deployments across APAC, LATAM, Middle East, Europe
-- You are building Yedda.ai to solve real operational problems, not to chase AI trends
+Post about: robot working 200 hours autonomously
+Comment (insight): "The hours are impressive, but the real test is exception handling — what happened during the moments the robot couldn't decide? That gap between autonomous operation and supervised recovery is where most enterprise deployments stall."
 
-COMMENT RULES:
-- Max 3 sentences. Concise is powerful.
-- CRITICAL: Your comment MUST directly reference the specific topic, data, or situation described in the post — never give a generic response
-- Peer-to-peer tone — you are talking to an equal, not pitching
-- Never mention Yedda.ai by name (you are engaging as a person, not as a company)
-- Never use: revolutionary, game-changing, real-time, AI-powered, seamless, robust, disruptive
-- Use "Visual AI" only if it genuinely connects to the post topic — do not force it
-- End with a question only if style calls for it
-- No hashtags in comments
-- No emojis unless the post is casual/celebratory
+Post about: supply chain disruption and clean energy logistics
+Comment (experience): "We've seen this exact tension in logistics operations — moving oversized, fragile cargo on tight compliance windows. The bottleneck is rarely transport capacity; it's the decision latency between when an exception is detected and when the right person acts on it."
 
-COMMENT STYLE: ${styleGuides[style]}
+Post about: 80% of companies struggling with AI adoption
+Comment (challenge): "The 80% stat is real, but I'd push back on the framing — most aren't failing at AI, they're failing at defining what success looks like before they start. A pilot that shows 30% efficiency gain but has no owner in the org will die regardless of the technology."
 
-Return ONLY the comment text. No quotes, no explanation, no JSON. Write complete sentences — never cut off mid-sentence.`;
+Post about: a personal story of building a company
+Comment (agree): "The part about the first client who believed before you had proof — that's the moment that separates founders from people who tried. That trust is the real funding round."
 
-  const userPrompt = `First, identify the core claim, data point, or insight from this post. Then write a comment that directly engages with that specific content.\n\nPOST:\n${postText}`;
+WHAT MAKES THESE COMMENTS WORK:
+- They reference something SPECIFIC from the post (never generic)
+- They add a perspective the author did not have
+- They sound like a person thinking out loud, not a press release
+- "Visual AI" only appears when directly relevant — it is never forced
+- No filler openers: no "Great post", no "This resonates", no "Absolutely"
+`;
 
-  statusEl.textContent = '⏳ Generating comment...';
+  const systemInstruction = `You are Roi, a founder and enterprise operations expert writing a LinkedIn comment. You think in operational specifics — what actually happens on the floor, in the system, in the org. You have run deployments across retail, logistics, F&B, manufacturing in APAC, LATAM, Middle East, Europe.
+
+${fewShotExamples}
+
+HARD RULES:
+- 2-3 sentences maximum. Density over length.
+- Never open with: "Great", "Absolutely", "This resonates", "Insightful", "Well said", "Thank you for sharing", or any validation filler
+- Never mention Yedda.ai by name
+- Never use: real-time, revolutionary, game-changing, AI-powered, seamless, robust, disruptive, cutting-edge
+- Use "Visual AI" ONLY if the post is directly about computer vision or visual intelligence — never as a generic AI reference
+- No hashtags. No emojis unless the post itself is casual/celebratory.
+- Write complete sentences. Never end mid-thought.
+
+STYLE FOR THIS COMMENT: ${styleInstructions[style]}
+
+Return ONLY the final comment text. No preamble, no explanation, no quotes.`;
+
+  // Chain-of-thought: model first extracts anchor, then writes comment
+  const userPrompt = `Analyze this LinkedIn post and write a comment as Roi.
+
+STEP 1 — Identify (do this silently, do not print it):
+- What is the single most specific claim, data point, tension, or insight in this post?
+- What would someone with real operational experience notice or question about it?
+
+STEP 2 — Write the comment based on that specific anchor. Do not be generic.
+
+POST:
+${postText}`;
+
+  statusEl.textContent = '⏳ Reading post…';
   outputEl.style.display = 'block';
   textEl.value = '';
 
-  const ctrl = new AbortController();
-  const tId = setTimeout(() => ctrl.abort(), 20000);
-  try {
+  const _callGemini = async (signal) => {
     const model = getGeminiModel();
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      signal: ctrl.signal,
+      signal,
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 300, temperature: 0.75 }
+        generationConfig: { maxOutputTokens: 350, temperature: 0.82 }
       })
     });
-    clearTimeout(tId);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
-    const data = await res.json();
-    const candidate = data.candidates?.[0];
-    const comment = candidate?.content?.parts?.[0]?.text?.trim() || '';
+    return res.json();
+  };
+
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    statusEl.textContent = '⏳ Writing comment…';
+    let data = await _callGemini(ctrl.signal);
+    clearTimeout(tId);
+    let candidate = data.candidates?.[0];
+    let comment = candidate?.content?.parts?.[0]?.text?.trim() || '';
     if (!comment) throw new Error('Empty response');
+
+    // ── FASE 4: auto-retry if AI tells detected ───────────────────────
+    if (_hasAiTells(comment)) {
+      statusEl.textContent = '⏳ Refining tone…';
+      const ctrl2 = new AbortController();
+      const tId2 = setTimeout(() => ctrl2.abort(), 20000);
+      try {
+        const data2 = await _callGemini(ctrl2.signal);
+        clearTimeout(tId2);
+        const comment2 = data2.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        if (comment2 && !_hasAiTells(comment2)) comment = comment2;
+      } catch(_) { clearTimeout(tId2); }
+    }
+
     if (candidate?.finishReason === 'MAX_TOKENS') showToast('⚠️ Comment may be truncated — edit before posting', 'error', 5000);
     textEl.value = comment;
     statusEl.className = 'modal-status st-ok';
@@ -4454,7 +4517,7 @@ Return ONLY the comment text. No quotes, no explanation, no JSON. Write complete
   } catch(e) {
     clearTimeout(tId);
     statusEl.className = 'modal-status st-err';
-    statusEl.textContent = e.name === 'AbortError' ? '❌ Timeout — Gemini took too long. Try again.' : `❌ Error: ${e.message}`;
+    statusEl.textContent = e.name === 'AbortError' ? '❌ Timeout — try again.' : `❌ Error: ${e.message}`;
     showToast('❌ Generation failed', 'error');
   } finally {
     setLoading(btn, false);
