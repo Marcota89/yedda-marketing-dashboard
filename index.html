@@ -168,7 +168,43 @@ h1,h2,h3,h4 {
   0%,100% { box-shadow: 0 0 0 3px rgba(75,173,184,0.2); }
   50% { box-shadow: 0 0 0 6px rgba(75,173,184,0); }
 }
-.nav-toggle { display: none; }
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.nav-toggle:hover { background: var(--line-soft); }
+.nav-toggle span {
+  display: block;
+  width: 20px; height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 20px 16px;
+    z-index: 100;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 15px; }
+}
 
 /* ═══════════ HERO ═══════════ */
 .hero {
@@ -1898,7 +1934,7 @@ textarea::placeholder {
       <img src="assets/yedda-logo.png" alt="Yedda.ai" width="120" height="34" loading="eager">
       <span class="nav-pill">Command Center</span>
     </a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="#modules">Modules</a>
       <a href="#cases">Cases</a>
       <a href="#content">Content</a>
@@ -1909,7 +1945,10 @@ textarea::placeholder {
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
       <span class="nav-live"><span class="nav-live-dot"></span>SESSION ACTIVE</span>
-      <a href="#cases" class="nav-cta">View cases <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a href="#cases" class="nav-cta" aria-label="View customer cases">View cases <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <button class="nav-toggle" id="navToggleBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
@@ -2955,6 +2994,78 @@ textarea::placeholder {
         <div class="adv-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Carrefour POC as credibility anchor</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ═══ C01 — COMMAND PANEL ═══ -->
+<section class="section" id="command-panel" style="background:var(--teal-bg);border-top:1px solid var(--line)">
+  <div class="container">
+    <div class="sec-head" style="margin-bottom:32px">
+      <div class="eyebrow">F31 Content Marketing</div>
+      <h2 class="sec-title" style="margin-top:10px">Command Panel</h2>
+      <p style="color:var(--text-soft);font-size:14px;margin-top:8px;max-width:560px">Dispatch content workflows, approve generated posts, and monitor competitor intelligence.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+
+      <!-- Dispatch panel -->
+      <div style="background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;box-shadow:var(--shadow-sm)">
+        <h3 style="font-size:16px;margin-bottom:16px;color:var(--ink)">Dispatch Content Run</h3>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Topic / Campaign</label>
+          <input id="cp-topic" type="text" placeholder="e.g. loss prevention in QSR..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--line)'">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Priority</label>
+          <select id="cp-priority" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--bg);outline:none">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <button id="cp-dispatch-btn" onclick="dispatchContentRun()" aria-label="Dispatch F31 content marketing workflow" style="width:100%;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='var(--teal-dark)'" onmouseout="this.style.background='var(--teal)'">
+          <span id="cp-dispatch-icon">&#9654;</span> Dispatch F31 Run
+        </button>
+        <div id="cp-dispatch-status" style="margin-top:10px;font-size:12px;color:var(--muted);min-height:18px"></div>
+      </div>
+
+      <!-- Approval queue -->
+      <div style="background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="font-size:16px;color:var(--ink)">Pending Approvals</h3>
+          <button onclick="loadPendingApprovals()" aria-label="Refresh pending approvals" style="background:var(--line-soft);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text-soft);cursor:pointer">&#8635; Refresh</button>
+        </div>
+        <div id="cp-approvals-list" style="max-height:280px;overflow-y:auto">
+          <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C05 — Competitor Intel -->
+    <div id="competitor-intel-panel" style="margin-top:24px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;box-shadow:var(--shadow-sm)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <h3 style="font-size:16px;color:var(--ink)">Competitor Intel</h3>
+          <div id="ci-last-scan" style="font-size:11px;color:var(--muted);margin-top:3px">Last scan: —</div>
+        </div>
+        <button onclick="loadCompetitorIntel()" aria-label="Refresh competitor intelligence" style="background:var(--teal-xl);border:1px solid rgba(75,173,184,0.3);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--teal-deep);font-weight:600;cursor:pointer;transition:background .15s">&#8635; Refresh</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Monitored Competitors</div>
+        <div id="ci-competitors-list" style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="background:var(--teal-xl);color:var(--teal-deep);border:1px solid rgba(75,173,184,0.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Wobot</span>
+          <span style="background:var(--teal-xl);color:var(--teal-deep);border:1px solid rgba(75,173,184,0.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Bindy</span>
+          <span style="background:var(--teal-xl);color:var(--teal-deep);border:1px solid rgba(75,173,184,0.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Zenput</span>
+          <span style="background:var(--teal-xl);color:var(--teal-deep);border:1px solid rgba(75,173,184,0.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Restaurant365</span>
+          <span style="background:var(--orange-light);color:var(--orange);border:1px solid rgba(240,120,48,0.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">+ Add</span>
+        </div>
+      </div>
+      <div id="ci-insights-container">
+        <div id="ci-insights-list" style="display:grid;gap:12px">
+          <div style="color:var(--muted);font-size:13px;padding:16px 0">Click Refresh to load latest competitor insights.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -4381,7 +4492,6 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
   outputEl.style.display = 'block';
   textEl.value = '';
 
-  try {
   const ctrl = new AbortController();
   const tId = setTimeout(() => ctrl.abort(), 20000);
   try {
@@ -5018,6 +5128,222 @@ document.addEventListener('keydown', function(e) {
   } else if (e.key === '?') {
     showMarketingToast('Shortcuts: J/K navigate · A approve · R reject', 'info', 4000);
   }
+});
+
+// ── C04 — Hamburger menu ──────────────────────────────────────────────────
+(function() {
+  const toggleBtn = document.getElementById('navToggleBtn');
+  const navLinks = document.getElementById('navLinks');
+  if (!toggleBtn || !navLinks) return;
+  toggleBtn.addEventListener('click', () => {
+    const isOpen = navLinks.classList.toggle('open');
+    toggleBtn.setAttribute('aria-expanded', String(isOpen));
+    toggleBtn.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+  });
+  // Close on link click
+  navLinks.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    });
+  });
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!toggleBtn.contains(e.target) && !navLinks.contains(e.target)) {
+      navLinks.classList.remove('open');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+})();
+
+// ── C01 — Command Panel ────────────────────────────────────────────────────
+const _MAS_BASE = (function() {
+  // Try to detect MAS dashboard URL from current page origin
+  // Default: same host port 8000, or from localStorage config
+  return localStorage.getItem('yedda-mas-url') || 'http://localhost:8000';
+})();
+
+async function dispatchContentRun() {
+  const btn = document.getElementById('cp-dispatch-btn');
+  const statusEl = document.getElementById('cp-dispatch-status');
+  const topic = (document.getElementById('cp-topic')?.value || '').trim();
+  const priority = document.getElementById('cp-priority')?.value || 'medium';
+  if (!topic) {
+    statusEl.textContent = '⚠ Please enter a topic.';
+    statusEl.style.color = '#dc2626';
+    document.getElementById('cp-topic')?.focus();
+    return;
+  }
+  btn.disabled = true;
+  btn.setAttribute('data-loading', '1');
+  const iconEl = document.getElementById('cp-dispatch-icon');
+  if (iconEl) iconEl.textContent = '⏳';
+  statusEl.textContent = 'Dispatching...';
+  statusEl.style.color = 'var(--muted)';
+  try {
+    const r = await fetch(_MAS_BASE + '/api/issues', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        title: 'F31 Content Run: ' + topic,
+        description: topic,
+        workflow_id: 'f31_content_marketing',
+        priority,
+        status: 'todo',
+        confidentiality: 'internal',
+      })
+    });
+    if (r.ok) {
+      statusEl.textContent = '✓ Dispatched. Polling for results...';
+      statusEl.style.color = '#16a34a';
+      document.getElementById('cp-topic').value = '';
+      setTimeout(loadPendingApprovals, 3000);
+    } else {
+      const err = await r.text().catch(() => r.status);
+      statusEl.textContent = '✗ Error: ' + err;
+      statusEl.style.color = '#dc2626';
+    }
+  } catch(e) {
+    statusEl.textContent = '✗ ' + (e.message || 'Network error');
+    statusEl.style.color = '#dc2626';
+  } finally {
+    btn.disabled = false;
+    btn.removeAttribute('data-loading');
+    if (iconEl) iconEl.textContent = '▶';
+  }
+}
+
+async function loadPendingApprovals() {
+  const listEl = document.getElementById('cp-approvals-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Loading...</div>';
+  try {
+    const r = await fetch(_MAS_BASE + '/api/issues?workflow_id=f31_content_marketing');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const issues = await r.json();
+    if (!issues.length) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">No F31 issues found.</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    issues.slice(0, 10).forEach(issue => {
+      const card = document.createElement('div');
+      card.className = 'queue-card';
+      card.setAttribute('data-queue-item', '1');
+      card.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:8px;background:var(--bg)';
+      const statusColor = issue.status === 'done' ? '#16a34a' : issue.status === 'in_progress' ? 'var(--teal-deep)' : '#64748b';
+      card.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (issue.title || '').replace(/</g,'&lt;') + '</div>' +
+            '<div style="font-size:11px;color:var(--muted)">' + (issue.updated_at || '').substring(0,16).replace('T',' ') + ' · <span style="color:' + statusColor + ';font-weight:600">' + (issue.status||'').replace('_',' ') + '</span></div>' +
+          '</div>' +
+          (issue.status === 'done' && issue.status !== 'approved' ?
+            '<div style="display:flex;gap:6px;flex-shrink:0">' +
+              '<button data-action="approve" onclick="approveF31Issue(' + issue.id + ', this)" aria-label="Approve issue" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve</button>' +
+              '<button data-action="reject" onclick="rejectF31Issue(' + issue.id + ', this)" aria-label="Reject issue" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">✗</button>' +
+            '</div>'
+          : '') +
+        '</div>' +
+        (issue.result ? '<div style="margin-top:8px;font-size:11.5px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line-soft);padding-top:6px">' + issue.result.substring(0,120).replace(/</g,'&lt;') + '</div>' : '');
+      listEl.appendChild(card);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:12px">Error loading: ' + e.message + '<br><small>Make sure MAS dashboard is running at ' + _MAS_BASE + '</small></div>';
+  }
+}
+
+async function approveF31Issue(id, btn) {
+  const origText = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch(_MAS_BASE + '/api/issues/' + id + '/approve?approved_by=marketing_agent', {method:'POST'});
+    if (r.ok) {
+      showMarketingToast('Issue approved ✓', 'success', 2500);
+      setTimeout(loadPendingApprovals, 500);
+    } else {
+      btn.disabled = false; btn.textContent = origText;
+      showMarketingToast('Approve failed: ' + r.status, 'error');
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = origText;
+    showMarketingToast('Approve error: ' + e.message, 'error');
+  }
+}
+
+async function rejectF31Issue(id, btn) {
+  const origText = btn.textContent;
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch(_MAS_BASE + '/api/issues/' + id, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({status:'todo'})
+    });
+    if (r.ok) {
+      showMarketingToast('Issue sent back to queue', 'info', 2500);
+      setTimeout(loadPendingApprovals, 500);
+    } else {
+      btn.disabled = false; btn.textContent = origText;
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = origText;
+  }
+}
+
+// ── C05 — Competitor Intel ─────────────────────────────────────────────────
+async function loadCompetitorIntel() {
+  const listEl = document.getElementById('ci-insights-list');
+  const lastScan = document.getElementById('ci-last-scan');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0">Loading competitor intel...</div>';
+  try {
+    // Query issues tagged as competitor scan results
+    const r = await fetch(_MAS_BASE + '/api/issues?workflow_id=f31_content_marketing&status=done');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const issues = await r.json();
+    // Filter issues with competitor_insights in result
+    const ciIssues = issues.filter(i => i.result && i.result.includes('competitor'));
+    if (lastScan) lastScan.textContent = 'Last scan: ' + new Date().toLocaleString();
+    if (!ciIssues.length) {
+      // Show static fallback with known competitors
+      listEl.innerHTML =
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">' +
+        [
+          {name:'Wobot AI', tier:'Primary', note:'Computer vision for QSR audit. Similar ICP. Direct competitor.', threat:88},
+          {name:'Bindy', tier:'Secondary', note:'Retail execution platform. Mobile-first checklists.', threat:62},
+          {name:'Zenput', tier:'Secondary', note:'Ops management. Strong in restaurant chains.', threat:55},
+          {name:'Restaurant365', tier:'Tertiary', note:'Back-office + accounting. Less direct on vision AI.', threat:34},
+        ].map(c => `
+          <div style="background:var(--teal-xl);border:1px solid rgba(75,173,184,0.2);border-radius:8px;padding:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-weight:700;color:var(--ink);font-size:13.5px">${c.name}</span>
+              <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${c.tier==='Primary'?'rgba(240,120,48,0.15)':'var(--line-soft)'};color:${c.tier==='Primary'?'var(--orange)':'var(--muted)'};">${c.tier}</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-soft);line-height:1.5;margin-bottom:8px">${c.note}</p>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Threat level: ${c.threat}%</div>
+            <div style="height:4px;border-radius:2px;background:var(--line)"><div style="height:100%;border-radius:2px;background:${c.threat>70?'var(--orange)':'var(--teal)'};width:${c.threat}%"></div></div>
+          </div>`
+        ).join('') + '</div>';
+      return;
+    }
+    // Render real results from MAS
+    listEl.innerHTML = ciIssues.slice(0,5).map(i =>
+      '<div style="border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--bg)">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:6px">' + (i.title||'').replace(/</g,'&lt;') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-soft);white-space:pre-wrap;line-height:1.5;max-height:120px;overflow:hidden">' + (i.result||'').substring(0,300).replace(/</g,'&lt;') + '</div>' +
+        '<div style="font-size:10px;color:var(--muted);margin-top:6px">' + (i.updated_at||'').substring(0,16).replace('T',' ') + '</div>' +
+      '</div>'
+    ).join('');
+  } catch(e) {
+    if (listEl) listEl.innerHTML = '<div style="color:#dc2626;font-size:13px">Error: ' + e.message + '</div>';
+  }
+}
+
+// Init Command Panel on load
+document.addEventListener('DOMContentLoaded', function() {
+  loadPendingApprovals();
+  loadCompetitorIntel();
 });
 (function() {
   const s = document.createElement('style');
