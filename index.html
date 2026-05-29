@@ -3699,6 +3699,7 @@ function renderQueue() {
 
 function qCopyPost(btn, i) {
   const p = posts[i];
+  if (!p) return;
   const orig = btn.textContent;
   clipWrite(p.body + '\n\n' + p.tags, () => {
     btn.textContent = '✅ Copied!';
@@ -3736,10 +3737,13 @@ async function bufferHandleCallback() {
   showBufferStatus('🔄 Connecting to Buffer…', '#1A73E8');
   openSettings();
 
+  const bCtrl = new AbortController();
+  const bTId = setTimeout(() => bCtrl.abort(), 15000);
   try {
     const res = await fetch('https://api.bufferapp.com/1/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      signal: bCtrl.signal,
       body: new URLSearchParams({
         client_id: BUFFER_CLIENT_ID,
         redirect_uri: BUFFER_REDIRECT,
@@ -3753,18 +3757,20 @@ async function bufferHandleCallback() {
     if (!token) throw new Error(data.error_description || 'No token received');
 
     // fetch profile ID automatically
-    const profileRes = await fetch(`https://api.bufferapp.com/1/profiles.json?access_token=${token}`);
+    const profileRes = await fetch(`https://api.bufferapp.com/1/profiles.json?access_token=${token}`, { signal: bCtrl.signal });
     const profiles = await profileRes.json();
     const linkedin = Array.isArray(profiles) ? profiles.find(p => p.service === 'linkedin') : null;
     const profileId = linkedin?.id || '';
     const name = linkedin?.service_username || 'LinkedIn';
 
+    clearTimeout(bTId);
     localStorage.setItem(BUFFER_KEY, JSON.stringify({ token, profileId, name }));
     sessionStorage.removeItem('buffer_verifier');
     updateBufferUI();
     showBufferStatus('✅ Buffer connected!', '#16a34a');
   } catch(e) {
-    showBufferStatus('❌ ' + e.message, '#dc2626');
+    clearTimeout(bTId);
+    showBufferStatus('❌ ' + (e.name === 'AbortError' ? 'Timeout — Buffer took too long.' : e.message), '#dc2626');
   }
 }
 
@@ -4039,7 +4045,7 @@ function renderApifyResults(articles) {
   }
   const items = articles.map((a, i) => `
     <div class="news-item" id="nitem-${i}" onclick="toggleNewsItem(${i})">
-      <input type="checkbox" id="ncheck-${i}" onclick="event.stopPropagation();toggleNewsItem(${i})">
+      <input type="checkbox" id="ncheck-${i}" onclick="event.stopPropagation();toggleNewsItem(${i},true)">
       <div class="news-item-body">
         <div class="news-item-title">${esc(a.title || 'No title')}</div>
         <div class="news-item-meta">
@@ -4061,10 +4067,10 @@ function renderApifyResults(articles) {
   window._apifyArticles = articles;
 }
 
-function toggleNewsItem(i) {
+function toggleNewsItem(i, fromCheckbox) {
   const item  = document.getElementById(`nitem-${i}`);
   const check = document.getElementById(`ncheck-${i}`);
-  check.checked = !check.checked;
+  if (!fromCheckbox) check.checked = !check.checked;
   item.classList.toggle('selected', check.checked);
 }
 
@@ -4141,7 +4147,7 @@ async function generatePostFromNews(articles, apiKey, selectedPillars) {
   const dayStr = dayNames[postDate.getDay()];
 
   const articlesText = articles.map((a, i) =>
-    `Article ${i+1}:\nTitle: ${a.title}\nURL: ${a.url || 'N/A'}\nSnippet: ${a.snippet || a.description || 'N/A'}`
+    `Article ${i+1}:\nTitle: ${a.title}\nURL: ${a.url || 'N/A'}\nSnippet: ${a.text || 'N/A'}`
   ).join('\n\n');
 
   const pillarGuides = {
@@ -4209,10 +4215,11 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 
   const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's Visual AI value proposition in retail / enterprise operations. Make the data feel urgent and relevant to CEOs, COOs, Board Members and loss prevention leaders at large retail and logistics companies.`;
 
-  const models = [getGeminiModel(), 'gemini-2.5-flash', 'gemini-1.5-flash-002'];
+  const models = [getGeminiModel(), 'gemini-2.5-flash', 'gemini-2.0-flash'];
 
   const makeBody = (includeJsonMime) => JSON.stringify({
-    contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: {
       maxOutputTokens: 4096,
       temperature: 0.7,
@@ -4305,7 +4312,7 @@ function addGeneratedPostToCalendar(post) {
   if (saved.length >= 30) {
     if (!confirm(`You have ${saved.length} auto-generated posts saved.\nRemove the 10 oldest to continue?`)) return;
     saved.splice(0, 10);
-    _saveGeneratedPosts(saved);
+    try { _saveGeneratedPosts(saved); } catch(e) { alert('Storage error — could not trim posts: ' + e.message); return; }
     rebuildGeneratedSection();
     return addGeneratedPostToCalendar(post); // posts[] is clean after rebuild
   }
@@ -4328,7 +4335,11 @@ function addGeneratedPostToCalendar(post) {
     weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
     const allWeeks = document.querySelectorAll('.week-section');
     const lastWeek = allWeeks[allWeeks.length - 1];
-    lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+    if (lastWeek && lastWeek.parentNode) {
+      lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+    } else {
+      (document.querySelector('.posts-list') || document.body).appendChild(weekSection);
+    }
   } else {
     refreshGenHeader();
   }
@@ -4568,6 +4579,8 @@ ${topic ? `TOPIC/HOOK TO USE: ${topic}` : ''}
 
 Return ONLY the post text (and poll options if poll type). No quotes, no explanation.`;
 
+  const roiPostUserPrompt = `Write a LinkedIn post. POST TYPE: ${typeGuides[postType]}${topic ? `\nTOPIC/HOOK: ${topic}` : ''}`;
+
   statusEl.textContent = '⏳ Generating Roi\'s post...';
   outputEl.style.display = 'block';
   textEl.value = '';
@@ -4581,7 +4594,8 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       signal: ctrl.signal,
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: roiPostUserPrompt }] }],
         generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
       })
     });
@@ -4681,6 +4695,7 @@ async function reviewWithMAS(idx) {
 
     if (data.approved) {
       statusEl.className = 'mas-status st-ok';
+      statusEl.dataset.approved = '1';
       const rewriteNote = data.rewrites_done > 0
         ? ` ${data.rewrites_done} revision${data.rewrites_done > 1 ? 's' : ''} applied — post updated in preview.`
         : ' No revisions needed — post is brand-aligned.';
@@ -4688,6 +4703,7 @@ async function reviewWithMAS(idx) {
       showToast(data.rewrites_done > 0 ? '✅ MAS rewrote ' + data.rewrites_done + ' violation(s)' : '✅ Post brand-aligned', 'success');
     } else {
       statusEl.className = 'mas-status st-err';
+      statusEl.dataset.approved = '0';
       statusEl.textContent = `⚠️ ${data.message}`;
     }
   } catch(e) {
@@ -4787,7 +4803,11 @@ function restoreGeneratedPosts() {
         weekSection.innerHTML = _genSectionHeaderHTML(saved.length);
         const allWeeks = document.querySelectorAll('.week-section');
         const lastWeek = allWeeks[allWeeks.length - 1];
-        lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+        if (lastWeek && lastWeek.parentNode) {
+          lastWeek.parentNode.insertBefore(weekSection, lastWeek.nextSibling);
+        } else {
+          (document.querySelector('.posts-list') || document.body).appendChild(weekSection);
+        }
       }
       weekSection.insertAdjacentHTML('beforeend', `
         <div class="post-row" id="prow-${idx}" data-post-id="${esc(post._id)}" onclick="showPost(${idx}, this)">
@@ -4929,7 +4949,7 @@ function filterGeneratedPosts(filter) {
   document.querySelectorAll('.gen-filter-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === filter);
   });
-  const ratings = JSON.parse(localStorage.getItem('yedda_ratings') || '{}');
+  const ratings = getRatings();
   const sec = document.getElementById('generated-week-section');
   if (!sec) return;
   sec.querySelectorAll('.post-row').forEach(row => {
@@ -4963,7 +4983,7 @@ function filterGeneratedPosts(filter) {
 
 function copyPrompt(btn, i) {
   const p = posts[i];
-  if (!p.prompt) return;
+  if (!p || !p.prompt) return;
   clipWrite(p.prompt, () => {
     btn.textContent = '✅ Copied!';
     btn.classList.add('copied');
@@ -4974,6 +4994,7 @@ function copyPrompt(btn, i) {
 
 function copyPost(btn, i) {
   const p = posts[i];
+  if (!p) return;
   const text = p.body + '\n\n' + p.tags;
   clipWrite(text, () => {
     btn.textContent = '✅ Copied!';
@@ -5044,7 +5065,9 @@ async function checkApiStatus() {
     geminiEl.textContent = (geminiOk ? '● ' : '○ ') + 'Gemini';
   }
   try {
-    const r = await fetch('http://localhost:8001/health', {signal: AbortSignal.timeout(2000)});
+    const _hCtrl = new AbortController();
+    setTimeout(() => _hCtrl.abort(), 2000);
+    const r = await fetch('http://localhost:8001/health', { signal: _hCtrl.signal });
     const masOk = r.ok;
     const masEl = document.getElementById('masStatus');
     if (masEl) {
@@ -5063,7 +5086,7 @@ async function checkApiStatus() {
 }
 const _apiStatusInterval = setInterval(checkApiStatus, 30000);
 window.addEventListener('beforeunload', () => clearInterval(_apiStatusInterval));
-document.addEventListener('DOMContentLoaded', () => setTimeout(checkApiStatus, 1000));
+setTimeout(checkApiStatus, 1000);
 
 /* M2 — Queue badge cleared state */
 function updateQueueBadgeV2(count) {
@@ -5095,12 +5118,6 @@ updateQueueBadge = function() {
   updateQueueBadgeV2(count);
 };
 
-/* M3 — Loading skeleton during generation */
-function showGenerationSkeleton() {
-  const container = document.getElementById('postsContainer') || document.querySelector('.posts-list') || document.querySelector('[id*="post"]');
-  if (!container) return;
-  container.innerHTML = [1,2,3].map(() => '<div style="height:120px;margin-bottom:12px;background:linear-gradient(90deg,#e8f6f8 25%,#f4fafb 50%,#e8f6f8 75%);background-size:200% 100%;animation:skshimmer 1.5s infinite;border-radius:8px"></div>').join('');
-}
 if (!document.getElementById('skshimmer-style')) {
   const s = document.createElement('style');
   s.id = 'skshimmer-style';
@@ -5121,7 +5138,15 @@ function showMarketingToast(message, type, duration) {
   const toast = document.createElement('div');
   const borderColor = type === 'success' ? '#16a34a' : type === 'info' ? '#4BADB8' : '#dc2626';
   toast.style.cssText = 'background:#fff;border:1px solid ' + borderColor + ';color:#0E1B1E;padding:10px 16px;border-radius:8px;font-size:13px;max-width:320px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,0.1)';
-  toast.innerHTML = '<span style="flex:1">' + message + '</span><span style="cursor:pointer;color:#8A9AA0;flex-shrink:0" onclick="this.parentElement.remove()">✕</span>';
+  const msgSpan = document.createElement('span');
+  msgSpan.style.flex = '1';
+  msgSpan.textContent = message;
+  const closeSpan = document.createElement('span');
+  closeSpan.style.cssText = 'cursor:pointer;color:#8A9AA0;flex-shrink:0';
+  closeSpan.textContent = '✕';
+  closeSpan.addEventListener('click', () => toast.remove());
+  toast.appendChild(msgSpan);
+  toast.appendChild(closeSpan);
   container.appendChild(toast);
   setTimeout(() => toast.remove(), duration);
 }
@@ -5137,11 +5162,11 @@ reviewWithMAS = async function(idx) {
     let badge = card.querySelector('.mas-review-badge');
     if (!badge) { badge = document.createElement('div'); badge.className = 'mas-review-badge'; card.appendChild(badge); }
     const statusEl = document.getElementById('masReviewStatus-' + idx);
-    const approved = statusEl && statusEl.style.color.includes('16a34a');
+    const approved = statusEl?.dataset.approved === '1';
     badge.style.cssText = 'margin-top:6px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block;' +
       (approved ? 'color:#16a34a;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3)' : 'color:#dc2626;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3)');
     badge.textContent = approved ? '✓ MAS APPROVED' : '✗ NEEDS REVISION';
-  } catch(_) {}
+  } catch(e) { console.warn('MAS badge update failed:', e); }
 };
 
 /* M6 — Mobile breakpoint for sticky preview */
@@ -5311,29 +5336,70 @@ async function loadPendingApprovals() {
     }
     listEl.innerHTML = '';
     issues.slice(0, 10).forEach(issue => {
+      const safeId = parseInt(issue.id, 10);
+      if (isNaN(safeId)) return;
       const card = document.createElement('div');
       card.className = 'queue-card';
       card.setAttribute('data-queue-item', '1');
       card.style.cssText = 'border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:8px;background:var(--bg)';
       const statusColor = issue.status === 'done' ? '#16a34a' : issue.status === 'in_progress' ? 'var(--teal-deep)' : '#64748b';
-      card.innerHTML =
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (issue.title || '').replace(/</g,'&lt;') + '</div>' +
-            '<div style="font-size:11px;color:var(--muted)">' + (issue.updated_at || '').substring(0,16).replace('T',' ') + ' · <span style="color:' + statusColor + ';font-weight:600">' + (issue.status||'').replace('_',' ') + '</span></div>' +
-          '</div>' +
-          (issue.status === 'done' && issue.status !== 'approved' ?
-            '<div style="display:flex;gap:6px;flex-shrink:0">' +
-              '<button data-action="approve" onclick="approveF31Issue(' + issue.id + ', this)" aria-label="Approve issue" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve</button>' +
-              '<button data-action="reject" onclick="rejectF31Issue(' + issue.id + ', this)" aria-label="Reject issue" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">✗</button>' +
-            '</div>'
-          : '') +
-        '</div>' +
-        (issue.result ? '<div style="margin-top:8px;font-size:11.5px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line-soft);padding-top:6px">' + issue.result.substring(0,120).replace(/</g,'&lt;') + '</div>' : '');
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px';
+
+      const info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0';
+      const titleEl = document.createElement('div');
+      titleEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      titleEl.textContent = issue.title || '';
+      const metaEl = document.createElement('div');
+      metaEl.style.cssText = 'font-size:11px;color:var(--muted)';
+      const statusSpan = document.createElement('span');
+      statusSpan.style.cssText = 'color:' + statusColor + ';font-weight:600';
+      statusSpan.textContent = (issue.status || '').replace('_', ' ');
+      metaEl.textContent = (issue.updated_at || '').substring(0, 16).replace('T', ' ') + ' · ';
+      metaEl.appendChild(statusSpan);
+      info.appendChild(titleEl);
+      info.appendChild(metaEl);
+      row.appendChild(info);
+
+      if (issue.status === 'done') {
+        const btns = document.createElement('div');
+        btns.style.cssText = 'display:flex;gap:6px;flex-shrink:0';
+        const approveBtn = document.createElement('button');
+        approveBtn.setAttribute('aria-label', 'Approve issue');
+        approveBtn.style.cssText = 'background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer';
+        approveBtn.textContent = '✓ Approve';
+        approveBtn.addEventListener('click', function() { approveF31Issue(safeId, this); });
+        const rejectBtn = document.createElement('button');
+        rejectBtn.setAttribute('aria-label', 'Reject issue');
+        rejectBtn.style.cssText = 'background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer';
+        rejectBtn.textContent = '✗';
+        rejectBtn.addEventListener('click', function() { rejectF31Issue(safeId, this); });
+        btns.appendChild(approveBtn);
+        btns.appendChild(rejectBtn);
+        row.appendChild(btns);
+      }
+      card.appendChild(row);
+
+      if (issue.result) {
+        const resultEl = document.createElement('div');
+        resultEl.style.cssText = 'margin-top:8px;font-size:11.5px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line-soft);padding-top:6px';
+        resultEl.textContent = issue.result.substring(0, 120);
+        card.appendChild(resultEl);
+      }
       listEl.appendChild(card);
     });
   } catch(e) {
-    listEl.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:12px">Error loading: ' + e.message + '<br><small>Make sure MAS dashboard is running at ' + _MAS_BASE + '</small></div>';
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'color:#dc2626;font-size:13px;padding:12px';
+    const small = document.createElement('small');
+    small.textContent = 'Make sure MAS dashboard is running at ' + _MAS_BASE;
+    errDiv.textContent = 'Error loading: ' + e.message;
+    errDiv.appendChild(document.createElement('br'));
+    errDiv.appendChild(small);
+    listEl.innerHTML = '';
+    listEl.appendChild(errDiv);
   }
 }
 
