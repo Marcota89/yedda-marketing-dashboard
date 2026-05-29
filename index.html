@@ -3999,33 +3999,63 @@ Return JSON:
 
   const model = getGeminiModel();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 20000);
+  const RETRIES = 3;
+  const RETRY_DELAY_MS = 2500;
   let raw = '';
-  try {
-    const res = await fetch(url, {
-      method: 'POST', signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 2048, temperature: 0.75 }
-      })
-    });
-    clearTimeout(tid);
-    if (!res.ok) throw new Error(`Gemini ${res.status}`);
-    const data = await res.json();
-    raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  } catch(e) { clearTimeout(tid); throw e; }
+  let lastErr = null;
 
-  if (!raw) throw new Error('Empty response from Gemini');
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const useJsonMime = attempt < 2; // 3rd attempt: no mime type (plain text fallback)
+      const res = await fetch(url, {
+        method: 'POST', signal: ctrl.signal,
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generationConfig: {
+            ...(useJsonMime ? { responseMimeType: 'application/json' } : {}),
+            maxOutputTokens: 2048, temperature: 0.75
+          }
+        })
+      });
+      clearTimeout(tid);
+      if (res.status === 401 || res.status === 403) throw new Error(`Gemini auth error ${res.status} — check API key`);
+      if (res.status === 503 || res.status === 429 || res.status >= 500) {
+        lastErr = new Error(`Gemini ${res.status}`); continue; // retry
+      }
+      if (!res.ok) throw new Error(`Gemini ${res.status}`);
+      const data = await res.json();
+      raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (raw) break; // success
+      lastErr = new Error('Empty response from Gemini');
+    } catch(e) {
+      clearTimeout(tid);
+      if (e.name === 'AbortError') { lastErr = new Error('Gemini request timed out'); continue; }
+      if (e.message.includes('auth error')) throw e; // no retry on auth
+      lastErr = e;
+    }
+  }
+
+  if (!raw) throw lastErr || new Error('Gemini unavailable after 3 attempts');
 
   let parsed;
   try { parsed = JSON.parse(raw); }
   catch(_) {
-    const m = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || raw.match(/(\{[\s\S]*\})/);
-    if (!m) throw new Error('Could not parse JSON from Gemini');
-    parsed = JSON.parse(m[1] || m[0]);
+    // strip markdown fences
+    let clean = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
+    // extract first {...} block
+    const m = clean.match(/\{[\s\S]*\}/);
+    if (!m) {
+      // last resort: build a minimal object from raw text
+      parsed = { content: raw, tags: '#YeddaAI #VisualAI' };
+    } else {
+      try { parsed = JSON.parse(m[0]); }
+      catch(_2) { parsed = { content: raw, tags: '#YeddaAI #VisualAI' }; }
+    }
   }
 
   const bodyText = unwrapJsonBody(parsed.content || parsed.body || '');
