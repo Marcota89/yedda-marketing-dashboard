@@ -2508,8 +2508,15 @@ textarea::placeholder {
         </div>
         <div class="sched-field" style="margin-top:8px;"><label>Custom topic or keyword (optional)</label><input type="text" id="sgTopic" class="sched-input" placeholder="e.g. shrinkage prevention, LATAM expansion, safety compliance"></div>
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-          <button class="sched-gen-run" onclick="generateSchedulePrompt()">🚀 Generate Prompt</button>
+          <button id="sgDirectBtn" class="sched-gen-run" onclick="generateWeekPostsDirect(this)">🚀 Generate Posts</button>
+          <button class="sched-gen-run" style="background:var(--text-soft);font-size:12px;padding:8px 14px;" onclick="generateSchedulePrompt()">📋 Get Prompt for Claude</button>
           <button class="sched-gen-cancel" onclick="toggleScheduleGen()">Cancel</button>
+        </div>
+        <div id="sgProgress" style="display:none;margin-top:14px;padding:12px 16px;background:var(--teal-xl);border-radius:10px;border:1.5px solid rgba(75,173,184,0.25);">
+          <div id="sgProgressText" style="font-size:13px;font-weight:600;color:var(--teal-deep);"></div>
+          <div style="margin-top:8px;height:6px;background:rgba(75,173,184,0.15);border-radius:4px;overflow:hidden;">
+            <div id="sgProgressBar" style="height:100%;background:var(--teal);border-radius:4px;transition:width .4s ease;width:0%"></div>
+          </div>
         </div>
         <div id="sgOutput" style="display:none;" class="sched-output">
           <div class="sched-output-label">📋 Prompt ready — paste this into Claude.ai:</div>
@@ -3827,10 +3834,27 @@ function closeSettings() { document.getElementById('settingsModal').style.displa
 function closeSettingsOutside(e) { if (e.target.id === 'settingsModal') closeSettings(); }
 
 /* ── SCHEDULE GENERATOR ── */
+function _nextWeekRange() {
+  const today = new Date();
+  const dow = today.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const daysUntilMonday = dow === 0 ? 1 : (8 - dow) % 7 || 7;
+  const mon = new Date(today); mon.setDate(today.getDate() + daysUntilMonday); mon.setHours(0,0,0,0);
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  const fmt = d => d.toISOString().slice(0,10);
+  return { start: fmt(mon), end: fmt(fri) };
+}
+
 function toggleScheduleGen() {
   const panel = document.getElementById('scheduleGenPanel');
   panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  if (panel.style.display === 'block') panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel.style.display === 'block') {
+    const range = _nextWeekRange();
+    const startEl = document.getElementById('sgStart');
+    const endEl   = document.getElementById('sgEnd');
+    if (startEl && !startEl.value) startEl.value = range.start;
+    if (endEl   && !endEl.value)   endEl.value   = range.end;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function generateSchedulePrompt() {
@@ -3898,6 +3922,187 @@ function copySchedulePrompt() {
     const btn = document.querySelector('.sched-copy-prompt');
     if (btn) { btn.textContent = '✅ Copied! Paste into Claude.ai'; setTimeout(() => btn.textContent = '📋 Copy Prompt', 2500); }
   });
+}
+
+/* ── DIRECT WEEK GENERATION ── */
+function _getBusinessDays(start, end) {
+  const days = [];
+  const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  while (cur <= last) {
+    const dow = cur.getDay();
+    if (dow !== 0 && dow !== 6) days.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function _pickEvenly(days, n) {
+  if (!days.length) return [];
+  if (days.length <= n) return [...days];
+  if (n === 1) return [days[0]];
+  return Array.from({length: n}, (_, i) => days[Math.round(i * (days.length - 1) / (n - 1))]);
+}
+
+async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey, articles}) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dateStr    = dateObj.toISOString().slice(0,10);
+  const dateLabel  = `${months[dateObj.getMonth()]} ${dateObj.getDate()}`;
+  const dayStr     = days[dateObj.getDay()];
+
+  const pillarGuides = {
+    'Celebrating':    'Milestone or achievement post. Celebrate wins WITHOUT mentioning any client names. Reference sector/region/scale only.',
+    'News Comment':   'Comment on a real industry news article. State the headline/data, give Yedda\'s Visual AI perspective operationally.',
+    'Who We Are':     'Culture, team, mission post. Human side of Yedda.ai. Why we exist.',
+    'What We Offer':  'Module spotlight. Focus on ONE Yedda module. Explain the specific problem it solves with a concrete outcome.',
+    'Thought Leadership': 'Industry insight from Yedda\'s Visual AI perspective. Backed by a data point or trend.',
+    'Social Proof':   'Proof point post. Lead with a metric. Show the before/after.',
+    'Education':      'Teach the reader something about Visual AI or operational intelligence in retail/logistics/F&B.',
+    'Engagement':     'Poll or question post. Drive conversation. End with a clear → question.',
+    'Case Study':     'Walk through a deployment: challenge, approach, specific measurable outcome.'
+  };
+
+  const articleContext = (articles || []).slice(0, 3).map((a, i) =>
+    `Article ${i+1}: "${a.title}" — ${a.text || a.description || 'N/A'}`
+  ).join('\n');
+
+  const systemPrompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise Visual AI company.
+
+BRAND RULES (never break these):
+- Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI" — never just "AI"
+- FORBIDDEN words: revolutionary, game-changing, real-time, AI-powered (without outcome), seamless, robust, disruptive, cutting-edge, best-in-class
+- Proof points: 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months
+- Yedda.ai turns existing CCTV into Visual AI operational intelligence — no new hardware
+- Markets: APAC, Middle East, Europe, LATAM
+- ${persona} persona: ${persona === 'Abbey' ? 'Abbey is the Visual AI Guide — thoughtful, strategic, teal energy' : persona === 'Kai' ? 'Kai is the IA Analyst — data-driven, precise, orange energy' : 'Use Abbey or Kai as fits the content'}
+
+TARGET AUDIENCE: CEOs, COOs, CDOs, VP Operations at retail (100+ stores), logistics (500+ vehicles), F&B QSR (50+ locations). Write peer-to-peer — sophisticated leaders who have seen AI hype. Show outcomes, not features.
+
+VOICE PATTERN: contrast structure ("Not X. Y."), → for insights, ✓ for proof points. Max 300 words. Ends with → question.
+
+OUTPUT: Valid JSON only — no markdown, no commentary.`;
+
+  const userPrompt = `Write a LinkedIn post for ${dateLabel} (${dayStr}).
+PILLAR: ${pillar}${pillarGuides[pillar] ? ' — ' + pillarGuides[pillar] : ''}
+${topic ? 'TOPIC/FOCUS: ' + topic : ''}
+${articleContext ? 'REFERENCE THESE ARTICLES (weave insights into the post):\n' + articleContext : ''}
+
+Return JSON:
+{
+  "content": "full post text, LinkedIn-formatted, max 300 words",
+  "tags": "#HashTag1 #HashTag2 ... (5-8 tags, always include #YeddaAI #VisualAI)",
+  "imagePrompt": "one paragraph Gemini/Imagen prompt, brand colors teal #4BADB8 and orange #F07830, enterprise aesthetic",
+  "hook": "first line — the grabber",
+  "char": "${persona === 'Mixed' ? 'Abbey' : persona}"
+}`;
+
+  const model = getGeminiModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 20000);
+  let raw = '';
+  try {
+    const res = await fetch(url, {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 2048, temperature: 0.75 }
+      })
+    });
+    clearTimeout(tid);
+    if (!res.ok) throw new Error(`Gemini ${res.status}`);
+    const data = await res.json();
+    raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch(e) { clearTimeout(tid); throw e; }
+
+  if (!raw) throw new Error('Empty response from Gemini');
+
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(_) {
+    const m = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || raw.match(/(\{[\s\S]*\})/);
+    if (!m) throw new Error('Could not parse JSON from Gemini');
+    parsed = JSON.parse(m[1] || m[0]);
+  }
+
+  const bodyText = unwrapJsonBody(parsed.content || parsed.body || '');
+
+  return {
+    name: 'Yedda.ai',
+    headline: 'Intelligence Augmentation · AI + IA for Enterprise Operations',
+    time: `${dateLabel} · 🌐`,
+    tags: parsed.tags || '#YeddaAI #VisualAI',
+    src: articleContext ? (articles[0]?.title || 'Industry Research') : `${pillar} · ${dateLabel}`,
+    meta: { time: '9–10AM', char: parsed.char || persona, target: 'Operations Leaders', day: dayStr },
+    body: bodyText.replace(/\\n/g, '\n'),
+    prompt: parsed.imagePrompt || '',
+    _hookPreview: parsed.hook || bodyText.slice(0, 80),
+    _pillar: pillar,
+    _dateDay: String(dateObj.getDate()).padStart(2, '0'),
+    _dateMonth: months[dateObj.getMonth()]
+  };
+}
+
+async function generateWeekPostsDirect(btn) {
+  const startVal = document.getElementById('sgStart').value;
+  const endVal   = document.getElementById('sgEnd').value;
+  const freq     = parseInt(document.getElementById('sgFreq').value, 10) || 3;
+  const persona  = document.getElementById('sgPersona').value;
+  const topic    = document.getElementById('sgTopic').value.trim();
+  const pillars  = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
+  const apiKey   = localStorage.getItem('yedda_claude_key');
+  const articles = window._apifyArticles || [];
+
+  if (!startVal || !endVal) { showToast('⚠️ Select start and end dates.', 'error'); return; }
+  if (!apiKey) { showToast('⚠️ Gemini API key required — open Settings.', 'error'); return; }
+  if (!pillars.length) { showToast('⚠️ Select at least one content pillar.', 'error'); return; }
+
+  const startDate = new Date(startVal + 'T12:00:00');
+  const endDate   = new Date(endVal   + 'T12:00:00');
+  const bizDays   = _getBusinessDays(startDate, endDate);
+  const picked    = _pickEvenly(bizDays, freq);
+  if (!picked.length) { showToast('⚠️ No business days in the selected range.', 'error'); return; }
+
+  const progressEl  = document.getElementById('sgProgress');
+  const progressTxt = document.getElementById('sgProgressText');
+  const progressBar = document.getElementById('sgProgressBar');
+  setLoading(btn, true, `⏳ Generating 1 of ${picked.length}…`);
+  if (progressEl) progressEl.style.display = 'block';
+
+  let done = 0; const errors = [];
+
+  for (let i = 0; i < picked.length; i++) {
+    const pillar  = pillars[i % pillars.length];
+    const personaI = persona === 'Mixed' ? (i % 2 === 0 ? 'Abbey' : 'Kai') : persona;
+    const selected = articles.filter(a => a._selected);
+    const articleSet = selected.length ? selected : articles.slice(0, 3);
+
+    if (progressTxt) progressTxt.textContent = `Generating post ${i + 1} of ${picked.length} · ${pillar}…`;
+    if (progressBar) progressBar.style.width = `${Math.round(i / picked.length * 100)}%`;
+
+    try {
+      const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet });
+      addGeneratedPostToCalendar(post);
+      done++;
+    } catch(e) {
+      console.error('Week post generation failed:', picked[i], e);
+      errors.push(`${picked[i].toISOString().slice(0,10)}: ${e.message}`);
+    }
+  }
+
+  setLoading(btn, false, '🚀 Generate Posts');
+  if (progressEl) { progressBar.style.width = '100%'; setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 2000); }
+
+  if (errors.length === 0) {
+    showToast(`✅ ${done} post${done > 1 ? 's' : ''} generated and added to calendar!`, 'success');
+  } else if (done > 0) {
+    showToast(`⚠️ ${done} of ${picked.length} posts generated. ${errors.length} failed.`, 'error');
+  } else {
+    showToast('❌ Generation failed. Check your Gemini API key.', 'error');
+  }
 }
 
 /* ── APIFY INTEGRATION ── */
@@ -4072,6 +4277,9 @@ function toggleNewsItem(i, fromCheckbox) {
   const check = document.getElementById(`ncheck-${i}`);
   if (!fromCheckbox) check.checked = !check.checked;
   item.classList.toggle('selected', check.checked);
+  if (window._apifyArticles && window._apifyArticles[i]) {
+    window._apifyArticles[i]._selected = check.checked;
+  }
 }
 
 async function useSelectedNews(btn) {
