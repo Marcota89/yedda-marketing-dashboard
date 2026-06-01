@@ -1202,6 +1202,13 @@ h1,h2,h3,h4 {
 .rdot.approved { background: #16a34a; }
 .rdot.revise { background: var(--orange); }
 .rdot.rejected { background: #dc2626; }
+.rdot.published { background: var(--teal); box-shadow: 0 0 0 2px rgba(75,173,184,0.3); }
+.rating-published-banner {
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:rgba(75,173,184,0.1);border:1.5px solid rgba(75,173,184,0.3);
+  border-radius:8px;font-size:13px;font-weight:600;color:var(--teal-deep);
+}
+.q-status.sent { font-size:11px;font-weight:700;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:3px 8px;white-space:nowrap; }
 
 /* ── Schedule generator ── */
 .sched-gen-btn {
@@ -3602,6 +3609,12 @@ function _saveRatings(obj) {
 }
 
 function renderRatingBar(i) {
+  const status = getPostStatus(i);
+  if (status === 'published') {
+    return `<div class="rating-published-banner">✓ Published to LinkedIn · <span style="font-weight:400;font-size:12px;">Remove from queue to re-rate</span>
+      <button class="rate-btn reject" style="margin-left:auto;font-size:11px;padding:4px 10px;" onclick="ratePost(${i},null)" title="Remove published mark">↩ Undo</button>
+    </div>`;
+  }
   const r = getRatings()[i];
   const savedTag = r ? `<span class="rating-saved-tag ${r}">${r === 'approved' ? '✅ Approved — in Queue' : r === 'revise' ? '🔁 Flagged for revision' : '❌ Skipped'}</span>` : '';
   return `
@@ -3622,24 +3635,40 @@ function renderRatingBar(i) {
 
 function ratePost(i, rating) {
   const ratings = getRatings();
-  if (rating === null) { delete ratings[i]; } else { ratings[i] = rating; }
+  if (rating === null) {
+    delete ratings[i];
+    // also clear published mark so undo works fully
+    const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+    delete sent[i];
+    localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+  } else { ratings[i] = rating; }
   _saveRatings(ratings);
   const bar = document.getElementById(`ratingBar-${i}`);
   if (bar) bar.innerHTML = renderRatingBar(i);
-  updateDot(i, rating);
+  updateDot(i);
   renderQueue();
   updateQueueBadge();
 }
 
-function updateDot(i, rating) {
+function getPostStatus(i) {
+  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  if (sent[i]) return 'published';
+  return getRatings()[i] || 'pending';
+}
+
+function updateDot(i) {
   const dot = document.getElementById(`rdot-${i}`);
   if (!dot) return;
-  dot.className = 'rdot' + (rating ? ' ' + (rating === 'rejected' ? 'rejected' : rating) : '');
+  const status = getPostStatus(i);
+  dot.className = 'rdot' + (status !== 'pending' ? ' ' + status : '');
+  dot.title = status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 function loadRatings() {
   const ratings = getRatings();
-  Object.entries(ratings).forEach(([i, r]) => updateDot(parseInt(i), r));
+  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const allIdx = new Set([...Object.keys(ratings), ...Object.keys(sent)].map(Number));
+  allIdx.forEach(i => updateDot(i));
   updateQueueBadge();
 }
 
@@ -3813,13 +3842,17 @@ function showBufferStatus(msg, color) {
 
 async function copyAndOpenLinkedIn(btn, i) {
   const p = posts[i];
+  if (!p) return;
   const text = p.body + '\n\n' + p.tags;
-  // copy to clipboard
-  try { await navigator.clipboard.writeText(text); } catch(_) {}
-  // mark as sent
+  clipWrite(text);
+  // mark as published
   const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
   sent[i] = true;
   localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+  // update dot + rating bar to reflect published state
+  updateDot(i);
+  const bar = document.getElementById(`ratingBar-${i}`);
+  if (bar) bar.innerHTML = renderRatingBar(i);
   renderQueue();
   // open LinkedIn feed in new tab
   window.open('https://www.linkedin.com/feed/', '_blank');
