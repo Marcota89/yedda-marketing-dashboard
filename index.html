@@ -3432,9 +3432,73 @@ function _genSectionHeaderHTML(count) {
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('revise')" data-filter="revise">🔁 Revise</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
         </div>
+        <button onclick="exportContentBank()" title="Download approved posts as LINKEDIN-CONTENT-BANK.md snippet" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">📥 Export</button>
         <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
       </div>
     </div>`;
+}
+
+function exportContentBank() {
+  const ratings  = getRatings();
+  const sent     = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const saved    = getGeneratedPosts();
+
+  // collect approved + published generated posts (index >= POSTS_BASELINE_COUNT)
+  const eligible = [];
+  for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
+    const status = getPostStatus(i);
+    if (status === 'approved' || status === 'published') eligible.push({ i, post: posts[i], status });
+  }
+
+  if (!eligible.length) {
+    showToast('⚠️ No approved posts to export. Approve at least one generated post first.', 'error');
+    return;
+  }
+
+  const typeMap = { 'Engagement': 'Poll', 'Case Study': 'Carousel', 'Education': 'Carousel' };
+  const today   = new Date();
+  const months  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+
+  let md = `# Yedda.ai — LinkedIn Content Bank Export\n`;
+  md    += `## Generated: ${dateStr} · ${eligible.length} post${eligible.length > 1 ? 's' : ''}\n`;
+  md    += `### All output in English | All posts ready to publish\n\n---\n\n`;
+  md    += `> Append these posts to LINKEDIN-CONTENT-BANK.md and run check_marketing_sync.py --fix\n\n---\n\n`;
+
+  eligible.forEach(({ post, status }, n) => {
+    const rawDate = (post.time || '').replace(' · 🌐','').replace(' · 🔒','').trim();
+    const postDate = rawDate || dateStr;
+    const pillar   = post._pillar || 'Thought Leadership';
+    const type     = typeMap[pillar] || 'Text Post';
+    const topic    = post._hookPreview || post.body.split('\n')[0].slice(0, 80);
+    const source   = post.src || 'Industry Research';
+    const statusBadge = status === 'published' ? ' ✓ Published' : '';
+
+    md += `### POST #EXPORT-${n + 1} — ${postDate}${statusBadge}\n`;
+    md += `**Type:** ${type} | **Pillar:** ${pillar}\n`;
+    md += `**Topic:** ${topic}\n`;
+    md += `**Source:** ${source}\n\n---\n\n`;
+    md += `**[COPY AND PASTE TO LINKEDIN]**\n\n`;
+    md += `${post.body}\n\n`;
+    md += `${post.tags}\n\n`;
+    if (post.prompt) {
+      md += `**[IMAGE PROMPT]**\n\n${post.prompt}\n\n`;
+    }
+    md += `---\n\n`;
+  });
+
+  // trigger download
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `content-bank-export-${today.toISOString().slice(0,10)}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast(`📥 ${eligible.length} post${eligible.length > 1 ? 's' : ''} exported — add to LINKEDIN-CONTENT-BANK.md and commit`, 'success', 6000);
 }
 
 function clipWrite(text, onSuccess) {
