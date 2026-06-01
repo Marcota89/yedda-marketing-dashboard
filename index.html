@@ -4494,7 +4494,7 @@ function _genSectionHeaderHTML(count) {
 
 function exportContentBank() {
   const ratings  = getRatings();
-  const sent     = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const sent     = _getSent();
   const saved    = getGeneratedPosts();
 
   // collect approved + published generated posts (index >= POSTS_BASELINE_COUNT)
@@ -4632,17 +4632,21 @@ let _genPostsCache = null;
 let _ratingsCache = null;
 
 function getGeneratedPosts() {
-  if (_genPostsCache !== null) return _genPostsCache;
+  if (_genPostsCache !== null) return [..._genPostsCache]; // shallow copy — callers must not rely on mutating cache
   try {
     const v = JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]');
     _genPostsCache = Array.isArray(v) ? v : [];
   } catch(e) { _genPostsCache = []; }
-  return _genPostsCache;
+  return [..._genPostsCache];
 }
 
 function _saveGeneratedPosts(arr) {
   _genPostsCache = arr;
-  localStorage.setItem('yedda_generated_posts', JSON.stringify(arr));
+  try {
+    localStorage.setItem('yedda_generated_posts', JSON.stringify(arr));
+  } catch(e) {
+    if (e.name === 'QuotaExceededError') showToast('⚠️ Storage full — clear old posts to continue saving.', 'error', 6000);
+  }
 }
 
 function esc(s) {
@@ -4756,9 +4760,10 @@ function ratePost(i, rating) {
   if (rating === null) {
     delete ratings[i];
     // also clear published mark so undo works fully
-    const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+    const sent = {..._getSent()};
     delete sent[i];
     localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+    _invalidateSentCache();
   } else { ratings[i] = rating; }
   _saveRatings(ratings);
   const bar = document.getElementById(`ratingBar-${i}`);
@@ -4768,9 +4773,16 @@ function ratePost(i, rating) {
   updateQueueBadge();
 }
 
+let _sentCache = null;
+function _getSent() {
+  if (_sentCache !== null) return _sentCache;
+  try { _sentCache = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}'); } catch(_) { _sentCache = {}; }
+  return _sentCache;
+}
+function _invalidateSentCache() { _sentCache = null; }
+
 function getPostStatus(i) {
-  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
-  if (sent[i]) return 'published';
+  if (_getSent()[i]) return 'published';
   return getRatings()[i] || 'pending';
 }
 
@@ -4784,7 +4796,7 @@ function updateDot(i) {
 
 function loadRatings() {
   const ratings = getRatings();
-  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const sent = _getSent();
   const allIdx = new Set([...Object.keys(ratings), ...Object.keys(sent)].map(Number));
   allIdx.forEach(i => updateDot(i));
   updateQueueBadge();
@@ -4800,8 +4812,18 @@ function updateQueueBadge() {
 }
 
 /* ── QUEUE ── */
-const postDates = ['Apr 21','Apr 22','Apr 24','Apr 25','Apr 28','Apr 29','May 1','May 2'];
-const postTimes = ['9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT'];
+const postDates = [
+  'Apr 21','Apr 22','Apr 24','Apr 25','Apr 28','Apr 29','May 1','May 2',
+  'May 13','May 15','May 19','May 21','May 26','May 28',
+  'Jun 2','Jun 4','Jun 9','Jun 11','Jun 16','Jun 18',
+  'Jul 7','Jul 14','Jul 21','Jul 28','Aug 4','Aug 11','Aug 18','Aug 25'
+];
+const postTimes = [
+  '9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','12:00 PM SGT','9:00 AM SGT','9:00 AM SGT',
+  '9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT',
+  '9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT',
+  '9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT','9:00 AM SGT'
+];
 
 function getPostDate(i) {
   const p = posts[i];
@@ -4816,7 +4838,7 @@ function getPostTime(i) {
 
 function renderQueue() {
   const ratings = getRatings();
-  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const sent = _getSent();
   const approved = Object.entries(ratings).filter(([i,r]) => r === 'approved');
   const list = document.getElementById('queueList');
   const empty = document.getElementById('queueEmpty');
@@ -4964,9 +4986,10 @@ async function copyAndOpenLinkedIn(btn, i) {
   const text = p.body + '\n\n' + p.tags;
   clipWrite(text);
   // mark as published
-  const sent = JSON.parse(localStorage.getItem(QUEUE_SENT) || '{}');
+  const sent = {..._getSent()};
   sent[i] = true;
   localStorage.setItem(QUEUE_SENT, JSON.stringify(sent));
+  _invalidateSentCache();
   // update dot + rating bar to reflect published state
   updateDot(i);
   const bar = document.getElementById(`ratingBar-${i}`);
@@ -5257,8 +5280,9 @@ async function generateWeekPostsDirect(btn) {
   let masAvailable = false;
   try {
     const hCtrl = new AbortController();
-    setTimeout(() => hCtrl.abort(), 3000);
+    const hTid = setTimeout(() => hCtrl.abort(), 3000);
     const hRes = await fetch('http://localhost:8001/health', { signal: hCtrl.signal });
+    clearTimeout(hTid);
     masAvailable = hRes.ok;
   } catch(_) { masAvailable = false; }
 
@@ -5271,7 +5295,7 @@ async function generateWeekPostsDirect(btn) {
     const articleSet = selected.length ? selected : articles.slice(0, 3);
 
     if (progressTxt) progressTxt.textContent = `Generating post ${i + 1} of ${picked.length} · ${pillar}…`;
-    if (progressBar) progressBar.style.width = `${Math.round(i / picked.length * 100)}%`;
+    if (progressBar) progressBar.style.width = `${Math.round((i + 0.5) / picked.length * 100)}%`;
 
     try {
       const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet });
@@ -5736,8 +5760,8 @@ function addGeneratedPostToCalendar(post) {
   _saveGeneratedPosts(saved);
 
   // pillar tag style
-  const pillarClass = { 'Social Proof':'or', 'Engagement':'ink', 'Thought Leadership':'', 'Educational':'' }[post._pillar] || '';
-  const tagHtml = `<span class="post-tag ${pillarClass}">${post._pillar || 'Generated'}</span>`;
+  const pillarClass = esc({ 'Social Proof':'or', 'Engagement':'ink', 'Thought Leadership':'', 'Educational':'' }[post._pillar] || '');
+  const tagHtml = `<span class="post-tag ${pillarClass}">${esc(post._pillar || 'Generated')}</span>`;
 
   // find or create "Generated" week section
   let weekSection = document.getElementById('generated-week-section');
@@ -5767,7 +5791,7 @@ function addGeneratedPostToCalendar(post) {
       </div>
       <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
         ${tagHtml}
-        <button class="gen-del-btn" onclick="deleteGeneratedPost('${post._id}')" title="Delete post">✕</button>
+        <button class="gen-del-btn" onclick="deleteGeneratedPost('${esc(post._id)}')" title="Delete post">✕</button>
       </div>
     </div>`;
   weekSection.insertAdjacentHTML('beforeend', rowHtml);
@@ -6107,9 +6131,11 @@ async function reviewWithMAS(idx) {
     } catch(_) {}
   }
 
+  const _masCtrl = new AbortController();
+  const _masTid = setTimeout(() => _masCtrl.abort(), 15000);
   try {
     const res = await fetch('http://localhost:8001/review', {
-      method: 'POST',
+      method: 'POST', signal: _masCtrl.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         post_body: masBody,
@@ -6117,6 +6143,7 @@ async function reviewWithMAS(idx) {
         post_src: post.src
       })
     });
+    clearTimeout(_masTid);
 
     if (!res.ok) throw new Error(`MAS API returned HTTP ${res.status}`);
     const data = await res.json();
@@ -6300,30 +6327,48 @@ function clearAllGeneratedPosts() {
 }
 
 function rebuildGeneratedSection() {
-  // Remap ratings by _id → new index before splicing, so ratings survive delete/rebuild
+  // Remap ratings AND sent(published) by _id → new index before splicing
   const ratings = getRatings();
+  const sent    = _getSent();
   const idRatingMap = {};
+  const idSentMap   = {};
   for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
-    if (posts[i]?._id && ratings[i]) idRatingMap[posts[i]._id] = ratings[i];
+    const id = posts[i]?._id;
+    if (!id) continue;
+    if (ratings[i]) idRatingMap[id] = ratings[i];
+    if (sent[i])    idSentMap[id]   = true;
   }
 
   posts.splice(POSTS_BASELINE_COUNT);
   const sec = document.getElementById('generated-week-section');
   if (sec) sec.remove();
-  _genPostsCache = null; // force fresh read from localStorage
+  _genPostsCache = null;
   restoreGeneratedPosts();
   _applyCollapseState();
 
-  // Rebuild ratings clean — keep baseline, re-map generated by _id
+  // Rebuild ratings — keep baseline, re-map generated by _id
   const cleanRatings = {};
   for (let i = 0; i < POSTS_BASELINE_COUNT; i++) {
     if (ratings[i]) cleanRatings[i] = ratings[i];
   }
   for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
-    if (posts[i]?._id && idRatingMap[posts[i]._id]) cleanRatings[i] = idRatingMap[posts[i]._id];
+    const id = posts[i]?._id;
+    if (id && idRatingMap[id]) cleanRatings[i] = idRatingMap[id];
   }
-  _ratingsCache = null; // invalidate before save
+  _ratingsCache = null;
   _saveRatings(cleanRatings);
+
+  // Rebuild sent (published) — keep baseline, re-map generated by _id
+  const cleanSent = {};
+  for (let i = 0; i < POSTS_BASELINE_COUNT; i++) {
+    if (sent[i]) cleanSent[i] = true;
+  }
+  for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
+    const id = posts[i]?._id;
+    if (id && idSentMap[id]) cleanSent[i] = true;
+  }
+  localStorage.setItem(QUEUE_SENT, JSON.stringify(cleanSent));
+  _invalidateSentCache();
 
   loadRatings();
 }
@@ -6368,7 +6413,12 @@ function toggleWeekCollapse(header) {
     const txt = sec.querySelector('.week-header')?.textContent || '';
     const m = txt.match(/Week\s+(\w{3})\s+(\d{1,2})/);
     if (!m || mMap[m[1]] === undefined) return;
-    const weekStart = new Date(today.getFullYear(), mMap[m[1]], parseInt(m[2], 10));
+    const mon = mMap[m[1]];
+    // infer year: if month is >6 away from today's month in either direction, adjust year
+    let year = today.getFullYear();
+    const monthDiff = mon - today.getMonth();
+    if (monthDiff > 6) year--; else if (monthDiff < -6) year++;
+    const weekStart = new Date(year, mon, parseInt(m[2], 10));
     const diff = today - weekStart; // positive = past
     const isThisWeek = diff >= 0 && diff < 7 * DAY_MS;
     const absDiff = Math.abs(diff);
@@ -6422,7 +6472,8 @@ function filterGeneratedPosts(filter) {
   const sec = document.getElementById('generated-week-section');
   if (!sec) return;
   sec.querySelectorAll('.post-row').forEach(row => {
-    const idx = parseInt(row.id.replace('prow-', ''));
+    const idx = parseInt(row.id.replace('prow-', ''), 10);
+    if (isNaN(idx)) return;
     const rating = ratings[idx] || 'unrated';
     if (filter === 'all') {
       row.classList.remove('gen-hidden');
@@ -6955,7 +7006,12 @@ async function loadCompetitorIntel() {
       '</div>'
     ).join('');
   } catch(e) {
-    if (listEl) listEl.innerHTML = '<div style="color:#dc2626;font-size:13px">Error: ' + e.message + '</div>';
+    if (listEl) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'color:#dc2626;font-size:13px';
+      errDiv.textContent = 'Error: ' + e.message;
+      listEl.replaceChildren(errDiv);
+    }
   }
 }
 
