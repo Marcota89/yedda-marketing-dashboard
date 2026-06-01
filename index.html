@@ -4102,10 +4102,19 @@ async function generateWeekPostsDirect(btn) {
   setLoading(btn, true, `⏳ Generating 1 of ${picked.length}…`);
   if (progressEl) progressEl.style.display = 'block';
 
-  let done = 0; const errors = [];
+  // Check if MAS is available for auto-review
+  let masAvailable = false;
+  try {
+    const hCtrl = new AbortController();
+    setTimeout(() => hCtrl.abort(), 3000);
+    const hRes = await fetch('http://localhost:8001/health', { signal: hCtrl.signal });
+    masAvailable = hRes.ok;
+  } catch(_) { masAvailable = false; }
+
+  let done = 0; let totalRewrites = 0; const errors = [];
 
   for (let i = 0; i < picked.length; i++) {
-    const pillar  = pillars[i % pillars.length];
+    const pillar   = pillars[i % pillars.length];
     const personaI = persona === 'Mixed' ? (i % 2 === 0 ? 'Abbey' : 'Kai') : persona;
     const selected = articles.filter(a => a._selected);
     const articleSet = selected.length ? selected : articles.slice(0, 3);
@@ -4116,6 +4125,17 @@ async function generateWeekPostsDirect(btn) {
     try {
       const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet });
       addGeneratedPostToCalendar(post);
+      const idx = posts.length - 1;
+
+      if (masAvailable) {
+        if (progressTxt) progressTxt.textContent = `MAS review · post ${i + 1} of ${picked.length}…`;
+        const masResult = await _autoMASReview(post, idx);
+        if (!masResult.skipped && masResult.rewrites > 0) {
+          totalRewrites += masResult.rewrites;
+          renderPost(idx); // refresh preview with rewritten content
+        }
+      }
+
       done++;
     } catch(e) {
       console.error('Week post generation failed:', picked[i], e);
@@ -4126,10 +4146,14 @@ async function generateWeekPostsDirect(btn) {
   setLoading(btn, false, '🚀 Generate Posts');
   if (progressEl) { progressBar.style.width = '100%'; setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 2000); }
 
+  const masNote = masAvailable
+    ? (totalRewrites > 0 ? ` MAS applied ${totalRewrites} revision${totalRewrites > 1 ? 's' : ''}.` : ' MAS: all posts brand-aligned.')
+    : ' (MAS offline — manual review available per post)';
+
   if (errors.length === 0) {
-    showToast(`✅ ${done} post${done > 1 ? 's' : ''} generated and added to calendar!`, 'success');
+    showToast(`✅ ${done} post${done > 1 ? 's' : ''} generated.${masNote}`, 'success');
   } else if (done > 0) {
-    showToast(`⚠️ ${done} of ${picked.length} posts generated. ${errors.length} failed.`, 'error');
+    showToast(`⚠️ ${done} of ${picked.length} posts generated. ${errors.length} failed.${masNote}`, 'error');
   } else {
     showToast('❌ Generation failed. Check your Gemini API key.', 'error');
   }
@@ -4875,6 +4899,39 @@ function openLinkedIn() {
 }
 
 const _masInProgress = {};
+
+/* Silent MAS review — used by batch generation. Returns {approved, rewrites, skipped}. */
+async function _autoMASReview(post, idx) {
+  let masBody = post.body || '';
+  if (masBody.trim().startsWith('{')) {
+    try { const inner = JSON.parse(masBody); masBody = inner.body || inner.content || inner.text || masBody; } catch(_) {}
+  }
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch('http://localhost:8001/review', {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_body: masBody, post_tags: post.tags, post_src: post.src || '' })
+    });
+    clearTimeout(tid);
+    if (!res.ok) return { approved: false, rewrites: 0, skipped: true };
+    const data = await res.json();
+    const cleanBody = unwrapJsonBody((data.post_body || '').replace(/\\n/g, '\n'));
+    // Update post object in place
+    post.body = cleanBody;
+    post.tags = data.post_tags;
+    posts[idx] = post;
+    // Persist to localStorage
+    const saved = getGeneratedPosts();
+    const genIdx = post._id ? saved.findIndex(p => p._id === post._id) : -1;
+    if (genIdx >= 0) { saved[genIdx].body = cleanBody; saved[genIdx].tags = data.post_tags; _saveGeneratedPosts(saved); }
+    return { approved: data.approved, rewrites: data.rewrites_done || 0, skipped: false };
+  } catch(e) {
+    clearTimeout(tid);
+    return { approved: false, rewrites: 0, skipped: true }; // MAS not running — skip silently
+  }
+}
 
 async function reviewWithMAS(idx) {
   if (_masInProgress[idx]) return; // prevent double-click
