@@ -3394,7 +3394,7 @@ That's not a future problem. That's this quarter.
 Fraudsters upgraded their tools. Most retailers haven't.
 
 When Yedda.ai Fraud Detection was deployed across a major retail chain in Southeast Asia:
-✓ Real-time alerts on 100% of monitored checkouts
+✓ Immediate alerts on 100% of monitored checkouts
 ✓ Intervention rate from 4% → 61% of flagged events
 ✓ 54% shrinkage reduction in 90 days
 ✓ Payback in 7 months
@@ -3860,7 +3860,7 @@ BRAND: Primary teal #4BADB8, accent orange #F07830, ink #0E1B1E. Logo always on 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Aug 11 · 🌐", tags:"#RetailTech #VisualAI #ComputerVision #YeddaAI #OperationalIntelligence #FutureOfRetail",
     src:"Yedda internal product — Abbey explainer", meta:{time:"9–10AM", char:"Abbey", target:"CDO/VP Digital Retail", day:"Tue"},
-    body:`What real-time anomaly detection actually looks like on a live retail feed.
+    body:`What Visual AI anomaly detection actually looks like on a live retail feed.
 
 Not what the demo shows. What the operation sees.
 
@@ -3882,7 +3882,7 @@ Abbey is watching for the moments that require her attention.
 
 That's the difference between surveillance and operational intelligence.
 
-What would change in your operation if your team knew about these events in 90 seconds — not 90 days?`, prompt:`Enterprise product editorial visual for a LinkedIn post showing Abbey's real-time anomaly detection.
+→ What would change in your operation if your team knew about these events in 90 seconds — not 90 days?`, prompt:`Enterprise product editorial visual for a LinkedIn post showing Abbey's real-time anomaly detection.
 
 Background: Dark operational control room aesthetic (ink #0E1B1E). Central screen showing a simplified 40-store network map with store nodes.
 
@@ -4281,7 +4281,7 @@ How long before your team knows about it?
 
 This question isn't rhetorical. We're genuinely mapping how operations teams receive information in 2026 — and what the cost of that lag looks like across industries.
 
-Drop your answer and if you want to add context about what that lag has cost your operation, I'd love to hear it in the comments.`, prompt:`Clean engagement visual for a LinkedIn poll post about operational data lag.
+→ Drop your answer and if you want to add context about what that lag has cost your operation, I'd love to hear it in the comments.`, prompt:`Clean engagement visual for a LinkedIn poll post about operational data lag.
 
 Background: White (#FAFCFC) with subtle teal (#4BADB8) geometric grid texture. Center: Large bold question in ink (#0E1B1E): "When a shrinkage event happens — how long before your team knows?"
 
@@ -4524,7 +4524,8 @@ function exportContentBank() {
     const postDate = rawDate || dateStr;
     const pillar   = post._pillar || 'Thought Leadership';
     const type     = typeMap[pillar] || 'Text Post';
-    const topic    = post._hookPreview || post.body.split('\n')[0].slice(0, 80);
+    const rawBody  = post.body || '';
+    const topic    = post._hookPreview || rawBody.split('\n')[0].slice(0, 80) || '(no topic)';
     const source   = post.src || 'Industry Research';
     const statusBadge = status === 'published' ? ' ✓ Published' : '';
 
@@ -4533,8 +4534,8 @@ function exportContentBank() {
     md += `**Topic:** ${topic}\n`;
     md += `**Source:** ${source}\n\n---\n\n`;
     md += `**[COPY AND PASTE TO LINKEDIN]**\n\n`;
-    md += `${post.body}\n\n`;
-    md += `${post.tags}\n\n`;
+    md += `${rawBody}\n\n`;
+    md += `${post.tags || ''}\n\n`;
     if (post.prompt) {
       md += `**[IMAGE PROMPT]**\n\n${post.prompt}\n\n`;
     }
@@ -4550,7 +4551,7 @@ function exportContentBank() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 
   showToast(`📥 ${eligible.length} post${eligible.length > 1 ? 's' : ''} exported — add to LINKEDIN-CONTENT-BANK.md and commit`, 'success', 6000);
 }
@@ -4782,8 +4783,9 @@ function _getSent() {
 function _invalidateSentCache() { _sentCache = null; }
 
 function getPostStatus(i) {
-  if (_getSent()[i]) return 'published';
-  return getRatings()[i] || 'pending';
+  const key = String(i);
+  if (_getSent()[key]) return 'published';
+  return getRatings()[key] || 'pending';
 }
 
 function updateDot(i) {
@@ -5250,10 +5252,16 @@ Return JSON:
   };
 }
 
+let _weekGenInProgress = false;
 async function generateWeekPostsDirect(btn) {
+  if (_weekGenInProgress) { showToast('⚠️ Generation already running — please wait.', 'error'); return; }
+  _weekGenInProgress = true;
+  try { await _generateWeekPostsDirectInner(btn); } finally { _weekGenInProgress = false; }
+}
+async function _generateWeekPostsDirectInner(btn) {
   const startVal = document.getElementById('sgStart').value;
   const endVal   = document.getElementById('sgEnd').value;
-  const freq     = parseInt(document.getElementById('sgFreq').value, 10) || 3;
+  const freq     = Math.max(1, parseInt(document.getElementById('sgFreq').value, 10) || 3);
   const persona  = document.getElementById('sgPersona').value;
   const topic    = document.getElementById('sgTopic').value.trim();
   const pillars  = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
@@ -5319,7 +5327,7 @@ async function generateWeekPostsDirect(btn) {
   }
 
   setLoading(btn, false, '🚀 Generate Posts');
-  if (progressEl) { progressBar.style.width = '100%'; setTimeout(() => { progressEl.style.display = 'none'; progressBar.style.width = '0%'; }, 2000); }
+  if (progressEl && progressBar) { progressBar.style.width = '100%'; setTimeout(() => { progressEl.style.display = 'none'; if (progressBar) progressBar.style.width = '0%'; }, 2000); }
 
   const masNote = masAvailable
     ? (totalRewrites > 0 ? ` MAS applied ${totalRewrites} revision${totalRewrites > 1 ? 's' : ''}.` : ' MAS: all posts brand-aligned.')
@@ -5740,18 +5748,19 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   };
 }
 
-function addGeneratedPostToCalendar(post) {
+function addGeneratedPostToCalendar(post, _retried = false) {
   // assign stable id if missing
   if (!post._id) post._id = Date.now().toString();
 
   // cap check BEFORE pushing to posts[] to avoid ghost index on rebuild
   let saved = getGeneratedPosts();
   if (saved.length >= 30) {
+    if (_retried) { showToast('❌ Could not trim posts — storage error. Clear old posts manually.', 'error'); return; }
     if (!confirm(`You have ${saved.length} auto-generated posts saved.\nRemove the 10 oldest to continue?`)) return;
     saved.splice(0, 10);
     try { _saveGeneratedPosts(saved); } catch(e) { alert('Storage error — could not trim posts: ' + e.message); return; }
     rebuildGeneratedSection();
-    return addGeneratedPostToCalendar(post); // posts[] is clean after rebuild
+    return addGeneratedPostToCalendar(post, true); // posts[] is clean after rebuild
   }
 
   const idx = posts.length;
@@ -6093,9 +6102,9 @@ async function _autoMASReview(post, idx) {
     if (!res.ok) return { approved: false, rewrites: 0, skipped: true };
     const data = await res.json();
     const cleanBody = unwrapJsonBody((data.post_body || '').replace(/\\n/g, '\n'));
-    // Update post object in place
-    post.body = cleanBody;
-    post.tags = data.post_tags;
+    // Only accept non-empty rewrites — never blank a post body
+    if (cleanBody && cleanBody.trim()) post.body = cleanBody;
+    if (data.post_tags) post.tags = data.post_tags;
     posts[idx] = post;
     // Persist to localStorage
     const saved = getGeneratedPosts();
@@ -6149,9 +6158,9 @@ async function reviewWithMAS(idx) {
     const data = await res.json();
 
     // update post in array with reviewed content (unescape \n from JSON transport)
-    let cleanBody = unwrapJsonBody((data.post_body || '').replace(/\\n/g, '\n'));
-    posts[idx].body = cleanBody;
-    posts[idx].tags = data.post_tags;
+    const cleanBody = unwrapJsonBody((data.post_body || '').replace(/\\n/g, '\n'));
+    if (cleanBody && cleanBody.trim()) posts[idx].body = cleanBody;
+    if (data.post_tags) posts[idx].tags = data.post_tags;
 
     // persist updated generated posts — use _id for stable lookup
     let saved = getGeneratedPosts();
@@ -6789,7 +6798,7 @@ document.addEventListener('keydown', function(e) {
 const _MAS_BASE = (function() {
   // Try to detect MAS dashboard URL from current page origin
   // Default: same host port 8000, or from localStorage config
-  return localStorage.getItem('yedda-mas-url') || 'http://localhost:8000';
+  return localStorage.getItem('yedda_mas_url') || 'http://localhost:8000';
 })();
 
 async function dispatchContentRun() {
