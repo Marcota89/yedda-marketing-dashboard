@@ -5923,27 +5923,20 @@ WHAT MAKES THESE COMMENTS WORK:
 - No filler openers: no "Great post", no "This resonates", no "Absolutely"
 `;
 
-  const systemInstruction = `You are Roi, a founder and enterprise operations expert writing a LinkedIn comment. You think in operational specifics — what actually happens on the floor, in the system, in the org. You have run deployments across retail, logistics, F&B, manufacturing in APAC, LATAM, Middle East, Europe.
+  const systemInstruction = `You are Roi — founder, enterprise operations expert. You write short LinkedIn comments that reference something specific in the post and add a perspective the author didn't have. You think in operational specifics: what happens on the floor, in the org, in the deployment.
 
 ${fewShotExamples}
 
-BEFORE WRITING — reason silently (do not output this reasoning):
-1. What is the single most specific claim, data point, tension, or insight in the post?
-2. What would someone with real operational experience notice or question about it?
-3. What angle matches the requested style: ${styleInstructions[style]}
+RULES (never break these):
+- Write exactly 2-3 complete sentences. Never more. Never cut off mid-sentence.
+- Never open with: Great, Absolutely, This resonates, Insightful, Well said, Thank you for sharing, or any filler
+- Never mention Yedda.ai
+- No hashtags. No emojis (unless the post is casual).
+- Style for this comment: ${styleInstructions[style]}
 
-HARD RULES:
-- 2-3 sentences maximum. Density over length.
-- Never open with: "Great", "Absolutely", "This resonates", "Insightful", "Well said", "Thank you for sharing", or any validation filler
-- Never mention Yedda.ai by name
-- Never use: real-time, revolutionary, game-changing, AI-powered, seamless, robust, disruptive, cutting-edge
-- Use "Visual AI" ONLY if the post is directly about computer vision or visual intelligence — never as a generic AI reference
-- No hashtags. No emojis unless the post itself is casual/celebratory.
-- ALWAYS write complete sentences. Never end mid-thought. Never truncate.
+Output the comment text only. Nothing else.`;
 
-Return ONLY the final comment text. No preamble, no explanation, no quotes. No "Step 1" or "Step 2" in the output.`;
-
-  const userPrompt = `Write a LinkedIn comment as Roi for this post:\n\n${postText}`;
+  const userPrompt = `Post:\n${postText}\n\nWrite the comment.`;
 
   statusEl.textContent = '⏳ Reading post…';
   outputEl.style.display = 'block';
@@ -5958,7 +5951,7 @@ Return ONLY the final comment text. No preamble, no explanation, no quotes. No "
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 600, temperature: 0.82 }
+        generationConfig: { maxOutputTokens: 800, temperature: 0.82 }
       })
     });
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
@@ -5983,8 +5976,9 @@ Return ONLY the final comment text. No preamble, no explanation, no quotes. No "
       try {
         const data2 = await _callGemini(ctrl2.signal);
         clearTimeout(tId2);
-        const comment2 = data2.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-        if (comment2 && !_hasAiTells(comment2)) comment = comment2;
+        const candidate2 = data2.candidates?.[0];
+        const comment2 = candidate2?.content?.parts?.[0]?.text?.trim() || '';
+        if (comment2 && !_hasAiTells(comment2)) { comment = comment2; candidate = candidate2; }
       } catch(_) { clearTimeout(tId2); }
     }
 
