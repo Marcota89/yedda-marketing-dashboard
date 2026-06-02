@@ -5942,8 +5942,12 @@ Output the comment text only. Nothing else.`;
   outputEl.style.display = 'block';
   textEl.value = '';
 
-  const _callGemini = async (signal) => {
-    const model = getGeminiModel();
+  // Comments need a fast, non-thinking model — 2.5-flash thinking tokens eat output budget
+  const _COMMENT_MODELS = ['gemini-2.0-flash', getGeminiModel()];
+
+  const _callGemini = async (signal, modelOverride) => {
+    const model = modelOverride || _COMMENT_MODELS[0];
+    const is25Flash = model.includes('2.5');
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -5951,9 +5955,14 @@ Output the comment text only. Nothing else.`;
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.82, thinkingConfig: { thinkingBudget: 0 } }
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.82,
+          ...(is25Flash ? { thinkingConfig: { thinkingBudget: 0 } } : {})
+        }
       })
     });
+    if (res.status === 503 || res.status === 429) throw new Error(`Gemini ${res.status}`);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     return res.json();
   };
@@ -5962,7 +5971,14 @@ Output the comment text only. Nothing else.`;
   const tId = setTimeout(() => ctrl.abort(), 25000);
   try {
     statusEl.textContent = '⏳ Writing comment…';
-    let data = await _callGemini(ctrl.signal);
+    let data;
+    try {
+      data = await _callGemini(ctrl.signal, _COMMENT_MODELS[0]);
+    } catch(e0) {
+      // fallback to user's configured model if 2.0-flash fails
+      if (!ctrl.signal.aborted) data = await _callGemini(ctrl.signal, _COMMENT_MODELS[1]);
+      else throw e0;
+    }
     clearTimeout(tId);
     let candidate = data.candidates?.[0];
     let comment = candidate?.content?.parts?.[0]?.text?.trim() || '';
