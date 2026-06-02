@@ -5951,7 +5951,7 @@ Output the comment text only. Nothing else.`;
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.82 }
+        generationConfig: { maxOutputTokens: 800, temperature: 0.82, thinkingConfig: { thinkingBudget: 0 } }
       })
     });
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
@@ -6058,7 +6058,7 @@ Return ONLY the post text (and poll options if poll type). No quotes, no explana
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: roiPostUserPrompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.85 }
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.85, thinkingConfig: { thinkingBudget: 0 } }
       })
     });
     clearTimeout(tId);
