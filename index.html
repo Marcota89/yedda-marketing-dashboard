@@ -1756,6 +1756,10 @@ footer {
   .chars { gap: 16px; }
   .char-body { padding: 18px 20px; }
   .char-name { font-size: 22px; }
+  /* gen section controls wrap on small screens */
+  #gen-controls { flex-wrap: wrap; row-gap: 6px; }
+  #gen-filter-tabs { flex-wrap: wrap; gap: 4px; }
+  .gen-filter-btn { min-height: 36px; padding: 4px 10px; }
 }
 
 /* ═══ TOAST NOTIFICATION ═══ */
@@ -2482,16 +2486,16 @@ textarea::placeholder {
           <div id="apifyNewsResults"></div>
         </div>
         <div class="sched-form">
-          <div class="sched-field"><label>Start date</label><input type="date" id="sgStart" class="sched-input"></div>
-          <div class="sched-field"><label>End date</label><input type="date" id="sgEnd" class="sched-input"></div>
-          <div class="sched-field"><label>Posts per week</label>
+          <div class="sched-field"><label for="sgStart">Start date</label><input type="date" id="sgStart" class="sched-input"></div>
+          <div class="sched-field"><label for="sgEnd">End date</label><input type="date" id="sgEnd" class="sched-input"></div>
+          <div class="sched-field"><label for="sgFreq">Posts per week</label>
             <select id="sgFreq" class="sched-input">
               <option value="2">2 per week</option>
               <option value="3" selected>3 per week</option>
               <option value="5">5 per week</option>
             </select>
           </div>
-          <div class="sched-field"><label>Persona</label>
+          <div class="sched-field"><label for="sgPersona">Persona</label>
             <select id="sgPersona" class="sched-input">
               <option value="Mixed" selected>Mixed (Abbey + Kai)</option>
               <option value="Abbey">Abbey only</option>
@@ -2513,7 +2517,7 @@ textarea::placeholder {
             <label><input type="checkbox" value="What We Offer"> 💡 What We Offer</label>
           </div>
         </div>
-        <div class="sched-field" style="margin-top:8px;"><label>Custom topic or keyword (optional)</label><input type="text" id="sgTopic" class="sched-input" placeholder="e.g. shrinkage prevention, LATAM expansion, safety compliance"></div>
+        <div class="sched-field" style="margin-top:8px;"><label for="sgTopic">Custom topic or keyword (optional)</label><input type="text" id="sgTopic" class="sched-input" placeholder="e.g. shrinkage prevention, LATAM expansion, safety compliance"></div>
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
           <button id="sgDirectBtn" class="sched-gen-run" onclick="generateWeekPostsDirect(this)">🚀 Generate Posts</button>
           <button class="sched-gen-run" style="background:var(--text-soft);font-size:12px;padding:8px 14px;" onclick="generateSchedulePrompt()">📋 Get Prompt for Claude</button>
@@ -2866,14 +2870,14 @@ textarea::placeholder {
     </div>
     <div class="sched-gen-box reveal" style="max-width:720px;">
       <div class="sched-field">
-        <label>Paste the LinkedIn post you want to comment on</label>
+        <label for="roiPostInput">Paste the LinkedIn post you want to comment on</label>
         <textarea id="roiPostInput" rows="5" class="sched-input" style="width:100%;resize:vertical;" placeholder="Paste the full text of the LinkedIn post here (not the URL — copy the actual post content)..." oninput="checkRoiPostInput(this)"></textarea>
         <div id="roiPostUrlWarning" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(240,120,48,0.1);border:1px solid rgba(240,120,48,0.35);border-radius:6px;font-size:12px;color:#c2540a;">
           ⚠️ <strong>URL detected.</strong> The Comment Generator needs the <em>post text</em>, not a link — Gemini cannot open URLs. Open the LinkedIn post, select all the text, copy and paste it here.
         </div>
       </div>
       <div class="sched-field" style="margin-top:12px;">
-        <label>Comment style</label>
+        <label for="roiCommentStyle">Comment style</label>
         <select id="roiCommentStyle" class="sched-input">
           <option value="insight">Add insight — extend the conversation with data/experience</option>
           <option value="challenge">Respectfully challenge — offer a different perspective</option>
@@ -2958,11 +2962,11 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ SETTINGS MODAL ═══ -->
-<div id="settingsModal" class="modal-backdrop" style="display:none;" onclick="closeSettingsOutside(event)">
+<div id="settingsModal" class="modal-backdrop" style="display:none;" onclick="closeSettingsOutside(event)" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
   <div class="modal-box">
     <div class="modal-head">
-      <h3 class="modal-title">⚙️ Settings</h3>
-      <button onclick="closeSettings()" class="modal-close">✕</button>
+      <h3 class="modal-title" id="settingsModalTitle">⚙️ Settings</h3>
+      <button onclick="closeSettings()" class="modal-close" aria-label="Close settings">✕</button>
     </div>
     <!-- Settings progress indicator -->
     <div class="settings-progress" id="settingsProgress">
@@ -2981,7 +2985,7 @@ textarea::placeholder {
       <div class="modal-section-title">✨ Gemini AI — Auto Post Generator <span style="color:#dc2626;font-size:11px;font-weight:700;margin-left:6px;">REQUIRED</span></div>
       <p class="modal-desc">Add your Google Gemini API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>aistudio.google.com → Get API Key</strong>.</p>
       <div class="modal-field">
-        <label>Gemini API Key</label>
+        <label for="claudeApiKey">Gemini API Key</label>
         <div class="token-field-wrap">
           <input type="password" id="claudeApiKey" class="modal-input" placeholder="AIza...">
           <button type="button" class="token-vis-btn" onclick="toggleTokenVis('claudeApiKey', this)" title="Show/hide key">👁</button>
@@ -2995,7 +2999,7 @@ textarea::placeholder {
       <div class="modal-section-title">🔍 Apify News Integration <span style="color:var(--text-soft);font-size:11px;font-weight:600;margin-left:6px;">OPTIONAL</span></div>
       <p class="modal-desc">Connect Apify to automatically fetch recent news articles relevant to Yedda.ai before generating new posts. Get your token at <strong>console.apify.com → Settings → Integrations</strong>.</p>
       <div class="modal-field">
-        <label>Apify Personal API Token</label>
+        <label for="apifyToken">Apify Personal API Token</label>
         <div class="token-field-wrap">
           <input type="password" id="apifyToken" class="modal-input" placeholder="apify_api_...">
           <button type="button" class="token-vis-btn" onclick="toggleTokenVis('apifyToken', this)" title="Show/hide token">👁</button>
@@ -4476,7 +4480,7 @@ function _genSectionHeaderHTML(count) {
   const chevron = collapsed ? '▶' : '▼';
   return `
     <div class="week-header" style="color:var(--teal-deep);flex-wrap:wrap;row-gap:6px;cursor:default;">
-      <button id="gen-collapse-btn" onclick="toggleGenCollapse()" title="${collapsed ? 'Expand' : 'Collapse'} posts" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--teal-deep);padding:0 4px 0 0;line-height:1;">${chevron}</button>
+      <button id="gen-collapse-btn" onclick="toggleGenCollapse()" title="${collapsed ? 'Expand' : 'Collapse'} posts" aria-label="${collapsed ? 'Expand' : 'Collapse'} auto-generated posts" aria-expanded="${collapsed ? 'false' : 'true'}" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--teal-deep);padding:0 4px 0 0;line-height:1;">${chevron}</button>
       <span class="week-dot"></span>Auto-Generated Posts ✨
       <span id="gen-count-badge" style="background:var(--teal);color:#fff;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;margin-left:2px;">${count > 0 ? count : ''}</span>
       <div id="gen-controls" style="margin-left:auto;display:${collapsed ? 'none' : 'flex'};gap:6px;align-items:center;flex-wrap:wrap;">
@@ -4485,6 +4489,7 @@ function _genSectionHeaderHTML(count) {
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('approved')" data-filter="approved">✅ Approved</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('revise')" data-filter="revise">🔁 Revise</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
+          <button class="gen-filter-btn" onclick="filterGeneratedPosts('published')" data-filter="published" style="border-color:var(--teal);">✓ Published</button>
         </div>
         <button onclick="exportContentBank()" title="Download approved posts as LINKEDIN-CONTENT-BANK.md snippet" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">📥 Export</button>
         <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
@@ -5002,11 +5007,35 @@ async function copyAndOpenLinkedIn(btn, i) {
 }
 
 /* ── SETTINGS MODAL ── */
+let _settingsTrigger = null;
+let _settingsTrapHandler = null;
+
 function openSettings() {
-  document.getElementById('settingsModal').style.display = 'flex';
+  _settingsTrigger = document.activeElement;
+  const modal = document.getElementById('settingsModal');
+  modal.style.display = 'flex';
   updateBufferUI();
+  // focus first focusable element in modal
+  const focusable = modal.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (focusable.length) focusable[0].focus();
+  // focus trap
+  _settingsTrapHandler = (e) => {
+    if (e.key !== 'Tab') return;
+    const els = [...modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+    if (!els.length) return;
+    const first = els[0]; const last = els[els.length - 1];
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+    else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+  };
+  modal.addEventListener('keydown', _settingsTrapHandler);
 }
-function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+function closeSettings() {
+  const modal = document.getElementById('settingsModal');
+  modal.style.display = 'none';
+  if (_settingsTrapHandler) { modal.removeEventListener('keydown', _settingsTrapHandler); _settingsTrapHandler = null; }
+  if (_settingsTrigger && typeof _settingsTrigger.focus === 'function') { _settingsTrigger.focus(); _settingsTrigger = null; }
+}
 function closeSettingsOutside(e) { if (e.target.id === 'settingsModal') closeSettings(); }
 
 /* ── SCHEDULE GENERATOR ── */
@@ -6456,7 +6485,7 @@ function toggleGenCollapse() {
     sec.querySelectorAll('.post-row').forEach(r => r.style.display = 'none');
   }
   const btn = document.getElementById('gen-collapse-btn');
-  if (btn) { btn.textContent = next ? '▶' : '▼'; btn.title = next ? 'Expand posts' : 'Collapse posts'; }
+  if (btn) { btn.textContent = next ? '▶' : '▼'; btn.title = next ? 'Expand posts' : 'Collapse posts'; btn.setAttribute('aria-expanded', next ? 'false' : 'true'); btn.setAttribute('aria-label', (next ? 'Expand' : 'Collapse') + ' auto-generated posts'); }
   const controls = document.getElementById('gen-controls');
   if (controls) controls.style.display = next ? 'none' : 'flex';
 }
@@ -6467,7 +6496,7 @@ function _applyCollapseState() {
     const sec = document.getElementById('generated-week-section');
     if (sec) sec.querySelectorAll('.post-row').forEach(r => r.style.display = 'none');
     const btn = document.getElementById('gen-collapse-btn');
-    if (btn) { btn.textContent = '▶'; btn.title = 'Expand posts'; }
+    if (btn) { btn.textContent = '▶'; btn.title = 'Expand posts'; btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Expand auto-generated posts'); }
     const controls = document.getElementById('gen-controls');
     if (controls) controls.style.display = 'none';
   }
@@ -6483,9 +6512,12 @@ function filterGeneratedPosts(filter) {
   sec.querySelectorAll('.post-row').forEach(row => {
     const idx = parseInt(row.id.replace('prow-', ''), 10);
     if (isNaN(idx)) return;
+    const status = getPostStatus(idx);
     const rating = ratings[idx] || 'unrated';
     if (filter === 'all') {
       row.classList.remove('gen-hidden');
+    } else if (filter === 'published') {
+      row.classList.toggle('gen-hidden', status !== 'published');
     } else if (filter === 'approved') {
       row.classList.toggle('gen-hidden', rating !== 'approved');
     } else if (filter === 'revise') {
