@@ -5927,6 +5927,11 @@ WHAT MAKES THESE COMMENTS WORK:
 
 ${fewShotExamples}
 
+BEFORE WRITING — reason silently (do not output this reasoning):
+1. What is the single most specific claim, data point, tension, or insight in the post?
+2. What would someone with real operational experience notice or question about it?
+3. What angle matches the requested style: ${styleInstructions[style]}
+
 HARD RULES:
 - 2-3 sentences maximum. Density over length.
 - Never open with: "Great", "Absolutely", "This resonates", "Insightful", "Well said", "Thank you for sharing", or any validation filler
@@ -5934,23 +5939,11 @@ HARD RULES:
 - Never use: real-time, revolutionary, game-changing, AI-powered, seamless, robust, disruptive, cutting-edge
 - Use "Visual AI" ONLY if the post is directly about computer vision or visual intelligence — never as a generic AI reference
 - No hashtags. No emojis unless the post itself is casual/celebratory.
-- Write complete sentences. Never end mid-thought.
+- ALWAYS write complete sentences. Never end mid-thought. Never truncate.
 
-STYLE FOR THIS COMMENT: ${styleInstructions[style]}
+Return ONLY the final comment text. No preamble, no explanation, no quotes. No "Step 1" or "Step 2" in the output.`;
 
-Return ONLY the final comment text. No preamble, no explanation, no quotes.`;
-
-  // Chain-of-thought: model first extracts anchor, then writes comment
-  const userPrompt = `Analyze this LinkedIn post and write a comment as Roi.
-
-STEP 1 — Identify (do this silently, do not print it):
-- What is the single most specific claim, data point, tension, or insight in this post?
-- What would someone with real operational experience notice or question about it?
-
-STEP 2 — Write the comment based on that specific anchor. Do not be generic.
-
-POST:
-${postText}`;
+  const userPrompt = `Write a LinkedIn comment as Roi for this post:\n\n${postText}`;
 
   statusEl.textContent = '⏳ Reading post…';
   outputEl.style.display = 'block';
@@ -5965,7 +5958,7 @@ ${postText}`;
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { maxOutputTokens: 350, temperature: 0.82 }
+        generationConfig: { maxOutputTokens: 600, temperature: 0.82 }
       })
     });
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
