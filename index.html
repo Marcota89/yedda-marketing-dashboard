@@ -6609,7 +6609,109 @@ function copyPrompt(btn, i) {
   });
 }
 
-/* ── IMAGE GENERATION (Imagen 3 + logo composite) ── */
+/* ── IMAGE GENERATION ── */
+
+function _extractCardText(post) {
+  const body = (post.body || post.prompt || '').replace(/#\w+/g, '').trim();
+  // Prefer sentences with a stat
+  const statMatch = body.match(/[\d,]+[%s][\w\s,.-]{0,60}/i);
+  if (statMatch) return statMatch[0].trim().replace(/[.!?,]+$/, '');
+  // Fallback: first 10 words
+  return body.split(/\s+/).slice(0, 10).join(' ').replace(/[.!?,]+$/, '');
+}
+
+async function _generateBrandedCardDataUrl(post) {
+  return new Promise((resolve) => {
+    const W = 1024, H = 1280;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a3d45');
+    bg.addColorStop(1, '#155f6e');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Orange top bar
+    ctx.fillStyle = '#F07830';
+    ctx.fillRect(0, 0, W, 10);
+
+    // Large teal circle top-right
+    ctx.save(); ctx.globalAlpha = 0.18;
+    ctx.fillStyle = '#4BADB8';
+    ctx.beginPath(); ctx.arc(W + 80, -60, 420, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Orange circle bottom-left
+    ctx.save(); ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#F07830';
+    ctx.beginPath(); ctx.arc(-60, H + 60, 300, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Small dots accent
+    [[120, 340], [890, 820], [780, 240], [200, 900]].forEach(([x, y]) => {
+      ctx.save(); ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#4BADB8';
+      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+
+    // "YEDDA.AI" label
+    ctx.fillStyle = '#F07830';
+    ctx.font = 'bold 28px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('YEDDA.AI', W / 2, 420);
+
+    // Divider line
+    ctx.fillStyle = '#F07830';
+    ctx.fillRect(W / 2 - 40, 440, 80, 3);
+
+    // Main text (word-wrapped, white, bold)
+    const phrase = _extractCardText(post);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 64px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    const words = phrase.split(' ');
+    const lines = []; let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(test).width > 820 && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    const lh = 84;
+    const startY = 560 - ((lines.length - 1) * lh) / 2;
+    lines.forEach((l, j) => ctx.fillText(l, W / 2, startY + j * lh));
+
+    // Orange underline accent
+    ctx.fillStyle = '#F07830';
+    ctx.fillRect(W / 2 - 60, startY + lines.length * lh + 24, 120, 4);
+
+    // Proof point (small, bottom area)
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '26px Arial, sans-serif';
+    ctx.fillText('Intelligence Augmentation', W / 2, H - 120);
+
+    // Add logo
+    const logo = new Image();
+    logo.onload = () => {
+      const logoW = Math.round(W * 0.20);
+      const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * logoW);
+      const pad = Math.round(W * 0.04);
+      ctx.save(); ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(pad - 6, H - logoH - pad - 6, logoW + 12, logoH + 12, 6);
+      ctx.fill(); ctx.restore();
+      ctx.drawImage(logo, pad, H - logoH - pad, logoW, logoH);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    logo.onerror = () => resolve(canvas.toDataURL('image/png'));
+    logo.src = 'yedda-logo.png';
+  });
+}
 
 async function _compositeWithLogo(base64Image) {
   return new Promise((resolve) => {
@@ -6655,22 +6757,35 @@ async function generatePostImage(btn, i) {
 
   const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Teal and orange brand colors. Abstract, professional. No people, no faces.';
   const seed = Math.floor(Math.random() * 999999);
-  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux&nologo=true&enhance=true`;
+  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux`;
 
   try {
-    const res = await fetch(pollinationsUrl);
-    if (!res.ok) throw new Error(`Image service HTTP ${res.status}`);
-    const blob = await res.blob();
-    const b64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    let dataUrl = null;
 
-    if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
-    const dataUrl = await _compositeWithLogo(b64);
-    if (!dataUrl) throw new Error('Canvas composite failed');
+    // Path 1: Pollinations AI (free, FLUX model)
+    try {
+      if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>';
+      const res = await fetch(pollinationsUrl);
+      if (res.ok) {
+        const blob = await res.blob();
+        const b64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
+        dataUrl = await _compositeWithLogo(b64);
+      }
+    } catch(_) {}
+
+    // Path 2: branded canvas card (always works, no external service)
+    if (!dataUrl) {
+      if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Generating branded card…</div>';
+      dataUrl = await _generateBrandedCardDataUrl(p);
+    }
+
+    if (!dataUrl) throw new Error('Canvas generation failed');
 
     // persist image in post object + localStorage
     p._image = dataUrl;
