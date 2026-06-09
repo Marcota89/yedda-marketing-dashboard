@@ -9,8 +9,19 @@ export default async function handler(req, res) {
   const { prompt, apiKey } = req.body || {};
   if (!prompt || !apiKey) return res.status(400).json({ error: 'Missing prompt or apiKey' });
 
+  // Recursively search any object for a base64 image string (>1000 chars, alphanumeric+/=)
+  function findBase64(obj, depth = 0) {
+    if (depth > 8 || !obj) return null;
+    if (typeof obj === 'string' && obj.length > 1000 && /^[A-Za-z0-9+/=]+$/.test(obj.slice(0, 40))) return obj;
+    if (Array.isArray(obj)) {
+      for (const item of obj) { const r = findBase64(item, depth + 1); if (r) return r; }
+    } else if (typeof obj === 'object') {
+      for (const key of Object.keys(obj)) { const r = findBase64(obj[key], depth + 1); if (r) return r; }
+    }
+    return null;
+  }
+
   const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image'];
-  const errors = [];
 
   for (const model of models) {
     try {
@@ -39,24 +50,35 @@ export default async function handler(req, res) {
       const data = await geminiRes.json();
 
       if (!geminiRes.ok) {
-        errors.push(`${model}: HTTP ${geminiRes.status} — ${data?.error?.message || JSON.stringify(data).slice(0, 120)}`);
-        continue;
+        // Return full error response for debugging
+        return res.status(500).json({
+          error: `${model}: HTTP ${geminiRes.status}`,
+          detail: data
+        });
       }
 
-      // Try multiple response paths
+      // Try known paths first, then recursive search
       const step = (data?.steps || [])[0];
       const b64 = (step?.content || []).find(c => c.data)?.data
                || data?.output_image?.data
                || data?.image?.data
-               || (data?.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data)?.inlineData?.data;
+               || data?.result?.image?.data
+               || (data?.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data)?.inlineData?.data
+               || findBase64(data);
 
-      if (b64) return res.status(200).json({ b64, model, raw: null });
+      if (b64) return res.status(200).json({ b64, model });
 
-      errors.push(`${model}: response OK but no image — ${JSON.stringify(data).slice(0, 300)}`);
+      // Return full response so we can see the actual structure
+      return res.status(500).json({
+        error: `${model}: 200 OK but no image found`,
+        rawKeys: Object.keys(data),
+        raw: data  // full response for debugging
+      });
+
     } catch (e) {
-      errors.push(`${model}: ${e.message}`);
+      return res.status(500).json({ error: `${model}: ${e.message}` });
     }
   }
 
-  return res.status(500).json({ error: errors.join(' | ') });
+  return res.status(500).json({ error: 'All models failed' });
 }

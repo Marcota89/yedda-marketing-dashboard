@@ -6620,7 +6620,12 @@ async function _tryGeminiInteractionsImage(apiKey, prompt) {
       body: JSON.stringify({ prompt, apiKey })
     });
     const data = await res.json();
-    if (!res.ok) return { b64: null, error: data.error || `HTTP ${res.status}` };
+    if (!res.ok) {
+      const errMsg = data.rawKeys
+        ? `Keys: [${data.rawKeys.join(', ')}] — ${data.error}`
+        : (data.error || `HTTP ${res.status}`);
+      return { b64: null, error: errMsg };
+    }
     return { b64: data.b64 || null, error: data.b64 ? null : (data.error || 'No image in response') };
   } catch(e) {
     return { b64: null, error: e.message };
