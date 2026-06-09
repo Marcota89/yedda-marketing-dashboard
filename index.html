@@ -6647,58 +6647,26 @@ async function _compositeWithLogo(base64Image) {
 async function generatePostImage(btn, i) {
   const p = posts[i];
   if (!p || !p.prompt) return;
-  const apiKey = localStorage.getItem('yedda_claude_key');
-  if (!apiKey) { showToast('⚠️ Gemini API key required — open Settings.', 'error'); return; }
 
   const area = document.getElementById(`genImgArea-${i}`);
   btn.disabled = true;
   btn.textContent = '⏳ Generating…';
-  if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image…</div>'; }
+  if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>'; }
 
-  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Use teal and orange brand colors. Abstract, professional, no people, no faces.';
-
-  // Try image-capable models in order; all use generateContent + responseModalities
-  const _imgModels = [
-    'gemini-2.0-flash-exp',
-    'gemini-2.0-flash-thinking-exp-01-21',
-    'gemini-2.0-flash'
-  ];
-
-  async function _tryImageModel(model) {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: _imgPrompt }] }],
-          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
-        })
-      }
-    );
-    if (!r.ok) {
-      const e = await r.json().catch(() => ({}));
-      const msg = e?.error?.message || '';
-      // "not found" means model doesn't exist or no image support — try next
-      if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('not supported')) {
-        return null;
-      }
-      throw new Error(msg || `HTTP ${r.status}`);
-    }
-    const d = await r.json();
-    const parts = d?.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find(pt => pt.inlineData?.data);
-    return imgPart?.inlineData?.data || null;
-  }
+  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Teal and orange brand colors. Abstract, professional. No people, no faces.';
+  const seed = Math.floor(Math.random() * 999999);
+  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux&nologo=true&enhance=true`;
 
   try {
-    let b64 = null;
-    for (const model of _imgModels) {
-      if (area) area.innerHTML = `<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Trying ${model}…</div>`;
-      b64 = await _tryImageModel(model);
-      if (b64) break;
-    }
-    if (!b64) throw new Error('Image generation not available for this API key. Enable Gemini image generation at aistudio.google.com or use a Vertex AI key.');
+    const res = await fetch(pollinationsUrl);
+    if (!res.ok) throw new Error(`Image service HTTP ${res.status}`);
+    const blob = await res.blob();
+    const b64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
 
     if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
     const dataUrl = await _compositeWithLogo(b64);
