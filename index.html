@@ -1175,6 +1175,21 @@ h1,h2,h3,h4 {
 }
 .li-prompt-btn:hover { background: var(--orange); color: #fff; }
 .li-prompt-btn.copied { background: #16a34a; border-color: #16a34a; color: #fff; }
+.li-img-gen-btn {
+  font-size: 12px; font-weight: 700; color: #7c3aed;
+  background: none; border: 1.5px solid #7c3aed; border-radius: 6px;
+  padding: 5px 12px; cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.li-img-gen-btn:hover { background: #7c3aed; color: #fff; }
+.li-img-gen-btn:disabled { opacity: .5; cursor: not-allowed; }
+.li-generated-image { padding: 12px 16px; background: #f5f3ff; border-top: 1px solid #ddd6fe; }
+.li-img-download-btn {
+  display: inline-block; font-size: 12px; font-weight: 700; color: #fff;
+  background: #7c3aed; border-radius: 6px; padding: 5px 14px;
+  text-decoration: none; transition: background .15s;
+}
+.li-img-download-btn:hover { background: #6d28d9; }
 
 /* ── Rating label (kept for backward compat) ── */
 .li-rating-label { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-right: 4px; }
@@ -4698,9 +4713,18 @@ function renderPost(i) {
       </div>
       <div class="li-action-btns">
         <button class="li-copy-btn" onclick="copyPost(this, ${i})" title="Copy full post text + hashtags to clipboard">📋 Copy Post</button>
-        ${p.prompt ? `<button class="li-prompt-btn" onclick="copyPrompt(this, ${i})" title="Copy the Gemini image generation prompt to clipboard — paste into Gemini to create the visual for this post">📸 Copy Image Prompt</button>` : ''}
+        ${p.prompt ? `<button class="li-prompt-btn" onclick="copyPrompt(this, ${i})" title="Copy the Gemini image generation prompt to clipboard">📸 Copy Prompt</button>` : ''}
+        ${p.prompt ? `<button class="li-img-gen-btn" id="imgGenBtn-${i}" onclick="generatePostImage(this, ${i})" title="Generate image with Imagen 3 + Yedda logo overlay">${p._image ? '🖼️ Regenerate Image' : '🎨 Generate Image'}</button>` : ''}
       </div>
     </div>
+    ${p._image ? `
+    <div class="li-generated-image" id="genImgArea-${i}">
+      <img src="${p._image}" alt="Generated visual" style="width:100%;border-radius:8px;display:block;">
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <a href="${p._image}" download="yedda-post-${i}.png" class="li-img-download-btn">⬇️ Download PNG</a>
+      </div>
+    </div>` : `<div class="li-generated-image" id="genImgArea-${i}" style="display:none;"></div>`}
+
 
     <!-- Option C + D: Rate block with tooltips -->
     <div class="li-action-block" style="background:#F8FAFB;border-top:1px solid var(--line);">
@@ -6581,8 +6605,104 @@ function copyPrompt(btn, i) {
     btn.textContent = '✅ Copied!';
     btn.classList.add('copied');
     showToast('📸 Image prompt copied', 'info', 2000);
-    setTimeout(() => { btn.textContent = '📸 Copy Image Prompt'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => { btn.textContent = '📸 Copy Prompt'; btn.classList.remove('copied'); }, 2000);
   });
+}
+
+/* ── IMAGE GENERATION (Imagen 3 + logo composite) ── */
+
+async function _compositeWithLogo(base64Image) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const mainImg = new Image();
+    mainImg.onload = () => {
+      canvas.width = mainImg.naturalWidth;
+      canvas.height = mainImg.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(mainImg, 0, 0);
+      const logo = new Image();
+      logo.onload = () => {
+        const logoW = Math.round(canvas.width * 0.20);
+        const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * logoW);
+        const pad   = Math.round(canvas.width * 0.04);
+        // white semi-transparent backing for legibility on any background
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(pad - 6, canvas.height - logoH - pad - 6, logoW + 12, logoH + 12, 6);
+        ctx.fill();
+        ctx.restore();
+        ctx.drawImage(logo, pad, canvas.height - logoH - pad, logoW, logoH);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      logo.onerror = () => resolve(canvas.toDataURL('image/png')); // fallback: no logo
+      logo.src = 'yedda-logo.png';
+    };
+    mainImg.onerror = () => resolve(null);
+    mainImg.src = `data:image/png;base64,${base64Image}`;
+  });
+}
+
+async function generatePostImage(btn, i) {
+  const p = posts[i];
+  if (!p || !p.prompt) return;
+  const apiKey = localStorage.getItem('yedda_claude_key');
+  if (!apiKey) { showToast('⚠️ Gemini API key required — open Settings.', 'error'); return; }
+
+  const area = document.getElementById(`genImgArea-${i}`);
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+  if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Calling Imagen 3…</div>'; }
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt: p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Teal #4BADB8 and orange #F07830 brand colors. No people, no faces.' }],
+          parameters: { sampleCount: 1, aspectRatio: '4:5', personGeneration: 'dont_allow' }
+        })
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Imagen HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const b64 = data?.predictions?.[0]?.bytesBase64Encoded;
+    if (!b64) throw new Error('No image returned from Imagen 3');
+
+    if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
+    const dataUrl = await _compositeWithLogo(b64);
+    if (!dataUrl) throw new Error('Canvas composite failed');
+
+    // persist image in post object + localStorage
+    p._image = dataUrl;
+    const saved = getGeneratedPosts();
+    const savedIdx = saved.findIndex(sp => sp._id === p._id);
+    if (savedIdx >= 0) { saved[savedIdx]._image = dataUrl; _saveGeneratedPosts(saved); }
+
+    // update UI
+    if (area) {
+      area.style.display = 'block';
+      area.innerHTML = `
+        <img src="${dataUrl}" alt="Generated visual" style="width:100%;border-radius:8px;display:block;">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <a href="${dataUrl}" download="yedda-post-${i}.png" class="li-img-download-btn">⬇️ Download PNG</a>
+        </div>`;
+    }
+    btn.textContent = '🖼️ Regenerate Image';
+    btn.disabled = false;
+    showToast('✅ Image generated with Yedda logo', 'success');
+  } catch(e) {
+    btn.textContent = '🎨 Generate Image';
+    btn.disabled = false;
+    if (area) area.style.display = 'none';
+    showToast(`❌ Image generation failed: ${e.message}`, 'error', 6000);
+  }
 }
 
 function copyPost(btn, i) {
