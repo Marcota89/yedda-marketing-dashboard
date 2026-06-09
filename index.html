@@ -6721,11 +6721,6 @@ async function _generateBrandedCardDataUrl(post) {
       const logoW = Math.round(W * 0.20);
       const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * logoW);
       const pad = Math.round(W * 0.04);
-      ctx.save(); ctx.globalAlpha = 0.85;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.roundRect(pad - 6, H - logoH - pad - 6, logoW + 12, logoH + 12, 6);
-      ctx.fill(); ctx.restore();
       ctx.drawImage(logo, pad, H - logoH - pad, logoW, logoH);
       resolve(canvas.toDataURL('image/png'));
     };
@@ -6748,18 +6743,10 @@ async function _compositeWithLogo(base64Image) {
         const logoW = Math.round(canvas.width * 0.20);
         const logoH = Math.round((logo.naturalHeight / logo.naturalWidth) * logoW);
         const pad   = Math.round(canvas.width * 0.04);
-        // white semi-transparent backing for legibility on any background
-        ctx.save();
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.roundRect(pad - 6, canvas.height - logoH - pad - 6, logoW + 12, logoH + 12, 6);
-        ctx.fill();
-        ctx.restore();
         ctx.drawImage(logo, pad, canvas.height - logoH - pad, logoW, logoH);
         resolve(canvas.toDataURL('image/png'));
       };
-      logo.onerror = () => resolve(canvas.toDataURL('image/png')); // fallback: no logo
+      logo.onerror = () => resolve(canvas.toDataURL('image/png'));
       logo.src = 'yedda-logo.png';
     };
     mainImg.onerror = () => resolve(null);
