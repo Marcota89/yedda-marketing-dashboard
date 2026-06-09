@@ -5231,8 +5231,17 @@ Return JSON:
       });
       clearTimeout(tid);
       if (res.status === 401 || res.status === 403) throw new Error(`Gemini auth error ${res.status} — check API key`);
-      if (res.status === 503 || res.status === 429 || res.status >= 500) {
-        lastErr = new Error(`Gemini ${res.status} — model overloaded`); continue;
+      if (res.status === 429 || res.status === 503 || res.status >= 500) {
+        const errBody = await res.json().catch(() => ({}));
+        const errMsg = errBody?.error?.message || '';
+        if (errMsg.toLowerCase().includes('depleted') || errMsg.toLowerCase().includes('billing')) {
+          throw new Error('Gemini quota depleted — add credits at aistudio.google.com');
+        }
+        // rate limit — wait longer before next attempt (RPM reset ~60s)
+        const waitMs = res.status === 429 ? 30000 : 2500 * (attempt + 1);
+        lastErr = new Error(`Gemini ${res.status} — ${res.status === 429 ? 'rate limit, waiting 30s' : 'model overloaded'}`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
       }
       if (!res.ok) throw new Error(`Gemini ${res.status}`);
       const data = await res.json();
@@ -5242,7 +5251,7 @@ Return JSON:
     } catch(e) {
       clearTimeout(tid);
       if (e.name === 'AbortError') { lastErr = new Error('Gemini request timed out'); continue; }
-      if (e.message.includes('auth error')) throw e;
+      if (e.message.includes('auth error') || e.message.includes('depleted')) throw e;
       lastErr = e;
     }
   }
@@ -5721,9 +5730,15 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
         { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, signal: ctrl.signal, body: makeBody(model, useJsonMime) }
       );
       clearTimeout(tId);
-      if (response.status === 503 || response.status === 429) {
-        lastError = 'Model overloaded';
-        await new Promise(r => setTimeout(r, 2500 * (attempt + 1)));
+      if (response.status === 429 || response.status === 503) {
+        const errBody = await response.json().catch(() => ({}));
+        const errMsg = errBody?.error?.message || '';
+        if (errMsg.toLowerCase().includes('depleted') || errMsg.toLowerCase().includes('billing')) {
+          throw new Error('Gemini quota depleted — add credits at aistudio.google.com');
+        }
+        const waitMs = response.status === 429 ? 30000 : 2500 * (attempt + 1);
+        lastError = response.status === 429 ? 'Rate limit — waiting 30s before retry' : 'Model overloaded';
+        await new Promise(r => setTimeout(r, waitMs));
         continue;
       }
       if (response.status === 401 || response.status === 403) {
@@ -5969,7 +5984,14 @@ Output the comment text only. Nothing else.`;
         }
       })
     });
-    if (res.status === 503 || res.status === 429) throw new Error(`Gemini ${res.status}`);
+    if (res.status === 429 || res.status === 503) {
+      const errBody = await res.json().catch(() => ({}));
+      const errMsg = errBody?.error?.message || '';
+      if (errMsg.toLowerCase().includes('depleted') || errMsg.toLowerCase().includes('billing')) {
+        throw new Error('Gemini quota depleted — add credits at aistudio.google.com');
+      }
+      throw new Error(`Gemini ${res.status}`);
+    }
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     return res.json();
   };
