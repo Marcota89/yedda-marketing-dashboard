@@ -5202,19 +5202,20 @@ Return JSON:
   "char": "${persona === 'Mixed' ? 'Abbey' : persona}"
 }`;
 
-  const model = getGeminiModel();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-  const RETRIES = 3;
-  const RETRY_DELAY_MS = 2500;
+  // Try configured model once, then fall back to gemini-2.0-flash (no thinking tokens, more stable)
+  const _weekModels = [getGeminiModel(), 'gemini-2.0-flash', 'gemini-2.0-flash'];
   let raw = '';
   let lastErr = null;
 
-  for (let attempt = 0; attempt < RETRIES; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
+  for (let attempt = 0; attempt < _weekModels.length; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 2500 * attempt));
+    const model = _weekModels[attempt];
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const is25 = model.includes('2.5');
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 25000);
     try {
-      const useJsonMime = attempt < 2; // 3rd attempt: no mime type (plain text fallback)
+      const useJsonMime = attempt < 2;
       const res = await fetch(url, {
         method: 'POST', signal: ctrl.signal,
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -5223,6 +5224,7 @@ Return JSON:
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
           generationConfig: {
             ...(useJsonMime ? { responseMimeType: 'application/json' } : {}),
+            ...(is25 ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
             maxOutputTokens: 2048, temperature: 0.75
           }
         })
@@ -5230,17 +5232,17 @@ Return JSON:
       clearTimeout(tid);
       if (res.status === 401 || res.status === 403) throw new Error(`Gemini auth error ${res.status} — check API key`);
       if (res.status === 503 || res.status === 429 || res.status >= 500) {
-        lastErr = new Error(`Gemini ${res.status}`); continue; // retry
+        lastErr = new Error(`Gemini ${res.status} — model overloaded`); continue;
       }
       if (!res.ok) throw new Error(`Gemini ${res.status}`);
       const data = await res.json();
       raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (raw) break; // success
+      if (raw) break;
       lastErr = new Error('Empty response from Gemini');
     } catch(e) {
       clearTimeout(tid);
       if (e.name === 'AbortError') { lastErr = new Error('Gemini request timed out'); continue; }
-      if (e.message.includes('auth error')) throw e; // no retry on auth
+      if (e.message.includes('auth error')) throw e;
       lastErr = e;
     }
   }
@@ -5367,7 +5369,7 @@ async function _generateWeekPostsDirectInner(btn) {
   } else if (done > 0) {
     showToast(`⚠️ ${done} of ${picked.length} posts generated. ${errors.length} failed.${masNote}`, 'error');
   } else {
-    showToast('❌ Generation failed. Check your Gemini API key.', 'error');
+    showToast(`❌ Generation failed: ${errors[0]?.split(': ').slice(1).join(': ') || 'Check your Gemini API key or try again.'}`, 'error');
   }
 }
 
