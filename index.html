@@ -6611,9 +6611,10 @@ function copyPrompt(btn, i) {
 
 /* ── IMAGE GENERATION ── */
 
-// Gemini Interactions API (2026-05-20) — gemini-2.5-flash-image / gemini-3.1-flash-image
+// Gemini Interactions API (2026-05-20) — returns {b64, error}
 async function _tryGeminiInteractionsImage(apiKey, prompt) {
   const models = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image'];
+  const errors = [];
   for (const model of models) {
     try {
       const res = await fetch(
@@ -6632,14 +6633,24 @@ async function _tryGeminiInteractionsImage(apiKey, prompt) {
           })
         }
       );
-      if (!res.ok) continue;
       const data = await res.json();
+      if (!res.ok) {
+        errors.push(`${model}: HTTP ${res.status} — ${data?.error?.message || JSON.stringify(data).slice(0, 120)}`);
+        continue;
+      }
+      // Try multiple response paths (API format uncertain)
       const step = (data?.steps || [])[0];
-      const imgPart = (step?.content || []).find(c => c.data);
-      if (imgPart?.data) return imgPart.data;
-    } catch(_) {}
+      const b64 = (step?.content || []).find(c => c.data)?.data
+               || data?.output_image?.data
+               || data?.image?.data
+               || (data?.candidates?.[0]?.content?.parts || []).find(p => p.inlineData?.data)?.inlineData?.data;
+      if (b64) return { b64, error: null };
+      errors.push(`${model}: response OK but no image data — ${JSON.stringify(data).slice(0, 200)}`);
+    } catch(e) {
+      errors.push(`${model}: ${e.message}`);
+    }
   }
-  return null;
+  return { b64: null, error: errors.join(' | ') };
 }
 
 function _extractCardText(post) {
@@ -6795,9 +6806,11 @@ async function generatePostImage(btn, i) {
     let dataUrl = null;
 
     // Path 1: Gemini Interactions API — gemini-2.5-flash-image (2026-05-20)
+    let _geminiErr = '';
     if (apiKey) {
       if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Gemini image generation…</div>';
-      const b64 = await _tryGeminiInteractionsImage(apiKey, _imgPrompt);
+      const { b64, error } = await _tryGeminiInteractionsImage(apiKey, _imgPrompt);
+      _geminiErr = error || '';
       if (b64) {
         if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
         dataUrl = await _compositeWithLogo(b64);
@@ -6848,7 +6861,8 @@ async function generatePostImage(btn, i) {
     }
     btn.textContent = '🖼️ Regenerate Image';
     btn.disabled = false;
-    showToast('✅ Image generated with Yedda logo', 'success');
+    const _usedPath = _geminiErr ? `Branded card (Gemini error: ${_geminiErr.slice(0, 80)})` : '✅ Gemini image';
+    showToast(_geminiErr ? `⚠️ Gemini falhou — branded card gerado. Erro: ${_geminiErr.slice(0,100)}` : '✅ Imagem gerada com logo Yedda', _geminiErr ? 'info' : 'success', 8000);
   } catch(e) {
     btn.textContent = '🎨 Generate Image';
     btn.disabled = false;
