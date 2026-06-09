@@ -6657,9 +6657,16 @@ async function generatePostImage(btn, i) {
 
   const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Use teal and orange brand colors. Abstract, professional, no people, no faces.';
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${apiKey}`,
+  // Try image-capable models in order; all use generateContent + responseModalities
+  const _imgModels = [
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash-thinking-exp-01-21',
+    'gemini-2.0-flash'
+  ];
+
+  async function _tryImageModel(model) {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6669,15 +6676,29 @@ async function generatePostImage(btn, i) {
         })
       }
     );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Image generation HTTP ${res.status}`);
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      const msg = e?.error?.message || '';
+      // "not found" means model doesn't exist or no image support — try next
+      if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('not supported')) {
+        return null;
+      }
+      throw new Error(msg || `HTTP ${r.status}`);
     }
-    const data = await res.json();
-    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const d = await r.json();
+    const parts = d?.candidates?.[0]?.content?.parts || [];
     const imgPart = parts.find(pt => pt.inlineData?.data);
-    const b64 = imgPart?.inlineData?.data;
-    if (!b64) throw new Error('No image returned');
+    return imgPart?.inlineData?.data || null;
+  }
+
+  try {
+    let b64 = null;
+    for (const model of _imgModels) {
+      if (area) area.innerHTML = `<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Trying ${model}…</div>`;
+      b64 = await _tryImageModel(model);
+      if (b64) break;
+    }
+    if (!b64) throw new Error('Image generation not available for this API key. Enable Gemini image generation at aistudio.google.com or use a Vertex AI key.');
 
     if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
     const dataUrl = await _compositeWithLogo(b64);
