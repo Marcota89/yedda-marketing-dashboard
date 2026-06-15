@@ -4270,7 +4270,7 @@ Center: A teal data flow arrow from Abbey to Kai labeled "from alert → to brie
 Mood: Warm, intelligent, distinct personalities. The collaboration is the product.
 Style: Character design meets enterprise editorial. Premium B2B illustration.
 Aspect ratio: 4:5
-BRAND: Primary teal #4BADB8, accent orange #F07830, ink #0E1B1E. Logo bottom-right corner.` },
+BRAND: Primary teal #4BADB8, accent orange #F07830, ink #0E1B1E. No logos or brand marks in the image.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Jun 4 · 🌐", tags:"#RetailOperations #OperationalExcellence #DataDrivenOps #YeddaAI #SupplyChain #LogisticsTech",
@@ -6758,7 +6758,7 @@ async function generatePostImage(btn, i) {
   if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>'; }
 
   const apiKey = localStorage.getItem('yedda_claude_key');
-  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. Teal and orange brand colors. Abstract, professional. IMPORTANT: Do not include any logos, brand marks, company names, wordmarks, watermarks, or text overlays in the image — a logo will be composited onto the image separately after generation.';
+  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. Teal and orange brand colors. Abstract, professional. CRITICAL: Do not place any logos, brand marks, company names, wordmarks, watermarks, text overlays, solid colored blocks, colored badges, color swatches, or geometric placeholder shapes in any corner of the image — especially not in the bottom-right corner. The image must be clean of all brand identifiers; a logo will be composited separately after generation.';
   const seed = Math.floor(Math.random() * 999999);
   const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux`;
 
