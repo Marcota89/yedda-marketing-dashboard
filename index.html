@@ -6211,6 +6211,12 @@ async function reviewWithMAS(idx) {
   const post = posts[idx];
   if (!post) { _masInProgress[idx] = false; return; }
 
+  if (window._masOnline === false) {
+    _masInProgress[idx] = false;
+    statusEl.className = 'mas-status st-err';
+    statusEl.textContent = '⚠️ MAS Review is a local feature — run the API with: python scripts/review_api.py (in yedda-mas-step1)';
+    return;
+  }
   setLoading(masBtn, true, '🔄 Reviewing…');
   statusEl.style.color = 'var(--teal-deep)';
   statusEl.textContent = '🔄 Connecting to MAS Review API on localhost:8001…';
@@ -6902,6 +6908,15 @@ setTimeout(() => {
 ══════════════════════════════════════════════════ */
 
 /* M1 — Status bar live checks */
+// _masOnline: null=unknown, true=online, false=offline (local-only feature)
+window._masOnline = null;
+let _masCheckInterval = null;
+
+function _setMasPollingInterval(ms) {
+  if (_masCheckInterval) clearInterval(_masCheckInterval);
+  _masCheckInterval = setInterval(checkApiStatus, ms);
+}
+
 async function checkApiStatus() {
   const geminiOk = !!(window._geminiModel);
   const geminiEl = document.getElementById('geminiStatus');
@@ -6909,28 +6924,41 @@ async function checkApiStatus() {
     geminiEl.style.color = geminiOk ? '#16a34a' : '#dc2626';
     geminiEl.textContent = (geminiOk ? '● ' : '○ ') + 'Gemini';
   }
-  try {
-    const _hCtrl = new AbortController();
-    setTimeout(() => _hCtrl.abort(), 2000);
-    const r = await fetch('http://localhost:8001/health', { signal: _hCtrl.signal });
-    const masOk = r.ok;
+
+  // Skip MAS health check if already known offline — avoid repeated ERR_CONNECTION_REFUSED
+  if (window._masOnline === false) {
     const masEl = document.getElementById('masStatus');
-    if (masEl) {
-      masEl.style.color = masOk ? '#16a34a' : '#dc2626';
-      masEl.textContent = (masOk ? '● ' : '○ ') + 'MAS Review';
+    if (masEl) { masEl.style.color = '#8A9AA0'; masEl.textContent = '○ MAS (local)'; }
+  } else {
+    try {
+      const _hCtrl = new AbortController();
+      setTimeout(() => _hCtrl.abort(), 2000);
+      const r = await fetch('http://localhost:8001/health', { signal: _hCtrl.signal });
+      window._masOnline = r.ok;
+      const masEl = document.getElementById('masStatus');
+      if (masEl) {
+        masEl.style.color = r.ok ? '#16a34a' : '#dc2626';
+        masEl.textContent = (r.ok ? '● ' : '○ ') + 'MAS Review';
+      }
+      // Back online — resume normal polling
+      if (r.ok) _setMasPollingInterval(30000);
+    } catch {
+      window._masOnline = false;
+      const masEl = document.getElementById('masStatus');
+      if (masEl) { masEl.style.color = '#8A9AA0'; masEl.textContent = '○ MAS (local)'; }
+      // Offline — slow poll to 5 min to stop console noise
+      _setMasPollingInterval(300000);
     }
-  } catch {
-    const masEl = document.getElementById('masStatus');
-    if (masEl) { masEl.className = 'st-err'; masEl.textContent = '○ MAS Review'; }
   }
+
   const qc = (window.postQueue || []).length;
   const qEl = document.getElementById('queueStatusCount');
   const qStatus = document.getElementById('queueStatus');
   if (qEl) qEl.textContent = qc;
   if (qStatus) qStatus.style.color = qc > 0 ? '#f59e0b' : '#8A9AA0';
 }
-const _apiStatusInterval = setInterval(checkApiStatus, 30000);
-window.addEventListener('beforeunload', () => clearInterval(_apiStatusInterval));
+_setMasPollingInterval(30000);
+window.addEventListener('beforeunload', () => { if (_masCheckInterval) clearInterval(_masCheckInterval); });
 setTimeout(checkApiStatus, 1000);
 
 /* M2 — Queue badge cleared state */
@@ -7128,6 +7156,11 @@ async function dispatchContentRun() {
     document.getElementById('cp-topic')?.focus();
     return;
   }
+  if (window._masOnline === false) {
+    statusEl.textContent = '⚠ MAS API not running locally. Start it with: python scripts/review_api.py (in yedda-mas-step1)';
+    statusEl.style.color = '#dc2626';
+    return;
+  }
   btn.disabled = true;
   btn.setAttribute('data-loading', '1');
   const iconEl = document.getElementById('cp-dispatch-icon');
@@ -7170,6 +7203,10 @@ async function dispatchContentRun() {
 async function loadPendingApprovals() {
   const listEl = document.getElementById('cp-approvals-list');
   if (!listEl) return;
+  if (window._masOnline === false) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">MAS API not running locally — start it to see F31 issues.</div>';
+    return;
+  }
   listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Loading...</div>';
   try {
     const r = await fetch(_MAS_BASE + '/api/issues?workflow_id=f31_content_marketing');
