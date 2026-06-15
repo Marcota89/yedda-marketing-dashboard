@@ -3395,13 +3395,11 @@ Scene: A human hand (right side, mid-frame) and a translucent teal data-form han
 
 Background: Clean white (#FAFCFC) with a very subtle teal radial gradient from center.
 
-Bottom-center: Yedda.ai logo (teal wordmark) small and clean on white.
-
 Mood: Thoughtful. Sophisticated. The moment before AI and human judgment meet.
 Style: High-end fintech editorial illustration — not sci-fi, not stock hands-on-laptop. Premium and enterprise-grade.
 Aspect ratio: 4:5
 
-BRAND: Primary teal #4BADB8, accent orange #F07830. Logo always on flat color field, never on complex background.` },
+BRAND: Primary teal #4BADB8, accent orange #F07830. No logos, text, or brand marks in the image.` },
 
   { name:"Yedda.ai", headline:"Intelligence Augmentation · AI + IA for Enterprise Operations",
     time:"Apr 22 · 🌐", tags:"#LossPrevention #RetailTech #FraudDetection #YeddaAI",
@@ -3430,8 +3428,6 @@ Below: Clean white text — "Shrinkage reduction in 90 days" / "Southeast Asia r
 
 Top-left: Small orange (#F07830) tag reading "VERIFIED RESULT" in monospaced all-caps.
 Subtle background: Ghost watermark of a store floor heatmap behind the text — barely visible, adds depth.
-
-Bottom strip (last 12% of height): Dark teal gradient (#2A7A84) with Yedda.ai logo centered in white.
 
 Typography: Nunito-style — rounded, modern. Heavy weight for stat, light for supporting text. No serif.
 Mood: Proof, not promise. The number is the hero.
@@ -3469,7 +3465,6 @@ AI intelligence overlay (composited on photo):
 
 The warehouse is normal. The system sees what humans miss in the operational noise.
 
-Bottom-right: Yedda.ai logo (white) on small teal badge.
 Mood: Prevention, not reaction. Calm operational precision.
 Style: Industrial editorial photography + clean enterprise UI overlay.
 Aspect ratio: 16:9
@@ -3509,8 +3504,6 @@ Bottom: Activity timeline — teal bars for clean shifts, orange spikes for flag
 Top-right of screen: "Abbey — AI Guide" profile with teal "LIVE" dot.
 
 The monitor sits on a clean desk. Professional, not staged.
-Yedda.ai logo on monitor taskbar bottom-left and on monitor bezel (small white on dark).
-
 Style: Hyper-realistic product mockup. UI must look production-ready, not a wireframe.
 Aspect ratio: 4:5
 
@@ -3541,7 +3534,6 @@ Right half (40%): Dark (#0E1B1E) — a clean teal (#4BADB8) data stream flowing 
 The gap between left and right is the story: investment happening, decisions not being reached.
 
 No text overlay. No people in distress.
-Bottom-right: Yedda.ai logo (teal) on white badge.
 
 Mood: The pause before the decision. The cost of the gap.
 Style: Premium editorial composite — financial magazine quality.
@@ -3577,7 +3569,6 @@ AI intelligence overlay (composited):
 
 The factory is real. The intelligence layer shows everything is connected.
 
-Bottom-right: Yedda.ai logo (white) on teal badge.
 Mood: Scale. Embedded intelligence. Not a pilot — a live operation.
 Style: Industrial editorial photography + clean enterprise overlay. No sci-fi aesthetic.
 Aspect ratio: 16:9
@@ -3612,7 +3603,6 @@ AI intelligence overlay (semi-transparent, composited):
 
 The store is real. The system sees the supply chain beneath the surface.
 
-Bottom-right: Yedda.ai logo (white) on teal badge.
 Mood: Invisible intelligence making the operation flow.
 Style: Photorealistic editorial + enterprise SaaS overlay. Clean, not cluttered.
 Aspect ratio: 4:5
@@ -3644,8 +3634,6 @@ Scene: A modern open-plan sales floor — standing desks, large monitors, profes
 Visual overlay (AI intelligence layer): Teal (#4BADB8) bounding highlights around two monitors showing real-time pipeline data. A floating badge reads "SIGNAL DETECTED · Buying Intent · Account: [REDACTED]" in teal monospaced font. An orange (#F07830) dot pulses next to "LIVE."
 
 The overlay is semi-transparent — real environment beneath, intelligence layer on top.
-
-Bottom-right corner: Yedda.ai logo (white wordmark) on a small teal badge.
 
 Mood: Speed. Precision. The moment a sales rep gets ahead of the conversation.
 Style: Enterprise editorial photography + clean SaaS UI overlay. No stock photo clichés.
@@ -5719,7 +5707,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   "postTarget": "target audience description",
   "pillar": "${activePillars.length === 1 ? activePillars[0] : activePillars.join(' or ')}",
   "headline": "short 3–6 word hook for calendar preview",
-  "imagePrompt": "detailed Gemini image generation prompt in Yedda brand style — include teal #4BADB8 and orange #F07830 accents, enterprise aesthetic, Yedda.ai logo bottom-right on flat color field, no sci-fi no cartoons, aspect ratio 4:5"
+  "imagePrompt": "detailed Gemini image generation prompt in Yedda brand style — include teal #4BADB8 and orange #F07830 accents, enterprise aesthetic, no sci-fi no cartoons, no logos no text overlays no brand marks, aspect ratio 4:5"
 }`;
 
   const userPrompt = `Generate one LinkedIn post for Yedda.ai based on these news articles:\n\n${articlesText}\n\nThe post must connect the article's insight to Yedda.ai's Visual AI value proposition in retail / enterprise operations. Make the data feel urgent and relevant to CEOs, COOs, Board Members and loss prevention leaders at large retail and logistics companies.`;
@@ -6770,7 +6758,7 @@ async function generatePostImage(btn, i) {
   if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>'; }
 
   const apiKey = localStorage.getItem('yedda_claude_key');
-  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. No text overlays. Teal and orange brand colors. Abstract, professional. No people, no faces.';
+  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. Teal and orange brand colors. Abstract, professional. IMPORTANT: Do not include any logos, brand marks, company names, wordmarks, watermarks, or text overlays in the image — a logo will be composited onto the image separately after generation.';
   const seed = Math.floor(Math.random() * 999999);
   const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux`;
 
