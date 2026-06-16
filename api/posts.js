@@ -1,3 +1,7 @@
+export const config = {
+  api: { bodyParser: { sizeLimit: '50mb' } },
+};
+
 const SUPABASE_URL = 'https://mxjlvgzmjmnltfzcwfsh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14amx2Z3ptam1ubHRmemN3ZnNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTM4MzAsImV4cCI6MjA5MjQ2OTgzMH0.eurPDN8iGug8jYRxKsUgxvjtJ88jRexUMoQb7lgpSAY';
 
@@ -7,18 +11,13 @@ const HEADERS = {
   'Authorization': `Bearer ${SUPABASE_KEY}`,
 };
 
-function stripImage(post) {
-  const { _image, ...rest } = post;
-  return rest;
-}
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET — return all posts ordered by creation date
+  // GET — return all posts (including images) ordered by creation date
   if (req.method === 'GET') {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/marketing_posts?select=post_data&order=created_at.asc`,
@@ -29,7 +28,7 @@ export default async function handler(req, res) {
     return res.status(200).json(data.map(row => row.post_data));
   }
 
-  // POST — upsert one or more posts (strips _image to keep rows lean)
+  // POST — upsert one or more posts (full post_data including _image)
   if (req.method === 'POST') {
     const { posts } = req.body || {};
     if (!posts || !Array.isArray(posts) || !posts.length)
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
       .filter(p => p && p._id)
       .map(p => ({
         post_id: p._id,
-        post_data: stripImage(p),
+        post_data: p,
         updated_at: new Date().toISOString(),
       }));
 

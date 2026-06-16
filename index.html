@@ -4687,16 +4687,47 @@ async function loadRemotePosts() {
       if (syncBtn) syncBtn.textContent = '☁ Cloud';
       return;
     }
-    const localIds = new Set(getGeneratedPosts().map(p => p._id).filter(Boolean));
-    const newPosts = remote.filter(p => p && p._id && !localIds.has(p._id));
+
+    const local = getGeneratedPosts();
+    const localById = new Map(local.map(p => [p._id, p]));
+    let newCount = 0, imageCount = 0;
+
+    for (const rp of remote) {
+      if (!rp || !rp._id) continue;
+      if (!localById.has(rp._id)) {
+        // Completely new post from cloud
+        local.push(rp);
+        localById.set(rp._id, rp);
+        newCount++;
+      } else {
+        // Post already exists locally — sync image and body if cloud has newer data
+        const lp = localById.get(rp._id);
+        if (rp._image && !lp._image) {
+          lp._image = rp._image;
+          imageCount++;
+        }
+        if (rp.body && !lp.body) lp.body = rp.body;
+      }
+    }
+
     if (syncBtn) syncBtn.textContent = `☁ ${remote.length}`;
-    if (!newPosts.length) return;
-    // Merge new remote posts into local storage without triggering cloud push
-    const merged = getGeneratedPosts().concat(newPosts);
-    _genPostsCache = merged;
-    try { localStorage.setItem('yedda_generated_posts', JSON.stringify(merged)); } catch(_) {}
-    rebuildGeneratedSection();
-    showToast(`☁ ${newPosts.length} post${newPosts.length > 1 ? 's' : ''} carregado${newPosts.length > 1 ? 's' : ''} da nuvem`, 'success', 4000);
+
+    if (newCount || imageCount) {
+      // Persist merged data to localStorage (without re-triggering cloud push)
+      _genPostsCache = local;
+      try { localStorage.setItem('yedda_generated_posts', JSON.stringify(local)); } catch(_) {}
+      // Update posts[] array with new images for already-rendered posts
+      for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
+        const cp = localById.get(posts[i]._id);
+        if (cp && cp._image && !posts[i]._image) posts[i]._image = cp._image;
+      }
+      if (newCount) rebuildGeneratedSection();
+      const msg = [
+        newCount ? `${newCount} post${newCount > 1 ? 's' : ''} novo${newCount > 1 ? 's' : ''}` : '',
+        imageCount ? `${imageCount} imagem${imageCount > 1 ? 'ns' : ''} sincronizada${imageCount > 1 ? 's' : ''}` : '',
+      ].filter(Boolean).join(' · ');
+      showToast(`☁ ${msg} carregado${newCount + imageCount > 1 ? 's' : ''} da nuvem`, 'success', 4000);
+    }
   } catch(_) {
     if (syncBtn) { syncBtn.textContent = '☁ Cloud'; syncBtn.disabled = false; }
   }
