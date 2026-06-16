@@ -6929,7 +6929,15 @@ async function checkApiStatus() {
         masEl.textContent = (r.ok ? '● ' : '○ ') + 'MAS Review';
       }
       // Back online — resume normal polling
-      if (r.ok) _setMasPollingInterval(30000);
+      if (r.ok) {
+        _setMasPollingInterval(30000);
+        // First time MAS comes online — load command panel data
+        if (!window._masLoadedOnce) {
+          window._masLoadedOnce = true;
+          loadPendingApprovals();
+          loadCompetitorIntel();
+        }
+      }
     } catch {
       window._masOnline = false;
       const masEl = document.getElementById('masStatus');
@@ -7191,7 +7199,7 @@ async function dispatchContentRun() {
 async function loadPendingApprovals() {
   const listEl = document.getElementById('cp-approvals-list');
   if (!listEl) return;
-  if (window._masOnline === false) {
+  if (window._masOnline !== true) {
     listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">MAS API not running locally — start it to see F31 issues.</div>';
     return;
   }
@@ -7316,6 +7324,10 @@ async function loadCompetitorIntel() {
   const listEl = document.getElementById('ci-insights-list');
   const lastScan = document.getElementById('ci-last-scan');
   if (!listEl) return;
+  if (window._masOnline !== true) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0">MAS API not running locally — competitor intel unavailable.</div>';
+    return;
+  }
   listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0">Loading competitor intel...</div>';
   try {
     // Query issues tagged as competitor scan results
@@ -7365,11 +7377,8 @@ async function loadCompetitorIntel() {
   }
 }
 
-// Init Command Panel on load
-document.addEventListener('DOMContentLoaded', function() {
-  loadPendingApprovals();
-  loadCompetitorIntel();
-});
+// Command Panel data loads only after MAS health check confirms local API is online
+// (triggered by checkApiStatus once via window._masLoadedOnce flag)
 (function() {
   const s = document.createElement('style');
   s.textContent = '.queue-card.focused,.queue-item.focused,[data-queue-item].focused{outline:2px solid #4BADB8;border-radius:8px}';
