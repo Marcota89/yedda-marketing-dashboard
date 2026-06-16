@@ -4494,6 +4494,7 @@ function _genSectionHeaderHTML(count) {
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('published')" data-filter="published" style="border-color:var(--teal);">✓ Published</button>
         </div>
+        <button id="cloud-sync-btn" onclick="loadRemotePosts()" title="Sincronizar posts com a nuvem (Supabase)" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">☁ Cloud</button>
         <button onclick="exportContentBank()" title="Download approved posts as LINKEDIN-CONTENT-BANK.md snippet" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">📥 Export</button>
         <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
       </div>
@@ -4655,6 +4656,49 @@ function _saveGeneratedPosts(arr) {
     localStorage.setItem('yedda_generated_posts', JSON.stringify(arr));
   } catch(e) {
     if (e.name === 'QuotaExceededError') showToast('⚠️ Storage full — clear old posts to continue saving.', 'error', 6000);
+  }
+  if (arr.length) setTimeout(() => _pushToCloud(arr), 0);
+}
+
+// ── Cloud Sync ────────────────────────────────────────────────────────────────
+let _cloudSyncBusy = false;
+
+async function _pushToCloud(arr) {
+  if (_cloudSyncBusy || !arr || !arr.length) return;
+  _cloudSyncBusy = true;
+  try {
+    await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ posts: arr }),
+    });
+  } catch(_) {} finally { _cloudSyncBusy = false; }
+}
+
+async function loadRemotePosts() {
+  const syncBtn = document.getElementById('cloud-sync-btn');
+  if (syncBtn) { syncBtn.textContent = '☁ Sincronizando…'; syncBtn.disabled = true; }
+  try {
+    const r = await fetch('/api/posts');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const remote = await r.json();
+    if (syncBtn) syncBtn.disabled = false;
+    if (!Array.isArray(remote) || !remote.length) {
+      if (syncBtn) syncBtn.textContent = '☁ Cloud';
+      return;
+    }
+    const localIds = new Set(getGeneratedPosts().map(p => p._id).filter(Boolean));
+    const newPosts = remote.filter(p => p && p._id && !localIds.has(p._id));
+    if (syncBtn) syncBtn.textContent = `☁ ${remote.length}`;
+    if (!newPosts.length) return;
+    // Merge new remote posts into local storage without triggering cloud push
+    const merged = getGeneratedPosts().concat(newPosts);
+    _genPostsCache = merged;
+    try { localStorage.setItem('yedda_generated_posts', JSON.stringify(merged)); } catch(_) {}
+    rebuildGeneratedSection();
+    showToast(`☁ ${newPosts.length} post${newPosts.length > 1 ? 's' : ''} carregado${newPosts.length > 1 ? 's' : ''} da nuvem`, 'success', 4000);
+  } catch(_) {
+    if (syncBtn) { syncBtn.textContent = '☁ Cloud'; syncBtn.disabled = false; }
   }
 }
 
@@ -6389,6 +6433,7 @@ function restoreGeneratedPosts() {
   });
 }
 restoreGeneratedPosts();
+setTimeout(loadRemotePosts, 1200); // pull cloud posts after local restore settles
 _applyCollapseState();
 
 /* ── Generated Posts Management ── */
