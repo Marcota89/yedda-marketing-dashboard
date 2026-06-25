@@ -5539,9 +5539,12 @@ async function fetchApifyNews(btn) {
     resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>`;
     try {
       const raw = await fetchViaApify(token, signal);
-      const articles = _filterSeen(raw);
+      let articles = _filterSeen(raw);
+      if (articles.length === 0 && raw.length > 0) {
+        showToast('ℹ️ Sem notícias novas no Apify — mostrando recentes já vistas', 'info', 5000);
+        articles = raw;
+      }
       if (articles.length > 0) { _markSeen(articles); setLoading(fetchBtn, false); renderApifyResults(articles); return; }
-      if (raw.length > 0 && articles.length === 0) showToast('ℹ️ Todas as notícias Apify já foram vistas — tente amanhã ou clique em "Limpar histórico"', 'info', 7000);
     } catch(e) {
       if (e.name === 'AbortError') { setLoading(fetchBtn, false); return; }
       console.warn('Apify failed, falling back to RSS:', e.message);
@@ -5552,8 +5555,12 @@ async function fetchApifyNews(btn) {
   resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>`;
   try {
     const raw = await fetchViaRSS(signal);
-    const articles = _filterSeen(raw);
-    _markSeen(articles);
+    let articles = _filterSeen(raw);
+    if (articles.length === 0 && raw.length > 0) {
+      showToast('ℹ️ Sem artigos novos — mostrando recentes já vistos. Use "Limpar histórico" para ver todos.', 'info', 7000);
+      articles = raw;
+    }
+    _markSeen(raw);
     setLoading(fetchBtn, false);
     renderApifyResults(articles);
   } catch(e) {
@@ -5614,8 +5621,9 @@ async function fetchViaRSS(signal) {
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
   const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
   const bust     = `&_cb=${Date.now()}`;
-  // Use base queries without after: (Google News RSS ignores that param), add sortBy=date
-  const queries  = _APIFY_QUERIES_BASE.map(q => q.replace(/ /g, '+') + `+${_afterDate.slice(0,7).replace('-', '+')}`);
+  // Google News RSS does NOT support after: operator — use plain queries + year for recency
+  const yr = new Date().getFullYear();
+  const queries  = _APIFY_QUERIES_BASE.map(q => encodeURIComponent(q + ' ' + yr));
   const results  = await Promise.all(queries.map(q =>
     fetch(RSS2JSON + encodeURIComponent(gnBase + q) + '&sortBy=date&count=5' + bust, signal ? { signal } : {})
       .then(r => r.json()).then(d => (d.items || []).slice(0, 4)).catch(() => [])
