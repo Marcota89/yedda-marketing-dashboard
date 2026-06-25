@@ -2496,7 +2496,10 @@ textarea::placeholder {
               <div style="font-size:13px;font-weight:700;color:var(--teal-deep);">🔍 Fetch Latest News</div>
               <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">Pulls recent Google News articles on retail AI, loss prevention, logistics &amp; safety</div>
             </div>
-            <button id="fetchNewsBtn" class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews(this)">🔍 Fetch News</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button id="fetchNewsBtn" class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews(this)">🔍 Fetch News</button>
+              <button onclick="clearSeenArticles()" title="Limpar histórico de notícias já vistas" style="background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;">🗑 Limpar histórico</button>
+            </div>
           </div>
           <div id="apifyNewsResults"></div>
         </div>
@@ -5478,9 +5481,9 @@ const _APIFY_QUERIES_BASE = [
   'AI workplace safety',
   'retail technology CCTV analytics'
 ];
-// Append current month so queries rotate monthly, busting any server-side cache
-const _YM = new Date().toISOString().slice(0, 7); // "2026-05"
-const APIFY_QUERIES = _APIFY_QUERIES_BASE.map(q => `${q} ${_YM}`);
+// Rolling 7-day window — forces fresh results and rotates queries weekly
+const _afterDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // "2026-06-09"
+const APIFY_QUERIES = _APIFY_QUERIES_BASE.map(q => `${q} after:${_afterDate}`);
 
 function saveApifySettings() {
   const token = document.getElementById('apifyToken').value.trim();
@@ -5500,6 +5503,25 @@ function showApifyModalStatus(msg, color) {
 
 let _fetchNewsController = null;
 
+// Cross-session dedup — tracks seen article URLs across fetches (rolling 300)
+const _SEEN_KEY = 'yedda_seen_articles';
+function _getSeenUrls() {
+  try { return new Set(JSON.parse(localStorage.getItem(_SEEN_KEY) || '[]')); } catch(_) { return new Set(); }
+}
+function _markSeen(articles) {
+  const seen = _getSeenUrls();
+  articles.forEach(a => { if (a.url) seen.add(a.url); });
+  try { localStorage.setItem(_SEEN_KEY, JSON.stringify([...seen].slice(-300))); } catch(_) {}
+}
+function _filterSeen(articles) {
+  const seen = _getSeenUrls();
+  return articles.filter(a => !a.url || !seen.has(a.url));
+}
+function clearSeenArticles() {
+  localStorage.removeItem(_SEEN_KEY);
+  showToast('✅ Histórico de notícias limpo — próximo fetch mostrará todos os artigos', 'success', 4000);
+}
+
 async function fetchApifyNews(btn) {
   // Prevent double-fetch: cancel previous if running
   if (_fetchNewsController) { _fetchNewsController.abort(); }
@@ -5516,8 +5538,10 @@ async function fetchApifyNews(btn) {
   if (token) {
     resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>`;
     try {
-      const articles = await fetchViaApify(token, signal);
-      if (articles.length > 0) { setLoading(fetchBtn, false); renderApifyResults(articles); return; }
+      const raw = await fetchViaApify(token, signal);
+      const articles = _filterSeen(raw);
+      if (articles.length > 0) { _markSeen(articles); setLoading(fetchBtn, false); renderApifyResults(articles); return; }
+      if (raw.length > 0 && articles.length === 0) showToast('ℹ️ Todas as notícias Apify já foram vistas — tente amanhã ou clique em "Limpar histórico"', 'info', 7000);
     } catch(e) {
       if (e.name === 'AbortError') { setLoading(fetchBtn, false); return; }
       console.warn('Apify failed, falling back to RSS:', e.message);
@@ -5527,7 +5551,9 @@ async function fetchApifyNews(btn) {
   // Fallback: RSS2JSON
   resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>`;
   try {
-    const articles = await fetchViaRSS(signal);
+    const raw = await fetchViaRSS(signal);
+    const articles = _filterSeen(raw);
+    _markSeen(articles);
     setLoading(fetchBtn, false);
     renderApifyResults(articles);
   } catch(e) {
@@ -5560,9 +5586,14 @@ async function fetchViaApify(token, signal) {
         mobileResults: false,
         languageCode: 'en',
         countryCode: 'us',
+        tbs: 'qdr:w',
       })
     }
   );
+  if (res.status === 402) {
+    showToast('⚠️ Quota Apify esgotada — usando RSS gratuito. Recarregue créditos em apify.com', 'info', 9000);
+    throw new Error('Apify quota exhausted (402)');
+  }
   if (!res.ok) throw new Error(`Apify HTTP ${res.status}`);
   const items = await res.json();
   const seen = new Set();
@@ -5582,11 +5613,12 @@ async function fetchViaApify(token, signal) {
 async function fetchViaRSS(signal) {
   const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
   const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
-  const bust     = `&t=${Date.now()}`;
-  const queries  = APIFY_QUERIES.map(q => q.replace(/ /g, '+'));
+  const bust     = `&_cb=${Date.now()}`;
+  // Use base queries without after: (Google News RSS ignores that param), add sortBy=date
+  const queries  = _APIFY_QUERIES_BASE.map(q => q.replace(/ /g, '+') + `+${_afterDate.slice(0,7).replace('-', '+')}`);
   const results  = await Promise.all(queries.map(q =>
-    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + bust, signal ? { signal } : {})
-      .then(r => r.json()).then(d => (d.items || []).slice(0, 3)).catch(() => [])
+    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + '&sortBy=date&count=5' + bust, signal ? { signal } : {})
+      .then(r => r.json()).then(d => (d.items || []).slice(0, 4)).catch(() => [])
   ));
   const seen = new Set();
   return results.flat().map(item => ({
