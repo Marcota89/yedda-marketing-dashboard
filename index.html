@@ -5625,7 +5625,7 @@ async function fetchViaRSS(signal) {
   const yr = new Date().getFullYear();
   const queries  = _APIFY_QUERIES_BASE.map(q => q + ' ' + yr);
   const results  = await Promise.all(queries.map(q =>
-    fetch(RSS2JSON + encodeURIComponent(gnBase + encodeURIComponent(q)) + '&sortBy=date&count=5' + bust, signal ? { signal } : {})
+    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + '&sortBy=date&count=5' + bust, signal ? { signal } : {})
       .then(r => r.json()).then(d => (d.items || []).slice(0, 4)).catch(() => [])
   ));
   const seen = new Set();
