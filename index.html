@@ -2933,7 +2933,7 @@ textarea::placeholder {
     <div class="sched-gen-box reveal" style="max-width:720px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;">
       <div class="sched-field">
         <label style="color:rgba(255,255,255,0.8);">Post type</label>
-        <select id="roiPostType" class="sched-input">
+        <select id="roiPostType" class="sched-input" onchange="document.getElementById('roiPostOutput').style.display='none'; document.getElementById('roiPostText').value=''; document.getElementById('roiPostStatus').textContent='';">
           <option value="thought_leadership">🧠 Visual AI Thought Leadership</option>
           <option value="industry_insight">📊 Industry Insight + Data</option>
           <option value="poll">📋 Poll — drive engagement</option>
