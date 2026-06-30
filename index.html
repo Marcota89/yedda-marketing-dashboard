@@ -5618,20 +5618,16 @@ async function fetchViaApify(token, signal) {
 }
 
 async function fetchViaRSS(signal) {
-  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
-  const gnBase   = 'https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=';
-  const bust     = `&_cb=${Date.now()}`;
-  // Google News RSS does NOT support after: operator — use plain queries + year for recency
-  const yr = new Date().getFullYear();
-  const queries  = _APIFY_QUERIES_BASE.map(q => q + ' ' + yr);
-  const results  = await Promise.all(queries.map(q =>
-    fetch(RSS2JSON + encodeURIComponent(gnBase + q) + '&sortBy=date&count=5' + bust, signal ? { signal } : {})
-      .then(r => r.json()).then(d => (d.items || []).slice(0, 4)).catch(() => [])
-  ));
+  const yr   = new Date().getFullYear();
+  const q    = _APIFY_QUERIES_BASE.map(qu => qu + ' ' + yr).join('|');
+  const bust = `&_cb=${Date.now()}`;
+  const r    = await fetch(`/api/rss?q=${encodeURIComponent(q)}&count=5${bust}`, signal ? { signal } : {});
+  if (!r.ok) throw new Error(`RSS proxy HTTP ${r.status}`);
+  const data = await r.json();
   const seen = new Set();
-  return results.flat().map(item => ({
+  return (data.items || []).map(item => ({
     title: item.title, url: item.link, publishedAt: item.pubDate,
-    text: item.description ? item.description.replace(/<[^>]+>/g,'').slice(0,160) : ''
+    text: item.description ? item.description.replace(/<[^>]+>/g, '').slice(0, 160) : ''
   })).filter(a => {
     if (!a.title || seen.has(a.title)) return false;
     seen.add(a.title); return true;
