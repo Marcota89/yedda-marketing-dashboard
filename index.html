@@ -2876,6 +2876,38 @@ textarea::placeholder {
   </div>
 </section>
 
+<!-- ═══ PEOPLE'S POSTS — CLIENT CONTACT RADAR ═══ -->
+<section class="section" id="people-posts">
+  <div class="container">
+    <div class="sec-head flex reveal">
+      <div>
+        <span class="eyebrow">Roi's Account · Client Radar</span>
+        <h2 class="sec-title">People's Posts</h2>
+        <p class="sec-lede">Latest LinkedIn posts from CEO contacts at client accounts — delivered daily by PhantomBuster. One click sends any post to the Comment Generator below.</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+        <button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="togglePeopleManualForm()">＋ Add post manually</button>
+        <button id="peoplePostsRefreshBtn" class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="loadPeoplePosts(true)">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div id="peopleManualForm" class="sched-gen-box reveal" style="display:none;max-width:720px;margin-bottom:18px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+        <div class="sched-field"><label for="pmName">Contact name</label><input id="pmName" class="sched-input" placeholder="e.g. John Smith"></div>
+        <div class="sched-field"><label for="pmTitle">Title</label><input id="pmTitle" class="sched-input" placeholder="e.g. CEO"></div>
+        <div class="sched-field"><label for="pmCompany">Company</label><input id="pmCompany" class="sched-input" placeholder="e.g. Acme Corp"></div>
+      </div>
+      <div class="sched-field" style="margin-top:10px;"><label for="pmUrl">Post URL *</label><input id="pmUrl" class="sched-input" style="width:100%;" placeholder="https://www.linkedin.com/posts/..."></div>
+      <div class="sched-field" style="margin-top:10px;"><label for="pmText">Post text *</label><textarea id="pmText" rows="4" class="sched-input" style="width:100%;resize:vertical;" placeholder="Paste the full text of the contact's post..."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="sched-gen-run" onclick="addManualPeoplePost(this)">💾 Save to radar</button>
+      </div>
+    </div>
+
+    <div id="peoplePostsList" class="reveal" style="max-width:920px;"></div>
+  </div>
+</section>
+
 <!-- ═══ ROI COMMENT GENERATOR ═══ -->
 <section class="section" id="roi-comments" style="background:var(--surface);">
   <div class="container">
@@ -6531,6 +6563,152 @@ openSettings = function() {
   updateSettingsProgress();
 };
 
+/* ═══ PEOPLE'S POSTS — LinkedIn contact monitoring (PhantomBuster feed) ═══ */
+let _peoplePosts = [];
+
+async function loadPeoplePosts(manual) {
+  const btn  = document.getElementById('peoplePostsRefreshBtn');
+  const list = document.getElementById('peoplePostsList');
+  if (!list) return;
+  if (btn && manual) { btn.textContent = '↻ Loading…'; btn.disabled = true; }
+  try {
+    const r = await fetch('/api/linkedin-posts');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    _peoplePosts = data.posts || [];
+    renderPeoplePosts();
+  } catch (e) {
+    list.innerHTML = `<div class="news-empty-state">
+      <h4>📡 Feed unavailable</h4>
+      <p style="font-size:13px;">Could not load contact posts (${esc(e.message)}). Try again in a moment.</p>
+    </div>`;
+  } finally {
+    if (btn && manual) { btn.textContent = '↻ Refresh'; btn.disabled = false; }
+  }
+}
+
+function renderPeoplePosts() {
+  const list = document.getElementById('peoplePostsList');
+  if (!list) return;
+  if (!_peoplePosts.length) {
+    list.innerHTML = `<div class="news-empty-state">
+      <h4>👥 No contact posts yet</h4>
+      <ul>
+        <li>Posts arrive automatically once the PhantomBuster daily run is configured</li>
+        <li>Or use <strong>＋ Add post manually</strong> to paste a post from any contact right now</li>
+      </ul>
+    </div>`;
+    return;
+  }
+  const cards = _peoplePosts.map((p, i) => {
+    const who = [p.contact_name, p.contact_title, p.contact_company].filter(Boolean);
+    const header = who.length
+      ? `${esc(who[0])}${who.length > 1 ? ' <span style="font-weight:500;color:var(--text-soft);">— ' + esc(who.slice(1).join(' · ')) + '</span>' : ''}`
+      : 'Unknown contact';
+    const date = p.published_at
+      ? new Date(p.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '';
+    const text = p.post_text ? String(p.post_text) : '';
+    return `
+    <div class="news-item" style="cursor:default;${p.commented ? 'opacity:.55;' : ''}">
+      <div class="news-item-body" style="width:100%;">
+        <div class="news-item-title">${header}${p.commented ? ' <span style="color:var(--teal-deep);font-size:11px;">✓ commented</span>' : ''}</div>
+        <div class="news-item-meta">
+          ${date ? `<span>${date}</span>` : ''}
+          <span>👍 ${p.likes_count || 0} · 💬 ${p.comments_count || 0}</span>
+          ${p.post_url ? `<a href="${esc(p.post_url)}" target="_blank" rel="noopener">View post ↗</a>` : ''}
+          ${p.source === 'manual' ? '<span style="opacity:.7;">added manually</span>' : ''}
+        </div>
+        ${text ? `<div class="news-snippet">${esc(text.slice(0, 220))}${text.length > 220 ? '…' : ''}</div>` : ''}
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="usePeoplePost(${i})">💬 Generate Roi's Comment</button>
+          ${!p.commented ? `<button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="markPeoplePostCommented(${i})">✓ Mark commented</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  list.innerHTML = `<div class="news-results">${cards}</div>`;
+}
+
+function usePeoplePost(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  if (!p.post_text) {
+    alert('This post has no text captured — open it on LinkedIn, copy the text and use "Add post manually".');
+    return;
+  }
+  const input = document.getElementById('roiPostInput');
+  input.value = p.post_text;
+  if (typeof checkRoiPostInput === 'function') checkRoiPostInput(input);
+  window._activePeoplePost = p;
+  document.getElementById('roi-comments').scrollIntoView({ behavior: 'smooth' });
+  // auto-generate only when a Gemini key is available — otherwise leave prefilled
+  if (localStorage.getItem('yedda_claude_key')) {
+    setTimeout(() => generateRoiComment(document.getElementById('roiCommentBtn')), 400);
+  }
+}
+
+async function markPeoplePostCommented(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  const body = { post_url: p.post_url, commented: true };
+  const txt = document.getElementById('roiCommentText');
+  if (window._activePeoplePost && window._activePeoplePost.post_url === p.post_url && txt && txt.value.trim()) {
+    body.roi_comment = txt.value.trim(); // save the comment that was actually used
+  }
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    p.commented = true;
+    if (body.roi_comment) p.roi_comment = body.roi_comment;
+    renderPeoplePosts();
+    showToast('✓ Post marcado como comentado.', 'success', 4000);
+  } catch (e) {
+    showToast('Erro ao salvar: ' + e.message, 'error', 6000);
+  }
+}
+
+function togglePeopleManualForm() {
+  const f = document.getElementById('peopleManualForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addManualPeoplePost(btn) {
+  const name    = document.getElementById('pmName').value.trim();
+  const title   = document.getElementById('pmTitle').value.trim();
+  const company = document.getElementById('pmCompany').value.trim();
+  const url     = document.getElementById('pmUrl').value.trim();
+  const text    = document.getElementById('pmText').value.trim();
+  if (!url || !text) { alert('Post URL and post text are required.'); return; }
+  setLoading(btn, true, '⏳ Saving…');
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ posts: [{
+        postUrl: url, postContent: text, fullName: name, title, company,
+        postDate: new Date().toISOString(), _manual: true,
+      }] }),
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.error ? JSON.stringify(e.error) : `HTTP ${r.status}`);
+    }
+    ['pmName', 'pmTitle', 'pmCompany', 'pmUrl', 'pmText'].forEach(id => document.getElementById(id).value = '');
+    togglePeopleManualForm();
+    await loadPeoplePosts(false);
+    showToast('✓ Post adicionado ao radar.', 'success', 4000);
+  } catch (e) {
+    alert('Failed to save post: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
 /* restore generated posts from localStorage — called on load and after rebuild */
 function restoreGeneratedPosts() {
   const saved = getGeneratedPosts();
@@ -6575,6 +6753,7 @@ function restoreGeneratedPosts() {
 }
 restoreGeneratedPosts();
 setTimeout(loadRemotePosts, 1200); // pull cloud posts after local restore settles
+setTimeout(() => loadPeoplePosts(false), 1600); // pull people's posts (PhantomBuster feed)
 _applyCollapseState();
 
 /* ── Generated Posts Management ── */
