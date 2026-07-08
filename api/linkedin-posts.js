@@ -108,11 +108,13 @@ function normalize(r) {
     return null;
   };
 
-  const rawDate = pick('postDate', 'postTimestamp', 'publishedAt', 'published_at', 'date', 'timestamp');
+  // Try every date field until one parses — PhantomBuster sends both a relative
+  // date ("3w") and an ISO timestamp; the relative one must not short-circuit
   let publishedAt = null;
-  if (rawDate) {
-    const d = new Date(rawDate);
-    if (!isNaN(d.getTime())) publishedAt = d.toISOString();
+  for (const k of ['postTimestamp', 'timestamp', 'publishedAt', 'published_at', 'postDate', 'date']) {
+    if (r[k] === undefined || r[k] === null || r[k] === '') continue;
+    const d = new Date(r[k]);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000) { publishedAt = d.toISOString(); break; }
   }
 
   return {
