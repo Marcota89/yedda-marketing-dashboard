@@ -117,8 +117,20 @@ function normalize(r) {
     if (!isNaN(d.getTime()) && d.getFullYear() > 2000) { publishedAt = d.toISOString(); break; }
   }
 
+  const postUrl = pick('postUrl', 'post_url', 'url', 'postLink', 'link');
+
+  // Fallback: LinkedIn activity IDs are snowflake-like — ms timestamp = id >> 22
+  if (!publishedAt && postUrl) {
+    const m = String(postUrl).match(/activity[:-](\d{15,20})/);
+    if (m) {
+      const ms = Number(BigInt(m[1]) >> 22n);
+      const d = new Date(ms);
+      if (!isNaN(d.getTime()) && d.getFullYear() > 2000) publishedAt = d.toISOString();
+    }
+  }
+
   return {
-    post_url:            pick('postUrl', 'post_url', 'url', 'postLink', 'link'),
+    post_url:            postUrl,
     contact_name:        pick('fullName', 'contact_name', 'name', 'profileName', 'author'),
     contact_title:       pick('title', 'headline', 'contact_title', 'occupation', 'job'),
     contact_company:     pick('company', 'companyName', 'contact_company'),
