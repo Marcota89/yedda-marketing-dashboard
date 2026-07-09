@@ -1962,8 +1962,8 @@ textarea::placeholder {
     </a>
     <div class="nav-links" id="navLinks">
       <a href="#radar" onclick="switchTab('radar');return false;">📡 Radar</a>
-      <a href="#criar" onclick="switchTab('criar');return false;">✍️ Create</a>
-      <a href="#fila" onclick="switchTab('fila');return false;">📋 Queue <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
+      <a href="#create" onclick="switchTab('create');return false;">✍️ Create</a>
+      <a href="#queue" onclick="switchTab('queue');return false;">📋 Queue <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
       <a href="#brand" onclick="switchTab('brand');return false;">📖 Brand</a>
       <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:16px;padding:0;display:flex;align-items:center;" title="Settings">⚙️</button>
     </div>
@@ -1992,8 +1992,8 @@ textarea::placeholder {
 <div class="wsbar" role="tablist" aria-label="Workspaces">
   <div class="wstabs">
     <button class="wstab" data-tabbtn="radar" role="tab" aria-selected="true" onclick="switchTab('radar')" title="Target contacts' posts to comment on">📡 Radar</button>
-    <button class="wstab" data-tabbtn="criar" role="tab" onclick="switchTab('criar')" title="News, calendar and post generators">✍️ Create</button>
-    <button class="wstab" data-tabbtn="fila" role="tab" onclick="switchTab('fila')" title="Approved posts, creatives and deliverables">📋 Queue <span id="tabQueueBadge" class="wsbadge" style="display:none"></span></button>
+    <button class="wstab" data-tabbtn="create" role="tab" onclick="switchTab('create')" title="News, calendar and post generators">✍️ Create</button>
+    <button class="wstab" data-tabbtn="queue" role="tab" onclick="switchTab('queue')" title="Approved posts, creatives and deliverables">📋 Queue <span id="tabQueueBadge" class="wsbadge" style="display:none"></span></button>
     <button class="wstab" data-tabbtn="intel" role="tab" onclick="switchTab('intel')" title="Competitive landscape">📊 Intel</button>
     <button class="wstab" data-tabbtn="mas" role="tab" onclick="switchTab('mas')" title="Command Panel + MAS approvals">🤖 MAS</button>
     <button class="wstab" data-tabbtn="brand" role="tab" onclick="switchTab('brand')" title="Modules, cases, characters — brand reference">📖 Brand</button>
@@ -2437,7 +2437,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ CADENCE ═══ -->
-<section class="section" id="content" data-tab="criar">
+<section class="section" id="content" data-tab="create">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Weekly Cadence · Active from week 1</span>
@@ -2491,7 +2491,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ LINKEDIN POSTS — SIDE BY SIDE ═══ -->
-<section class="section tealbg" id="calendar" data-tab="criar">
+<section class="section tealbg" id="calendar" data-tab="create">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2928,7 +2928,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ ROI COMMENT GENERATOR ═══ -->
-<section class="section" id="roi-comments" data-tab="criar" style="background:var(--surface);">
+<section class="section" id="roi-comments" data-tab="create" style="background:var(--surface);">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2972,7 +2972,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ ROI POST GENERATOR ═══ -->
-<section class="section" id="roi-posts" data-tab="criar" style="background:linear-gradient(135deg,#0E1B1E 0%,#1a2f35 100%);color:#fff;">
+<section class="section" id="roi-posts" data-tab="create" style="background:linear-gradient(135deg,#0E1B1E 0%,#1a2f35 100%);color:#fff;">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -3013,7 +3013,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ QUEUE ═══ -->
-<section class="section" id="queue" data-tab="fila">
+<section class="section" id="queue" data-tab="queue">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -3081,7 +3081,7 @@ textarea::placeholder {
 </div>
 
 <!-- ═══ VISUALS GALLERY ═══ -->
-<section class="section" id="creatives" data-tab="fila">
+<section class="section" id="creatives" data-tab="queue">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">LinkedIn Visuals · HTML + PNG ready</span>
@@ -3137,7 +3137,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ DELIVERABLES ═══ -->
-<section class="section" id="deliverables" data-tab="fila">
+<section class="section" id="deliverables" data-tab="queue">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Strategic deliverables · 6 pieces</span>
@@ -7422,7 +7422,7 @@ const io = new IntersectionObserver((entries) => {
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
 /* ═══ WORKSPACE TABS — primary information architecture (Radar·Criar·Fila·Intel·MAS·Brand) ═══ */
-const _TABS = ['radar','criar','fila','intel','mas','brand'];
+const _TABS = ['radar','create','queue','intel','mas','brand'];
 function switchTab(name, opts) {
   if (!_TABS.includes(name)) name = 'radar';
   window._activeTab = name;
