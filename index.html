@@ -7421,7 +7421,7 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.08 });
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-/* ═══ WORKSPACE TABS — primary information architecture (Radar·Criar·Fila·Intel·MAS·Brand) ═══ */
+/* ═══ WORKSPACE TABS — primary information architecture (Radar·Create·Queue·Intel·MAS·Brand) ═══ */
 const _TABS = ['radar','create','queue','intel','mas','brand'];
 function switchTab(name, opts) {
   if (!_TABS.includes(name)) name = 'radar';
@@ -7542,7 +7542,7 @@ setTimeout(checkApiStatus, 1000);
 
 /* M2 — Queue badge cleared state */
 function updateQueueBadgeV2(count) {
-  // Mirror the approved-count onto the Fila workspace tab badge
+  // Mirror the approved-count onto the Queue workspace tab badge
   const tb = document.getElementById('tabQueueBadge');
   if (tb) { tb.textContent = count; tb.style.display = count > 0 ? '' : 'none'; }
   const badge = document.getElementById('queueBadge');
