@@ -1962,14 +1962,14 @@ textarea::placeholder {
     </a>
     <div class="nav-links" id="navLinks">
       <a href="#radar" onclick="switchTab('radar');return false;">📡 Radar</a>
-      <a href="#criar" onclick="switchTab('criar');return false;">✍️ Criar</a>
-      <a href="#fila" onclick="switchTab('fila');return false;">📋 Fila <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
+      <a href="#criar" onclick="switchTab('criar');return false;">✍️ Create</a>
+      <a href="#fila" onclick="switchTab('fila');return false;">📋 Queue <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
       <a href="#brand" onclick="switchTab('brand');return false;">📖 Brand</a>
       <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:16px;padding:0;display:flex;align-items:center;" title="Settings">⚙️</button>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
       <span class="nav-live"><span class="nav-live-dot"></span>SESSION ACTIVE</span>
-      <a href="#radar" class="nav-cta" onclick="switchTab('radar');return false;" aria-label="Abrir o Radar de contatos">Abrir Radar <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a href="#radar" class="nav-cta" onclick="switchTab('radar');return false;" aria-label="Open the contact Radar">Open Radar <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <button class="nav-toggle" id="navToggleBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="navLinks">
         <span></span><span></span><span></span>
       </button>
@@ -1989,14 +1989,14 @@ textarea::placeholder {
 .wsstatus{display:flex;gap:14px;align-items:center;font-size:11px;flex-shrink:0}
 @media(max-width:720px){.wsstatus{display:none}.wstab{padding:11px 9px;font-size:11px}.wsbar{padding:0 10px}}
 </style>
-<div class="wsbar" role="tablist" aria-label="Áreas de trabalho">
+<div class="wsbar" role="tablist" aria-label="Workspaces">
   <div class="wstabs">
-    <button class="wstab" data-tabbtn="radar" role="tab" aria-selected="true" onclick="switchTab('radar')" title="Posts de contatos-alvo para comentar">📡 Radar</button>
-    <button class="wstab" data-tabbtn="criar" role="tab" onclick="switchTab('criar')" title="Notícias, calendário e geradores de posts">✍️ Criar</button>
-    <button class="wstab" data-tabbtn="fila" role="tab" onclick="switchTab('fila')" title="Aprovados, criativos e entregáveis">📋 Fila <span id="tabQueueBadge" class="wsbadge" style="display:none"></span></button>
-    <button class="wstab" data-tabbtn="intel" role="tab" onclick="switchTab('intel')" title="Panorama competitivo">📊 Intel</button>
-    <button class="wstab" data-tabbtn="mas" role="tab" onclick="switchTab('mas')" title="Command Panel + aprovações MAS">🤖 MAS</button>
-    <button class="wstab" data-tabbtn="brand" role="tab" onclick="switchTab('brand')" title="Módulos, cases, personagens — referência de marca">📖 Brand</button>
+    <button class="wstab" data-tabbtn="radar" role="tab" aria-selected="true" onclick="switchTab('radar')" title="Target contacts' posts to comment on">📡 Radar</button>
+    <button class="wstab" data-tabbtn="criar" role="tab" onclick="switchTab('criar')" title="News, calendar and post generators">✍️ Create</button>
+    <button class="wstab" data-tabbtn="fila" role="tab" onclick="switchTab('fila')" title="Approved posts, creatives and deliverables">📋 Queue <span id="tabQueueBadge" class="wsbadge" style="display:none"></span></button>
+    <button class="wstab" data-tabbtn="intel" role="tab" onclick="switchTab('intel')" title="Competitive landscape">📊 Intel</button>
+    <button class="wstab" data-tabbtn="mas" role="tab" onclick="switchTab('mas')" title="Command Panel + MAS approvals">🤖 MAS</button>
+    <button class="wstab" data-tabbtn="brand" role="tab" onclick="switchTab('brand')" title="Modules, cases, characters — brand reference">📖 Brand</button>
   </div>
   <div class="wsstatus">
     <span id="geminiStatus" style="color:#8A9AA0">⬤ Gemini</span>
@@ -2517,7 +2517,7 @@ textarea::placeholder {
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button id="fetchNewsBtn" class="sched-gen-run" style="background:var(--orange);white-space:nowrap;" onclick="fetchApifyNews(this)">🔍 Fetch News</button>
-              <button onclick="clearSeenArticles()" title="Limpar histórico de notícias já vistas" style="background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;">🗑 Limpar histórico</button>
+              <button onclick="clearSeenArticles()" title="Clear seen-news history" style="background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;">🗑 Clear history</button>
             </div>
           </div>
           <div id="apifyNewsResults"></div>
@@ -4548,7 +4548,7 @@ function _genSectionHeaderHTML(count) {
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('published')" data-filter="published" style="border-color:var(--teal);">✓ Published</button>
         </div>
-        <button id="cloud-sync-btn" onclick="loadRemotePosts()" title="Sincronizar posts com a nuvem (Supabase)" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">☁ Cloud</button>
+        <button id="cloud-sync-btn" onclick="loadRemotePosts()" title="Sync posts to the cloud (Supabase)" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">☁ Cloud</button>
         <button onclick="exportContentBank()" title="Download approved posts as LINKEDIN-CONTENT-BANK.md snippet" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">📥 Export</button>
         <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
       </div>
@@ -4731,7 +4731,7 @@ async function _pushToCloud(arr) {
 
 async function loadRemotePosts() {
   const syncBtn = document.getElementById('cloud-sync-btn');
-  if (syncBtn) { syncBtn.textContent = '☁ Sincronizando…'; syncBtn.disabled = true; }
+  if (syncBtn) { syncBtn.textContent = '☁ Syncing…'; syncBtn.disabled = true; }
   try {
     const r = await fetch('/api/posts');
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -4777,10 +4777,10 @@ async function loadRemotePosts() {
       }
       if (newCount) rebuildGeneratedSection();
       const msg = [
-        newCount ? `${newCount} post${newCount > 1 ? 's' : ''} novo${newCount > 1 ? 's' : ''}` : '',
-        imageCount ? `${imageCount} imagem${imageCount > 1 ? 'ns' : ''} sincronizada${imageCount > 1 ? 's' : ''}` : '',
+        newCount ? `${newCount} new post${newCount > 1 ? 's' : ''}` : '',
+        imageCount ? `${imageCount} image${imageCount > 1 ? 's' : ''} synced` : '',
       ].filter(Boolean).join(' · ');
-      showToast(`☁ ${msg} carregado${newCount + imageCount > 1 ? 's' : ''} da nuvem`, 'success', 4000);
+      showToast(`☁ ${msg} loaded from the cloud`, 'success', 4000);
     }
   } catch(_) {
     if (syncBtn) { syncBtn.textContent = '☁ Cloud'; syncBtn.disabled = false; }
@@ -5571,7 +5571,7 @@ function _filterSeen(articles) {
 }
 function clearSeenArticles() {
   localStorage.removeItem(_SEEN_KEY);
-  showToast('✅ Histórico de notícias limpo — próximo fetch mostrará todos os artigos', 'success', 4000);
+  showToast('✅ News history cleared — the next fetch will show all articles', 'success', 4000);
 }
 
 async function fetchApifyNews(btn) {
@@ -5593,7 +5593,7 @@ async function fetchApifyNews(btn) {
       const raw = await fetchViaApify(token, signal);
       let articles = _filterSeen(raw);
       if (articles.length === 0 && raw.length > 0) {
-        showToast('ℹ️ Sem notícias novas no Apify — mostrando recentes já vistas', 'info', 5000);
+        showToast('ℹ️ No new Apify news — showing recent seen items', 'info', 5000);
         articles = raw;
       }
       if (articles.length > 0) { _markSeen(articles); setLoading(fetchBtn, false); renderApifyResults(articles); return; }
@@ -5609,7 +5609,7 @@ async function fetchApifyNews(btn) {
     const raw = await fetchViaRSS(signal);
     let articles = _filterSeen(raw);
     if (articles.length === 0 && raw.length > 0) {
-      showToast('ℹ️ Sem artigos novos — mostrando recentes já vistos. Use "Limpar histórico" para ver todos.', 'info', 7000);
+      showToast('ℹ️ No new articles — showing recent seen items. Use "Clear history" to see all.', 'info', 7000);
       articles = raw;
     }
     _markSeen(raw);
@@ -5650,7 +5650,7 @@ async function fetchViaApify(token, signal) {
     }
   );
   if (res.status === 402) {
-    showToast('⚠️ Quota Apify esgotada — usando RSS gratuito. Recarregue créditos em apify.com', 'info', 9000);
+    showToast('⚠️ Apify quota exhausted — using free RSS. Top up credits at apify.com', 'info', 9000);
     throw new Error('Apify quota exhausted (402)');
   }
   if (!res.ok) throw new Error(`Apify HTTP ${res.status}`);
@@ -6777,7 +6777,7 @@ async function sendToHermes(i) {
   const p = _peoplePosts[i];
   if (!p) return;
   const name = p.contact_name || 'Unknown';
-  if (!confirm(`Enviar ${name} para a fila de prospecção do Hermes?\n\nO Hermes assume a cadência de vendas com o contexto do engajamento. O status entra como "pending" para revisão antes de qualquer envio.`)) return;
+  if (!confirm(`Send ${name} to the Hermes prospecting queue?\n\nHermes takes over the sales cadence with the engagement context. The status is set to "pending" for review before any outreach.`)) return;
   try {
     const r = await fetch('/api/linkedin-posts', {
       method: 'POST',
@@ -6795,9 +6795,9 @@ async function sendToHermes(i) {
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error ? JSON.stringify(e.error) : `HTTP ${r.status}`); }
     _peoplePosts.forEach(q => { if ((q.contact_profile_url || q.contact_name) === (p.contact_profile_url || p.contact_name)) q.handoff_sent = true; });
     renderPeoplePosts();
-    showToast('🔥 Lead enviado ao Hermes (status: pending).', 'success', 5000);
+    showToast('🔥 Lead sent to Hermes (status: pending).', 'success', 5000);
   } catch (e) {
-    showToast('Erro ao enviar ao Hermes: ' + e.message, 'error', 6000);
+    showToast('Failed to send to Hermes: ' + e.message, 'error', 6000);
   }
 }
 
@@ -6840,9 +6840,9 @@ async function markPeoplePostCommented(i) {
     p.commented = true;
     if (body.roi_comment) p.roi_comment = body.roi_comment;
     renderPeoplePosts();
-    showToast('✓ Post marcado como comentado.', 'success', 4000);
+    showToast('✓ Post marked as commented.', 'success', 4000);
   } catch (e) {
-    showToast('Erro ao salvar: ' + e.message, 'error', 6000);
+    showToast('Failed to save: ' + e.message, 'error', 6000);
   }
 }
 
@@ -6875,7 +6875,7 @@ async function addManualPeoplePost(btn) {
     ['pmName', 'pmTitle', 'pmCompany', 'pmUrl', 'pmText'].forEach(id => document.getElementById(id).value = '');
     togglePeopleManualForm();
     await loadPeoplePosts(false);
-    showToast('✓ Post adicionado ao radar.', 'success', 4000);
+    showToast('✓ Post added to radar.', 'success', 4000);
   } catch (e) {
     alert('Failed to save post: ' + e.message);
   } finally {
@@ -7371,11 +7371,11 @@ async function generatePostImage(btn, i) {
     btn.textContent = '🖼️ Regenerate Image';
     btn.disabled = false;
     const _toastMap = {
-      gemini: ['✅ Imagem gerada com Gemini + logo Yedda', 'success'],
-      flux:   [apiKey ? `⚠️ Gemini indisponível — imagem gerada via FLUX${_geminiErr ? ' (' + _geminiErr.slice(0,60) + ')' : ''}` : '✅ Imagem gerada via FLUX + logo Yedda', apiKey ? 'info' : 'success'],
-      canvas: ['ℹ️ Geradores de imagem indisponíveis — branded card criado', 'info'],
+      gemini: ['✅ Image generated with Gemini + Yedda logo', 'success'],
+      flux:   [apiKey ? `⚠️ Gemini unavailable — image generated via FLUX${_geminiErr ? ' (' + _geminiErr.slice(0,60) + ')' : ''}` : '✅ Image generated via FLUX + Yedda logo', apiKey ? 'info' : 'success'],
+      canvas: ['ℹ️ Image generators unavailable — branded card created', 'info'],
     };
-    const [_msg, _tp] = _toastMap[_path] || ['✅ Imagem gerada', 'success'];
+    const [_msg, _tp] = _toastMap[_path] || ['✅ Image generated', 'success'];
     showToast(_msg, _tp, 8000);
   } catch(e) {
     status.stop();
