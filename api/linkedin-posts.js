@@ -34,6 +34,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    // Handoff to Hermes prospecting queue — deliberate, human-triggered from the
+    // dashboard. status=pending so Hermes review gates any actual outreach.
+    if (req.body && req.body.action === 'handoff') return handleHandoff(req, res);
+
     // If PB_WEBHOOK_SECRET is set in Vercel env, require it (?secret=... on the webhook URL).
     const secret = process.env.PB_WEBHOOK_SECRET;
     if (secret && req.query.secret !== secret)
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { post_url, roi_comment, commented } = req.body || {};
+    const { post_url, roi_comment, commented, contact_name, contact_company } = req.body || {};
     if (!post_url) return res.status(400).json({ error: 'post_url required' });
 
     const patch = { updated_at: new Date().toISOString() };
@@ -74,10 +78,80 @@ export default async function handler(req, res) {
       const err = await r.json().catch(() => ({}));
       return res.status(r.status).json({ error: err });
     }
+
+    // Marketing → Sales ledger: log the engagement so MAS analytics and the
+    // warm-lead signal can see it. Best-effort — never blocks the PATCH response.
+    if (commented === true) {
+      await logInteraction({
+        name: contact_name, company: contact_company, post_url,
+        action: 'linkedin_comment',
+      }).catch(() => {});
+    }
     return res.status(200).json({ ok: true });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// Append an engagement row to lead_interactions (MAS's ledger). The table is
+// keyed by email; LinkedIn contacts rarely have one, so we use the profile/post
+// URL as a stable identifier — it never collides with a real email lead.
+async function logInteraction({ name, company, post_url, action }) {
+  const row = {
+    email: post_url || `linkedin:${name || 'unknown'}`,
+    company: company || 'Unknown',
+    action: action || 'linkedin_comment',
+    ts: new Date().toISOString(),
+    sdr: 'Roi (Marketing)',
+  };
+  await fetch(`${SUPABASE_URL}/rest/v1/lead_interactions`, {
+    method: 'POST',
+    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(row),
+  });
+}
+
+// Enqueue a warm LinkedIn contact into Hermes's prospecting queue.
+async function handleHandoff(req, res) {
+  const b = req.body || {};
+  const name = (b.prospect_name || b.contact_name || '').trim();
+  if (!name) return res.status(400).json({ error: 'prospect_name required' });
+
+  const taskId = 'mkt-' + (globalThis.crypto?.randomUUID?.() || (Date.now() + '-' + Math.round(Math.random() * 1e6)));
+  const row = {
+    task_id: taskId,
+    prospect_name: name,
+    company: (b.company || 'Unknown').trim() || 'Unknown',
+    region: (b.region || 'Unknown').trim() || 'Unknown',
+    title: b.title || null,
+    sector: b.sector || null,
+    signal_type: 'linkedin_engagement',
+    problem_text: b.problem_text || `Warm LinkedIn contact — Roi engaged with their recent post(s). ${b.note || ''}`.trim(),
+    status: 'pending',
+    enqueued_at: new Date().toISOString(),
+  };
+
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/hermes_mas_handoff`, {
+    method: 'POST',
+    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(row),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    return res.status(r.status).json({ error: err });
+  }
+
+  // Mark every post from this contact as handed off, so the badge clears
+  if (b.contact_profile_url || b.contact_name) {
+    const filter = b.contact_profile_url
+      ? `contact_profile_url=eq.${encodeURIComponent(b.contact_profile_url)}`
+      : `contact_name=eq.${encodeURIComponent(b.contact_name)}`;
+    await fetch(`${TABLE}?${filter}`, {
+      method: 'PATCH', headers: HEADERS,
+      body: JSON.stringify({ handoff_sent: true, updated_at: new Date().toISOString() }),
+    }).catch(() => {});
+  }
+  return res.status(200).json({ ok: true, task_id: taskId });
 }
 
 // Accepts the three payload shapes that reach this endpoint:

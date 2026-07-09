@@ -6683,6 +6683,20 @@ function renderPeoplePosts() {
     </div>`;
     return;
   }
+  // Warm-lead signal: count commented posts per contact. 2+ engagements → the
+  // relationship is warming and worth handing to Hermes. Show the CTA once per
+  // contact (on their first card in the list) to avoid repetition.
+  const _ck = p => p.contact_profile_url || p.contact_name || '';
+  const engaged = {};
+  _peoplePosts.forEach(p => {
+    const k = _ck(p);
+    if (!k) return;
+    engaged[k] = engaged[k] || { count: 0, handoff: false };
+    if (p.commented) engaged[k].count++;
+    if (p.handoff_sent) engaged[k].handoff = true;
+  });
+  const _shownHandoff = {};
+
   const cards = _peoplePosts.map((p, i) => {
     const who = [p.contact_name, p.contact_title, p.contact_company].filter(Boolean);
     const header = who.length
@@ -6692,10 +6706,22 @@ function renderPeoplePosts() {
       ? new Date(p.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '';
     const text = p.post_text ? String(p.post_text) : '';
+    const tier = _tierChip(p.tier);
+
+    const k = _ck(p);
+    const warm = k && engaged[k] && engaged[k].count >= 2;
+    let handoffCta = '';
+    if (warm && !engaged[k].handoff && !_shownHandoff[k]) {
+      _shownHandoff[k] = true;
+      handoffCta = `<button class="btn-outline" style="font-size:12px;padding:6px 14px;border-color:var(--orange);color:var(--orange);" onclick="sendToHermes(${i})">🔥 Send warm lead to Hermes</button>`;
+    }
+    const handoffBadge = (k && engaged[k] && engaged[k].handoff)
+      ? ' <span style="color:var(--orange);font-size:11px;font-weight:700;">→ in Hermes queue</span>' : '';
+
     return `
-    <div class="news-item" style="cursor:default;${p.commented ? 'opacity:.55;' : ''}">
+    <div class="news-item" style="cursor:default;${p.commented ? 'opacity:.72;' : ''}">
       <div class="news-item-body" style="width:100%;">
-        <div class="news-item-title">${header}${p.commented ? ' <span style="color:var(--teal-deep);font-size:11px;">✓ commented</span>' : ''}</div>
+        <div class="news-item-title">${tier}${header}${p.commented ? ' <span style="color:var(--teal-deep);font-size:11px;">✓ commented</span>' : ''}${handoffBadge}</div>
         <div class="news-item-meta">
           ${date ? `<span>${date}</span>` : ''}
           <span>👍 ${p.likes_count || 0} · 💬 ${p.comments_count || 0}</span>
@@ -6706,11 +6732,53 @@ function renderPeoplePosts() {
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
           <button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="usePeoplePost(${i})">💬 Generate Roi's Comment</button>
           ${!p.commented ? `<button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="markPeoplePostCommented(${i})">✓ Mark commented</button>` : ''}
+          ${handoffCta}
         </div>
       </div>
     </div>`;
   }).join('');
   list.innerHTML = `<div class="news-results">${cards}</div>`;
+}
+
+// Tier chip — mirrors the Roi CRM tiers from the contact sheet
+function _tierChip(tier) {
+  if (!tier) return '';
+  const map = {
+    '1-priority': ['★ Priority', 'var(--orange)', 'var(--orange-xl)'],
+    '2-client':   ['Client', 'var(--teal-deep)', 'var(--teal-xl)'],
+    '3-network':  ['Network', 'var(--text-soft)', 'var(--line-soft)'],
+    'internal':   ['Yedda', '#7a4fd0', '#efe9fb'],
+  };
+  const m = map[tier] || [tier, 'var(--text-soft)', 'var(--line-soft)'];
+  return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;margin-right:6px;color:${m[1]};background:${m[2]};vertical-align:middle;">${esc(m[0])}</span>`;
+}
+
+async function sendToHermes(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  const name = p.contact_name || 'Unknown';
+  if (!confirm(`Enviar ${name} para a fila de prospecção do Hermes?\n\nO Hermes assume a cadência de vendas com o contexto do engajamento. O status entra como "pending" para revisão antes de qualquer envio.`)) return;
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'handoff',
+        prospect_name: name,
+        company: p.contact_company || 'Unknown',
+        title: p.contact_title || null,
+        contact_profile_url: p.contact_profile_url || null,
+        contact_name: p.contact_name || null,
+        note: p.roi_comment ? `Roi's last comment: "${String(p.roi_comment).slice(0, 200)}"` : '',
+      }),
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error ? JSON.stringify(e.error) : `HTTP ${r.status}`); }
+    _peoplePosts.forEach(q => { if ((q.contact_profile_url || q.contact_name) === (p.contact_profile_url || p.contact_name)) q.handoff_sent = true; });
+    renderPeoplePosts();
+    showToast('🔥 Lead enviado ao Hermes (status: pending).', 'success', 5000);
+  } catch (e) {
+    showToast('Erro ao enviar ao Hermes: ' + e.message, 'error', 6000);
+  }
 }
 
 function usePeoplePost(i) {
@@ -6734,7 +6802,10 @@ function usePeoplePost(i) {
 async function markPeoplePostCommented(i) {
   const p = _peoplePosts[i];
   if (!p) return;
-  const body = { post_url: p.post_url, commented: true };
+  const body = {
+    post_url: p.post_url, commented: true,
+    contact_name: p.contact_name || null, contact_company: p.contact_company || null,
+  };
   const txt = document.getElementById('roiCommentText');
   if (window._activePeoplePost && window._activePeoplePost.post_url === p.post_url && txt && txt.value.trim()) {
     body.roi_comment = txt.value.trim(); // save the comment that was actually used
