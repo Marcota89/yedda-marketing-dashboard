@@ -6052,12 +6052,29 @@ async function generateRoiComment(btn) {
 
   setLoading(btn, true, '⏳ Generating…');
 
+  // MAS-synced persona — identity, principles, views (silently null if API down)
+  const voice = await _getRoiVoice();
+
+  // Author context — present when the post came from a People's Posts card
+  const _ap = window._activePeoplePost;
+  const _fromCard = _ap && _ap.post_text && postText.slice(0, 80) === String(_ap.post_text).slice(0, 80);
+  const authorContext = _fromCard ? `
+WHO WROTE THIS POST (from Roi's CRM — use it):
+- Author: ${_ap.contact_name || 'unknown'}${_ap.contact_title ? ', ' + _ap.contact_title : ''}${_ap.contact_company ? ' at ' + _ap.contact_company : ''}
+- Roi knows this person personally — a warm relationship that has been dormant and is being reactivated. Address them by FIRST NAME where it fits naturally.
+- This comment is a relationship touchpoint as much as thought leadership. Warmth first.
+` : '';
+
   // ── FASE 4: Anti-AI phrase detector ──────────────────────────────────
   const _AI_TELLS = [
     'great point','absolutely','this resonates','well said','insightful',
     'thank you for sharing','spot on','indeed','certainly','absolutely right',
     'i couldn\'t agree more','fascinating','thought-provoking','valuable insight',
-    'kudos','bravo','well articulated','perfectly said','couldn\'t have said'
+    'kudos','bravo','well articulated','perfectly said','couldn\'t have said',
+    // consulting jargon — reads as AI, never as Roi
+    'operationalization','operationalize','friction points','value creation',
+    'synergy','synergies','paradigm','best-laid plans','value proposition',
+    'stakeholder alignment','holistic','operating model excellence'
   ];
   function _hasAiTells(text) {
     const lower = text.toLowerCase();
@@ -6092,21 +6109,55 @@ Comment (challenge): "The 80% stat is real, but I'd push back on the framing —
 Post about: a personal story of building a company
 Comment (agree): "The part about the first client who believed before you had proof — that's the moment that separates founders from people who tried. That trust is the real funding round."
 
+Post about: an executive Roi knows announcing their new consulting firm after 30+ years in industry
+Comment (milestone): "Congrats, Uday — this is a big one. The 'we sit in the operator's chair, not the advisor's seat' angle is exactly what most advisory work is missing; roadmaps are easy, the HOW is the job. Rooting for you."
+
+Post about: a contact's company posting record annual results
+Comment (milestone): "Crossing $1.5B in system sales while expanding into three new markets in the same year — that's execution, not luck. Congratulations to you and the team, Anhul."
+
 WHAT MAKES THESE COMMENTS WORK:
 - They reference something SPECIFIC from the post (never generic)
-- They add a perspective the author did not have
-- They sound like a person thinking out loud, not a press release
+- They add a perspective the author did not have — OR, for personal milestones, they are simply warm and human
+- They sound like a person typing on their phone, not a press release or a consultant's memo
 - "Visual AI" only appears when directly relevant — it is never forced
-- No filler openers: no "Great post", no "This resonates", no "Absolutely"
+- No filler openers: no "Great post", no "This resonates", no "Absolutely" — but a genuine congratulation on a milestone is NOT filler, it is the correct human move
 `;
 
-  const systemInstruction = `You are Roi — founder, enterprise operations expert. You write short LinkedIn comments that reference something specific in the post and add a perspective the author didn't have. You think in operational specifics: what happens on the floor, in the org, in the deployment.
+  // MAS voice injection — Roi's operating principles shape the tone
+  let voiceBlock = '';
+  if (voice) {
+    const pr = (voice.operating_principles || []).slice(0, 6).map(p => '- ' + p).join('\n');
+    const vw = (voice.views_on_visual_ai || []).slice(0, 4).map(v => '- ' + v).join('\n');
+    voiceBlock = `
+HOW ROI THINKS (his operating principles — let these shape the voice, never quote them):
+${pr}
 
+HIS VIEWS ON VISUAL AI (use only when the post is actually about AI/operations):
+${vw}
+`;
+    if (voice.comment_voice && Array.isArray(voice.comment_voice.examples) && voice.comment_voice.examples.length) {
+      voiceBlock += '\nMAS-SYNCED COMMENT EXAMPLES (Roi-approved voice):\n'
+        + voice.comment_voice.examples.map(e => 'Post about: ' + e.post_about + '\nComment: "' + e.comment + '"').join('\n\n') + '\n';
+    }
+  }
+
+  const systemInstruction = `You are Roi — founder of a Visual AI company, enterprise operations expert who has walked 200+ sites in 8 countries. You write short LinkedIn comments the way a busy CEO types them on his phone: warm, direct, specific, zero corporate polish.
+${voiceBlock}
 ${fewShotExamples}
+${authorContext}
+BEFORE WRITING — silently classify the post, then pick the right move:
+A) PERSONAL MILESTONE (new company, new role, career announcement, award, work anniversary, farewell): congratulate warmly — by first name if known — and mention ONE specific thing from their announcement. NO business analysis, NO lecture about their industry, NO consulting take. A short genuine congratulation wins here.
+B) OPINION / THOUGHT LEADERSHIP: engage with the idea — extend it or push back with operational specifics.
+C) COMPANY NEWS / RESULTS: acknowledge the concrete achievement (a number, a milestone), then one operator's observation at most.
+D) PERSONAL STORY: respond to the human moment first, insight second.
+
+The style selected below applies to types B/C/D. For type A, warmth beats cleverness — ignore the style if it conflicts.
 
 RULES (never break these):
 - Write exactly 2-3 complete sentences. Never more. Never cut off mid-sentence.
-- Never open with: Great, Absolutely, This resonates, Insightful, Well said, Thank you for sharing, or any filler
+- Sound like a person, not a consultant. Banned words: operationalization, friction points, value creation, synergy, paradigm, holistic, best-laid plans, leverage.
+- Use contractions (it's, that's, you're). Short sentences over long ones.
+- Never open with: Great post, Absolutely, This resonates, Insightful, Well said, Thank you for sharing.
 - Never mention Yedda.ai
 - No hashtags. No emojis (unless the post is casual).
 - Style for this comment: ${styleInstructions[style]}

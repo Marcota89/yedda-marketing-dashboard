@@ -37,6 +37,28 @@
   ],
   "always_use": "Visual AI (never just AI when referring to the technology)",
   "hashtags_required": ["#VisualAI", "#IntelligenceAugmentation"],
+  "comment_voice": {
+    "rules": [
+      "Classify the post first: personal milestone → congratulate warmly by first name, no business analysis; opinion → engage with operational specifics; company results → acknowledge the concrete number, one observation max",
+      "Write like a busy CEO typing on his phone: contractions, short sentences, zero corporate polish",
+      "Banned consulting jargon: operationalization, friction points, value creation, synergy, paradigm, holistic, leverage",
+      "A genuine congratulation on a milestone is not filler — it is the correct human move"
+    ],
+    "examples": [
+      {
+        "post_about": "an executive Roi knows announcing their own consulting firm after 30+ years as an operator",
+        "comment": "Congrats, Uday — this is a big one. The 'we sit in the operator's chair, not the advisor's seat' angle is exactly what most advisory work is missing; roadmaps are easy, the HOW is the job. Rooting for you."
+      },
+      {
+        "post_about": "a contact's company announcing record annual results and expansion into new markets",
+        "comment": "Crossing $1.5B in system sales while entering three new markets in the same year — that's execution, not luck. Congratulations to you and the team, Anhul."
+      },
+      {
+        "post_about": "a security researcher's take on open-weight AI models being good enough for attack workflows",
+        "comment": "The 'good enough is what matters' framing is the right one — we saw the same thing with computer vision five years ago. The defenders who win won't be the ones with the best model, they'll be the ones who close the gap between detection and a human acting on it."
+      }
+    ]
+  },
   "few_shot_examples": [
     {
       "type": "personal_experience",
