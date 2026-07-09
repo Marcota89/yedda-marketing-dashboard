@@ -1961,17 +1961,15 @@ textarea::placeholder {
       <span class="nav-pill">Command Center</span>
     </a>
     <div class="nav-links" id="navLinks">
-      <a href="#modules">Modules</a>
-      <a href="#cases">Cases</a>
-      <a href="#content">Content</a>
-      <a href="#queue">Queue <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
-      <a href="#characters">Characters</a>
-      <a href="#competitive">Market</a>
+      <a href="#radar" onclick="switchTab('radar');return false;">📡 Radar</a>
+      <a href="#criar" onclick="switchTab('criar');return false;">✍️ Criar</a>
+      <a href="#fila" onclick="switchTab('fila');return false;">📋 Fila <span id="queueBadge" style="display:none;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:2px;"></span></a>
+      <a href="#brand" onclick="switchTab('brand');return false;">📖 Brand</a>
       <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:16px;padding:0;display:flex;align-items:center;" title="Settings">⚙️</button>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
       <span class="nav-live"><span class="nav-live-dot"></span>SESSION ACTIVE</span>
-      <a href="#cases" class="nav-cta" aria-label="View customer cases">View cases <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a href="#radar" class="nav-cta" onclick="switchTab('radar');return false;" aria-label="Abrir o Radar de contatos">Abrir Radar <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <button class="nav-toggle" id="navToggleBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="navLinks">
         <span></span><span></span><span></span>
       </button>
@@ -1979,15 +1977,36 @@ textarea::placeholder {
   </div>
 </nav>
 
-<!-- M1 — Status bar -->
-<div id="statusBar" style="background:#f0f5f6;border-bottom:1px solid #e4edef;padding:6px 20px;display:flex;gap:16px;align-items:center;font-size:11px;position:sticky;top:61px;z-index:49">
-  <span id="geminiStatus" style="color:#8A9AA0">⬤ Gemini</span>
-  <span id="masStatus" style="color:#8A9AA0">⬤ MAS Review</span>
-  <span id="queueStatus" style="color:#8A9AA0">⬤ Queue: <span id="queueStatusCount">0</span></span>
+<!-- Workspace bar — primary information architecture: 5 work areas + Brand Book -->
+<style id="tabbar-style">
+.wsbar{position:sticky;top:61px;z-index:49;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;overflow-x:auto}
+.wstabs{display:flex;gap:2px}
+.wstab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--text-soft);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
+.wstab:hover{color:var(--ink)}
+.wstab.active{color:var(--teal-deep);border-bottom-color:var(--teal)}
+.wstab:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+.wsbadge{background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:0 6px;border-radius:10px;min-width:16px;text-align:center}
+.wsstatus{display:flex;gap:14px;align-items:center;font-size:11px;flex-shrink:0}
+@media(max-width:720px){.wsstatus{display:none}.wstab{padding:11px 9px;font-size:11px}.wsbar{padding:0 10px}}
+</style>
+<div class="wsbar" role="tablist" aria-label="Áreas de trabalho">
+  <div class="wstabs">
+    <button class="wstab" data-tabbtn="radar" role="tab" aria-selected="true" onclick="switchTab('radar')" title="Posts de contatos-alvo para comentar">📡 Radar</button>
+    <button class="wstab" data-tabbtn="criar" role="tab" onclick="switchTab('criar')" title="Notícias, calendário e geradores de posts">✍️ Criar</button>
+    <button class="wstab" data-tabbtn="fila" role="tab" onclick="switchTab('fila')" title="Aprovados, criativos e entregáveis">📋 Fila <span id="tabQueueBadge" class="wsbadge" style="display:none"></span></button>
+    <button class="wstab" data-tabbtn="intel" role="tab" onclick="switchTab('intel')" title="Panorama competitivo">📊 Intel</button>
+    <button class="wstab" data-tabbtn="mas" role="tab" onclick="switchTab('mas')" title="Command Panel + aprovações MAS">🤖 MAS</button>
+    <button class="wstab" data-tabbtn="brand" role="tab" onclick="switchTab('brand')" title="Módulos, cases, personagens — referência de marca">📖 Brand</button>
+  </div>
+  <div class="wsstatus">
+    <span id="geminiStatus" style="color:#8A9AA0">⬤ Gemini</span>
+    <span id="masStatus" style="color:#8A9AA0">⬤ MAS</span>
+    <span id="queueStatus" style="color:#8A9AA0">⬤ Queue: <span id="queueStatusCount">0</span></span>
+  </div>
 </div>
 
 <!-- ═══ HERO ═══ -->
-<section class="hero" id="top">
+<section class="hero" id="top" data-tab="brand">
   <div class="hero-grid">
     <div>
       <div class="hero-badge">
@@ -2069,7 +2088,7 @@ textarea::placeholder {
 </div>
 
 <!-- ═══ UPDATE BANNER ═══ -->
-<section class="section tight">
+<section class="section tight" id="datasync" data-tab="brand">
   <div class="container">
     <div class="update-banner reveal">
       <div style="position:relative;z-index:1;">
@@ -2093,7 +2112,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ MODULES ═══ -->
-<section class="section" id="modules">
+<section class="section" id="modules" data-tab="brand">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">AI + IA Framework · 7 active modules</span>
@@ -2186,7 +2205,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ CASES ═══ -->
-<section class="section tealbg" id="cases">
+<section class="section tealbg" id="cases" data-tab="brand">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2418,7 +2437,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ CADENCE ═══ -->
-<section class="section" id="content">
+<section class="section" id="content" data-tab="criar">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Weekly Cadence · Active from week 1</span>
@@ -2472,7 +2491,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ LINKEDIN POSTS — SIDE BY SIDE ═══ -->
-<section class="section tealbg">
+<section class="section tealbg" id="calendar" data-tab="criar">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2877,7 +2896,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ PEOPLE'S POSTS — CLIENT CONTACT RADAR ═══ -->
-<section class="section" id="people-posts">
+<section class="section" id="people-posts" data-tab="radar">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2909,7 +2928,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ ROI COMMENT GENERATOR ═══ -->
-<section class="section" id="roi-comments" style="background:var(--surface);">
+<section class="section" id="roi-comments" data-tab="criar" style="background:var(--surface);">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2953,7 +2972,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ ROI POST GENERATOR ═══ -->
-<section class="section" id="roi-posts" style="background:linear-gradient(135deg,#0E1B1E 0%,#1a2f35 100%);color:#fff;">
+<section class="section" id="roi-posts" data-tab="criar" style="background:linear-gradient(135deg,#0E1B1E 0%,#1a2f35 100%);color:#fff;">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -2994,7 +3013,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ QUEUE ═══ -->
-<section class="section" id="queue">
+<section class="section" id="queue" data-tab="fila">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -3062,7 +3081,7 @@ textarea::placeholder {
 </div>
 
 <!-- ═══ VISUALS GALLERY ═══ -->
-<section class="section">
+<section class="section" id="creatives" data-tab="fila">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">LinkedIn Visuals · HTML + PNG ready</span>
@@ -3082,7 +3101,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ CHARACTERS ═══ -->
-<section class="section tealbg" id="characters">
+<section class="section tealbg" id="characters" data-tab="brand">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Brand Characters · Visual system</span>
@@ -3118,7 +3137,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ DELIVERABLES ═══ -->
-<section class="section">
+<section class="section" id="deliverables" data-tab="fila">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Strategic deliverables · 6 pieces</span>
@@ -3207,7 +3226,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ HOMEPAGE SCORE ═══ -->
-<section class="section tight">
+<section class="section tight" id="copywork" data-tab="brand">
   <div class="container">
     <div class="sec-head reveal">
       <span class="eyebrow">Homepage · Copy performance</span>
@@ -3249,7 +3268,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ COMPETITORS ═══ -->
-<section class="section" id="competitive">
+<section class="section" id="competitive" data-tab="intel">
   <div class="container">
     <div class="sec-head flex reveal">
       <div>
@@ -3289,7 +3308,7 @@ textarea::placeholder {
 </section>
 
 <!-- ═══ C01 — COMMAND PANEL ═══ -->
-<section class="section" id="command-panel" style="background:var(--teal-bg);border-top:1px solid var(--line)">
+<section class="section" id="command-panel" data-tab="mas" style="background:var(--teal-bg);border-top:1px solid var(--line)">
   <div class="container">
     <div class="sec-head" style="margin-bottom:32px">
       <div class="eyebrow">F31 Content Marketing</div>
@@ -7402,6 +7421,34 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.08 });
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
+/* ═══ WORKSPACE TABS — primary information architecture (Radar·Criar·Fila·Intel·MAS·Brand) ═══ */
+const _TABS = ['radar','criar','fila','intel','mas','brand'];
+function switchTab(name, opts) {
+  if (!_TABS.includes(name)) name = 'radar';
+  window._activeTab = name;
+  document.querySelectorAll('section[data-tab]').forEach(s => {
+    const on = s.getAttribute('data-tab') === name;
+    s.style.display = on ? '' : 'none';
+    // sections hidden at load never triggered the reveal observer — force them in
+    if (on) s.querySelectorAll('.reveal').forEach(r => r.classList.add('in'));
+  });
+  document.querySelectorAll('.wstab').forEach(b => {
+    const active = b.getAttribute('data-tabbtn') === name;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  const nl = document.getElementById('navLinks');
+  if (nl) nl.classList.remove('open');
+  try { history.replaceState(null, '', location.pathname + location.search + '#' + name); } catch(_) {}
+  if (!opts || !opts.noScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+// Initial view: honor a #tab hash (deep link), else default to Radar (operator start)
+(function initWorkspaceTabs(){
+  const h = (location.hash || '').replace('#','');
+  switchTab(_TABS.includes(h) ? h : 'radar', { noScroll: true });
+})();
+
 /* Animate threat bars when visible */
 const barObserver = new IntersectionObserver((entries) => {
   entries.forEach(e => {
@@ -7495,6 +7542,9 @@ setTimeout(checkApiStatus, 1000);
 
 /* M2 — Queue badge cleared state */
 function updateQueueBadgeV2(count) {
+  // Mirror the approved-count onto the Fila workspace tab badge
+  const tb = document.getElementById('tabQueueBadge');
+  if (tb) { tb.textContent = count; tb.style.display = count > 0 ? '' : 'none'; }
   const badge = document.getElementById('queueBadge');
   if (!badge) return;
   if (count > 0) {
