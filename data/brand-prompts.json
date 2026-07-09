@@ -1,0 +1,68 @@
+{
+  "version": "2026-07-09",
+  "source": "CLAUDE.md canonical proof points + BRAND-VOICE.md (MAS RAG)",
+  "note": "Single source of truth for all company-voice generation prompts. Edited by MAS sync — no code redeploy needed. Roi's PERSONAL voice lives in roi-voice.json.",
+  "identity": {
+    "company": "Yedda.ai",
+    "positioning": "Intelligence Augmentation · Visual AI for Enterprise Operations",
+    "what_it_is": "Yedda.ai turns existing CCTV cameras into Visual AI operational intelligence — no new hardware. It does not automate decisions; it eliminates the lag between an event on the floor and a human knowing about it.",
+    "modules": ["Sales", "Marketing", "Operation", "Fraud Detection", "Health & Safety", "Analytics", "Service"],
+    "markets": ["Retail (100+ stores)", "Logistics (500+ vehicles)", "F&B QSR (50+ locations)", "Manufacturing"],
+    "regions": ["APAC", "Middle East", "Europe", "LATAM"]
+  },
+  "language_rule": "Always say 'Visual AI', 'Visual Intelligence', or 'Intelligence Augmentation through Visual AI' — never just 'AI' or 'artificial intelligence'. This is the core differentiator.",
+  "brand_voice": "Authoritative but accessible. Bold, data-driven, never hype. Think McKinsey meets operational clarity. Peer-to-peer with sophisticated leaders who have seen AI hype — show outcomes, not features.",
+  "proof_points": {
+    "accuracy": "54% improvement in operational reporting accuracy",
+    "speed": "55-second automated report generation",
+    "roi": "ROI 180–400% within 12 months of deployment",
+    "fraud": "54% fraud reduction (Fraud Detection module)",
+    "carrefour_anchor": "Carrefour POC: 54% shrinkage reduction across a 90-day POC, 7-month payback, moved to full deployment post-POC"
+  },
+  "proof_points_flat": [
+    "54% improvement in operational reporting accuracy",
+    "55-second automated report generation",
+    "ROI 180–400% within 12 months of deployment",
+    "Carrefour POC: 54% shrinkage reduction in a 90-day POC, 7-month payback"
+  ],
+  "proof_points_note": "These are the approved figures shown on the live Yedda site. The Carrefour shrinkage figure is 54% (an earlier 52% draft was explicitly superseded — never revert it).",
+  "characters": {
+    "abbey": "Abbey — the Visual AI Guide. Thoughtful, strategic, teal energy (#4BADB8).",
+    "kai": "Kai — the IA Analyst. Data-driven, precise, orange energy (#F07830)."
+  },
+  "colors": { "teal": "#4BADB8", "orange": "#F07830", "ink": "#0E1B1E" },
+  "audience": {
+    "primary": "CEOs, COOs, Chief Digital Officers, VP Operations, Board Members at retail chains (100+ stores), logistics companies (500+ vehicles), F&B QSR operators (50+ locations)",
+    "secondary": "AI-aware investors, industry analysts, Chief Loss Prevention Officers, Operations Directors",
+    "tone": "Peer-to-peer — write as a trusted colleague, not a vendor. They are sophisticated and have seen AI hype. Show them outcomes."
+  },
+  "forbidden_words": [
+    "revolutionary", "game-changing", "leverage", "AI-powered", "real-time",
+    "disruptive", "cutting-edge", "best-in-class", "seamless", "robust",
+    "artificial intelligence", "utilize", "synergy"
+  ],
+  "post_format_rules": [
+    "Open with a sharp stat or striking fact (1 line, no intro fluff)",
+    "Body: 3–6 short paragraphs mixing context and the Visual AI angle",
+    "Use → for rhetorical questions or CTA lines",
+    "Use ✓ for proof points / results (max 4)",
+    "Close with a single engaging question starting with →",
+    "Hashtags: 3–5 on the final line, always include #YeddaAI #VisualAI",
+    "No emojis in body text. No 'excited to share'. No 'In today's world'."
+  ],
+  "image_style": {
+    "base_suffix": "Enterprise B2B LinkedIn visual. Teal (#4BADB8) and orange (#F07830) brand accents on a deep ink (#0E1B1E) or clean neutral ground. Cinematic corporate photography: 35mm lens feel, shallow depth of field, soft volumetric lighting, considered negative space. Professional and restrained — not sci-fi, not cartoon, not stock-cliché.",
+    "prohibitions": "CRITICAL: Do not place any logos, brand marks, company names, wordmarks, watermarks, text overlays, solid colored blocks, colored badges, color swatches, or geometric placeholder shapes in any corner — especially the bottom-right. The image must be clean of all brand identifiers; a logo is composited separately after generation.",
+    "pillar_tokens": {
+      "Celebrating": "Warm, human, aspirational. Abstract sense of momentum and achievement — upward light, open horizon. No specific people or faces.",
+      "News Comment": "Editorial and analytical. Abstract geometric composition in teal/orange, a sense of signal emerging from noise.",
+      "Who We Are": "Human and grounded. Environmental, documentary warmth — hands, workspace, quiet focus. Soft daylight.",
+      "What We Offer": "Precise and operational. Clean product-adjacent abstraction — a single clear subject, generous negative space, technical calm.",
+      "Thought Leadership": "Bold and spacious. One strong graphic idea, high contrast, confident minimalism.",
+      "Social Proof": "Metric-forward abstraction. A sense of measurement and before/after — no literal charts or numbers rendered.",
+      "Education": "Clear and instructional. Diagrammatic calm, ordered composition, plenty of air.",
+      "Engagement": "Open and inviting. Asymmetric composition that leaves room for a question. Approachable.",
+      "Case Study": "Documentary and concrete. A grounded operational scene rendered abstractly — depth, place, process."
+    }
+  }
+}

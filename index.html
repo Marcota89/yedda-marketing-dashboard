@@ -5193,7 +5193,7 @@ function generateSchedulePrompt() {
   const pillars = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
   if (!start || !end) { alert('Please select a start and end date.'); return; }
   const pillarGuides = {
-    'Celebrating': 'Milestone or achievement post. Celebrate wins WITHOUT mentioning any client names (protect competitive intelligence). Reference sector/region/scale only. E.g. "A leading retailer in SEA just hit 52% shrinkage reduction."',
+    'Celebrating': 'Milestone or achievement post. Celebrate wins WITHOUT mentioning any client names (protect competitive intelligence). Reference sector/region/scale only. E.g. "A leading retailer in SEA just hit 54% shrinkage reduction."',
     'News Comment': 'Comment on a real industry news article. State the headline/data, give Yedda\'s Visual AI perspective on what it means operationally. Drive conversation.',
     'Who We Are': 'Culture, team, mission, values post. Human side of Yedda.ai. Why we exist. What drives us. Who is behind the technology.',
     'What We Offer': 'Module spotlight post. Focus on ONE Yedda module (Sales, Operations, Fraud Detection, Health & Safety, Analytics, Service, Marketing). Explain the specific problem it solves with a concrete outcome.'
@@ -5277,6 +5277,7 @@ async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey,
   const dateStr    = dateObj.toISOString().slice(0,10);
   const dateLabel  = `${months[dateObj.getMonth()]} ${dateObj.getDate()}`;
   const dayStr     = days[dateObj.getDay()];
+  const brand      = await _getBrandPrompts();
 
   const pillarGuides = {
     'Celebrating':    'Milestone or achievement post. Celebrate wins WITHOUT mentioning any client names. Reference sector/region/scale only.',
@@ -5294,17 +5295,17 @@ async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey,
     `Article ${i+1}: "${a.title}" — ${a.text || a.description || 'N/A'}`
   ).join('\n');
 
-  const systemPrompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise Visual AI company.
-
-BRAND RULES (never break these):
+  const _brandRules = _brandBlock(brand) || `BRAND RULES (never break these):
 - Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI" — never just "AI"
 - FORBIDDEN words: revolutionary, game-changing, real-time, AI-powered (without outcome), seamless, robust, disruptive, cutting-edge, best-in-class
-- Proof points: 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months
-- Yedda.ai turns existing CCTV into Visual AI operational intelligence — no new hardware
-- Markets: APAC, Middle East, Europe, LATAM
-- ${persona} persona: ${persona === 'Abbey' ? 'Abbey is the Visual AI Guide — thoughtful, strategic, teal energy' : persona === 'Kai' ? 'Kai is the IA Analyst — data-driven, precise, orange energy' : 'Use Abbey or Kai as fits the content'}
+- Proof points: 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months, Carrefour POC 54% shrinkage reduction in a 90-day POC (7-month payback)
+- Yedda.ai turns existing CCTV into Visual AI operational intelligence — no new hardware`;
 
-TARGET AUDIENCE: CEOs, COOs, CDOs, VP Operations at retail (100+ stores), logistics (500+ vehicles), F&B QSR (50+ locations). Write peer-to-peer — sophisticated leaders who have seen AI hype. Show outcomes, not features.
+  const systemPrompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise Visual AI company.
+
+${_brandRules}
+
+PERSONA — ${persona}: ${persona === 'Abbey' ? 'Abbey is the Visual AI Guide — thoughtful, strategic, teal energy' : persona === 'Kai' ? 'Kai is the IA Analyst — data-driven, precise, orange energy' : 'Use Abbey or Kai as fits the content'}
 
 VOICE PATTERN: contrast structure ("Not X. Y."), → for insights, ✓ for proof points. Max 300 words. Ends with → question.
 
@@ -5789,9 +5790,10 @@ async function generatePostFromNews(articles, apiKey, selectedPillars) {
   const articlesText = articles.map((a, i) =>
     `Article ${i+1}:\nTitle: ${a.title}\nURL: ${a.url || 'N/A'}\nSnippet: ${a.text || 'N/A'}`
   ).join('\n\n');
+  const brand = await _getBrandPrompts();
 
   const pillarGuides = {
-    'Celebrating': 'Milestone or achievement post. Celebrate a win WITHOUT mentioning any client names. Reference sector/region/scale only (e.g. "A leading retailer in SEA reduced shrinkage by 54%"). Positive, confident, grounded.',
+    'Celebrating': 'Milestone or achievement post. Celebrate a win WITHOUT mentioning any client names. Reference sector/region/scale only (e.g. "A leading retailer in SEA cut shrinkage by 54%"). Positive, confident, grounded.',
     'News Comment': 'Comment on the news article\'s key finding. Lead with the stat or event, then give Yedda\'s Visual AI perspective on what it means for enterprise operations. Drive conversation with a pointed question.',
     'Who We Are': 'Culture, mission, or values post. Human side of Yedda.ai. Why we exist, what drives us, who is behind the Visual AI. Authentic, personal tone.',
     'What We Offer': 'Module spotlight. Focus on ONE specific Yedda capability (fraud detection, workforce analytics, queue management, compliance, safety). Name the operational problem it solves and the measurable outcome.',
@@ -5806,27 +5808,17 @@ async function generatePostFromNews(articles, apiKey, selectedPillars) {
     ? `CONTENT PILLAR — write this post as: ${activePillars[0]}\nGuidance: ${pillarGuides[activePillars[0]] || ''}`
     : `CONTENT PILLARS AVAILABLE — choose the most appropriate one for this article:\n${activePillars.map(p => `- ${p}: ${pillarGuides[p] || ''}`).join('\n')}`;
 
+  const _brandRules = _brandBlock(brand) || `CRITICAL LANGUAGE RULE: We work with VISUAL AI — not "AI" or "artificial intelligence" generically. Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI".
+BRAND VOICE: Authoritative but accessible. Bold, data-driven, never hype. Think McKinsey meets operational clarity.
+PROOF POINTS (include at least one per post): 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months, Carrefour POC 52% shrinkage reduction in 11-day deploy.
+FORBIDDEN WORDS: revolutionary, game-changing, leverage, AI-powered, real-time, disruptive, cutting-edge, best-in-class, seamless, robust, artificial intelligence.
+AUDIENCE: CEOs, COOs, CDOs, VP Operations, Board Members at retail (100+ stores), logistics (500+ vehicles), F&B QSR (50+ locations). Peer-to-peer tone.`;
+
   const systemPrompt = `You are a LinkedIn content writer for Yedda.ai, an enterprise Visual AI company specializing in Intelligence Augmentation (IA) for retail operations, loss prevention, queue management, and logistics.
 
-CRITICAL LANGUAGE RULE: We work with VISUAL AI — not "AI" or "artificial intelligence" generically. Always say "Visual AI", "Visual Intelligence", or "Intelligence Augmentation through Visual AI". This is a fundamental differentiator.
+${_brandRules}
 
-BRAND VOICE: Authoritative but accessible. Bold, data-driven, never hype. Think McKinsey meets operational clarity.
-COMPANY: Yedda.ai — "Intelligence Augmentation · Visual AI for Enterprise Operations"
-CHARACTERS: Abbey (Visual AI Guide, teal) and Kai (IA Analyst, orange)
-COLORS: Teal #4BADB8, Orange #F07830
-
-PROOF POINTS (include at least one per post):
-- 54% improvement in operational reporting accuracy
-- 55-second automated report generation
-- ROI 180–400% within 12 months of deployment
-- Carrefour POC: 54% shrinkage reduction in 11 days
-
-TARGET AUDIENCE — write FOR these people:
-Primary: CEOs, COOs, Chief Digital Officers, VP Operations, Board Members at retail chains (100+ stores), logistics companies (500+ vehicles), F&B QSR operators (50+ locations)
-Secondary: AI-aware investors, industry analysts, Chief Loss Prevention Officers, Operations Directors
-Tone: Peer-to-peer — write as a trusted colleague, not a vendor. They are sophisticated. They have seen AI hype. Show them outcomes.
-
-FORBIDDEN WORDS (never use): revolutionary, game-changing, leverage, AI-powered, real-time, disruptive, cutting-edge, best-in-class, seamless, robust, artificial intelligence (use Visual AI instead)
+CHARACTERS: Abbey (Visual AI Guide, teal #4BADB8) and Kai (IA Analyst, orange #F07830).
 
 POST FORMAT RULES:
 - Open with a sharp stat or striking fact (1 line, no intro fluff)
@@ -6257,6 +6249,46 @@ async function _getRoiVoice() {
     if (r.ok) _roiVoiceCache = await r.json();
   } catch(_) {}
   return _roiVoiceCache;
+}
+
+// ── SINGLE SOURCE OF TRUTH: company brand rules (MAS-synced) ──────────
+// One canonical set of proof points / forbidden words / audience / image
+// style, consumed by every company-voice generator. Fixes the drift where
+// each prompt carried its own (diverging) copy of the brand facts.
+let _brandCache = null;
+async function _getBrandPrompts() {
+  if (_brandCache) return _brandCache;
+  try {
+    const r = await fetch('/api/brand-prompts');
+    if (r.ok) _brandCache = await r.json();
+  } catch(_) {}
+  return _brandCache;
+}
+
+// Renders the canonical brand-rules text block injected into system prompts.
+// Falls back to an empty string if the endpoint is unavailable (prompts keep
+// their own inline rules as a safety net).
+function _brandBlock(b) {
+  if (!b) return '';
+  const proof = (b.proof_points_flat || []).map(p => '- ' + p).join('\n');
+  const forbidden = (b.forbidden_words || []).join(', ');
+  return `CANONICAL BRAND RULES (single source of truth — never contradict these):
+LANGUAGE: ${b.language_rule || ''}
+VOICE: ${b.brand_voice || ''}
+WHAT YEDDA IS: ${b.identity ? b.identity.what_it_is : ''}
+PROOF POINTS (use exact numbers, never invent or alter):
+${proof}
+FORBIDDEN WORDS (never use): ${forbidden}
+AUDIENCE: ${b.audience ? b.audience.primary : ''}
+TONE: ${b.audience ? b.audience.tone : ''}`;
+}
+
+// Builds the authoritative image-generation suffix, per content pillar.
+function _imageStyleSuffix(b, pillar) {
+  if (!b || !b.image_style) return '';
+  const s = b.image_style;
+  const tok = (s.pillar_tokens && pillar && s.pillar_tokens[pillar]) ? ' ' + s.pillar_tokens[pillar] : '';
+  return `. ${s.base_suffix}${tok} ${s.prohibitions}`;
 }
 
 async function generateRoiPost(btn) {
