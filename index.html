@@ -5569,7 +5569,7 @@ async function fetchApifyNews(btn) {
   const token = localStorage.getItem(APIFY_KEY);
 
   if (token) {
-    resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>`;
+    resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>` + _skeletonCards(3);
     try {
       const raw = await fetchViaApify(token, signal);
       let articles = _filterSeen(raw);
@@ -5585,7 +5585,7 @@ async function fetchApifyNews(btn) {
   }
 
   // Fallback: RSS2JSON
-  resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>`;
+  resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>` + _skeletonCards(3);
   try {
     const raw = await fetchViaRSS(signal);
     let articles = _filterSeen(raw);
@@ -6197,7 +6197,7 @@ Output the comment text only. Nothing else.`;
   const ctrl = new AbortController();
   const tId = setTimeout(() => ctrl.abort(), 25000);
   try {
-    statusEl.textContent = '⏳ Writing comment…';
+    statusEl.textContent = '⏳ Writing comment… (~5s)';
     let data;
     try {
       data = await _callGemini(ctrl.signal, _COMMENT_MODELS[0]);
@@ -6213,7 +6213,7 @@ Output the comment text only. Nothing else.`;
 
     // ── FASE 4: auto-retry if AI tells detected ───────────────────────
     if (_hasAiTells(comment)) {
-      statusEl.textContent = '⏳ Refining tone…';
+      statusEl.textContent = '🔁 First draft sounded generic — regenerating in Roi\'s voice…';
       const ctrl2 = new AbortController();
       const tId2 = setTimeout(() => ctrl2.abort(), 20000);
       try {
@@ -6654,6 +6654,7 @@ async function loadPeoplePosts(manual) {
   const list = document.getElementById('peoplePostsList');
   if (!list) return;
   if (btn && manual) { btn.textContent = '↻ Loading…'; btn.disabled = true; }
+  if (!_peoplePosts.length) list.innerHTML = _skeletonCards(3);
   try {
     const r = await fetch('/api/linkedin-posts');
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -7274,32 +7275,39 @@ async function generatePostImage(btn, i) {
   const area = document.getElementById(`genImgArea-${i}`);
   btn.disabled = true;
   btn.textContent = '⏳ Generating…';
-  if (area) { area.style.display = 'block'; area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>'; }
+  const status = _genStatus(area, 'Preparing…', '~15–30s');
+  if (area) area.style.display = 'block';
 
   const apiKey = localStorage.getItem('yedda_claude_key');
-  const _imgPrompt = p.prompt + '. Enterprise B2B LinkedIn visual. Teal and orange brand colors. Abstract, professional. CRITICAL: Do not place any logos, brand marks, company names, wordmarks, watermarks, text overlays, solid colored blocks, colored badges, color swatches, or geometric placeholder shapes in any corner of the image — especially not in the bottom-right corner. The image must be clean of all brand identifiers; a logo will be composited separately after generation.';
+  // Cinematic, brand-consistent suffix from the single source of truth (with a
+  // safe inline fallback if the endpoint is unavailable). Pillar-aware styling.
+  const _brand = await _getBrandPrompts();
+  const _suffix = _imageStyleSuffix(_brand, p.pillar) || '. Enterprise B2B LinkedIn visual. Teal (#4BADB8) and orange (#F07830) brand accents on a deep ink ground. Cinematic corporate photography — 35mm lens feel, shallow depth of field, soft volumetric lighting, considered negative space. Not sci-fi, not cartoon. CRITICAL: no logos, wordmarks, watermarks, text overlays, solid colored blocks, badges, swatches or placeholder shapes in any corner — especially bottom-right. Clean of all brand identifiers; a logo is composited separately after generation.';
+  const _imgPrompt = p.prompt + _suffix;
   const seed = Math.floor(Math.random() * 999999);
   const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(_imgPrompt)}?width=1024&height=1280&seed=${seed}&model=flux`;
 
   try {
     let dataUrl = null;
+    let _path = '';
 
     // Path 1: Gemini Interactions API — gemini-2.5-flash-image (2026-05-20)
     let _geminiErr = '';
     if (apiKey) {
-      if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Gemini image generation…</div>';
+      status.set('Generating with Gemini', 'cinematic Visual AI style');
       const { b64, error } = await _tryGeminiInteractionsImage(apiKey, _imgPrompt);
       _geminiErr = error || '';
       if (b64) {
-        if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
+        status.set('Compositing Yedda logo', '');
         dataUrl = await _compositeWithLogo(b64);
+        _path = 'gemini';
       }
     }
 
     // Path 2: Pollinations AI (FLUX, free)
     if (!dataUrl) {
       try {
-        if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">⏳ Generating image (~15s)…</div>';
+        status.set(apiKey ? 'Gemini unavailable — using FLUX fallback' : 'Generating with FLUX', '~15s');
         const res = await fetch(pollinationsUrl);
         if (res.ok) {
           const blob = await res.blob();
@@ -7309,17 +7317,20 @@ async function generatePostImage(btn, i) {
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
-          if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Adding Yedda logo…</div>';
+          status.set('Compositing Yedda logo', '');
           dataUrl = await _compositeWithLogo(b64);
+          _path = 'flux';
         }
       } catch(_) {}
     }
 
     // Path 3: branded canvas card (always works)
     if (!dataUrl) {
-      if (area) area.innerHTML = '<div style="padding:16px;font-size:13px;color:#7c3aed;font-weight:600;">🎨 Generating branded card…</div>';
+      status.set('Building branded card', 'guaranteed fallback');
       dataUrl = await _generateBrandedCardDataUrl(p);
+      _path = 'canvas';
     }
+    status.stop();
 
     if (!dataUrl) throw new Error('Canvas generation failed');
 
@@ -7340,9 +7351,15 @@ async function generatePostImage(btn, i) {
     }
     btn.textContent = '🖼️ Regenerate Image';
     btn.disabled = false;
-    const _usedPath = _geminiErr ? `Branded card (Gemini error: ${_geminiErr.slice(0, 80)})` : '✅ Gemini image';
-    showToast(_geminiErr ? `⚠️ Gemini falhou — branded card gerado. Erro: ${_geminiErr.slice(0,100)}` : '✅ Imagem gerada com logo Yedda', _geminiErr ? 'info' : 'success', 8000);
+    const _toastMap = {
+      gemini: ['✅ Imagem gerada com Gemini + logo Yedda', 'success'],
+      flux:   [apiKey ? `⚠️ Gemini indisponível — imagem gerada via FLUX${_geminiErr ? ' (' + _geminiErr.slice(0,60) + ')' : ''}` : '✅ Imagem gerada via FLUX + logo Yedda', apiKey ? 'info' : 'success'],
+      canvas: ['ℹ️ Geradores de imagem indisponíveis — branded card criado', 'info'],
+    };
+    const [_msg, _tp] = _toastMap[_path] || ['✅ Imagem gerada', 'success'];
+    showToast(_msg, _tp, 8000);
   } catch(e) {
+    status.stop();
     btn.textContent = '🎨 Generate Image';
     btn.disabled = false;
     if (area) area.style.display = 'none';
@@ -7509,8 +7526,52 @@ updateQueueBadge = function() {
 if (!document.getElementById('skshimmer-style')) {
   const s = document.createElement('style');
   s.id = 'skshimmer-style';
-  s.textContent = '@keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}';
+  s.textContent = `@keyframes skshimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.yd-sk{background:linear-gradient(90deg,var(--line-soft,#eef3f4) 25%,#f7fafb 37%,var(--line-soft,#eef3f4) 63%);background-size:400% 100%;animation:skshimmer 1.3s ease-in-out infinite;border-radius:6px}
+@media (prefers-reduced-motion: reduce){.yd-sk{animation:none}}
+.yd-genstep{display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:13px;font-weight:600;color:var(--teal-deep,#2a8f9a)}
+.yd-genstep .yd-gendots span{display:inline-block;width:5px;height:5px;margin:0 1px;border-radius:50%;background:currentColor;opacity:.35;animation:yddot 1s infinite}
+.yd-genstep .yd-gendots span:nth-child(2){animation-delay:.15s}.yd-genstep .yd-gendots span:nth-child(3){animation-delay:.3s}
+@keyframes yddot{0%,60%,100%{opacity:.35}30%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.yd-genstep .yd-gendots span{animation:none}}`;
   document.head.appendChild(s);
+}
+
+// Shimmer skeleton rows for list-loading states (news, people's posts)
+function _skeletonCards(n) {
+  n = n || 3;
+  let out = '<div class="news-results" aria-busy="true" aria-label="Loading">';
+  for (let i = 0; i < n; i++) {
+    out += `<div class="news-item" style="cursor:default;pointer-events:none;">
+      <div class="news-item-body" style="width:100%;">
+        <div class="yd-sk" style="height:13px;width:${45 + (i % 3) * 12}%;margin-bottom:8px;"></div>
+        <div class="yd-sk" style="height:10px;width:30%;margin-bottom:10px;"></div>
+        <div class="yd-sk" style="height:9px;width:100%;margin-bottom:5px;"></div>
+        <div class="yd-sk" style="height:9px;width:88%;"></div>
+      </div>
+    </div>`;
+  }
+  return out + '</div>';
+}
+
+// Staged generation status with a live elapsed timer. Returns a stop() fn.
+function _genStatus(area, label, sub) {
+  if (!area) return { set() {}, stop() {} };
+  const t0 = Date.now();
+  const render = (lbl, s) => {
+    const el = Math.max(0, Math.round((Date.now() - t0) / 1000));
+    area.innerHTML = `<div class="yd-genstep">
+      <span class="yd-gendots"><span></span><span></span><span></span></span>
+      <span>${esc(lbl)}${s ? ' <span style="opacity:.7;font-weight:500;">— ' + esc(s) + '</span>' : ''} <span style="opacity:.5;font-weight:500;">· ${el}s</span></span>
+    </div>`;
+  };
+  render(label, sub);
+  const iv = setInterval(() => render(_genStatus._l, _genStatus._s), 1000);
+  _genStatus._l = label; _genStatus._s = sub || '';
+  return {
+    set(lbl, s) { _genStatus._l = lbl; _genStatus._s = s || ''; render(lbl, s); },
+    stop() { clearInterval(iv); },
+  };
 }
 
 /* M4 — Error toast */
