@@ -1,268 +1,181 @@
-# Relatório — Política de Aprovação por Contato para Comentários do Roi
+# Relatório v2 — Política de Aprovação por Contato para Comentários do Roi
 
-> **Data:** 10 jul 2026 · **Autor:** Claude (Marketing Agent) · **Status:** proposta para decisão
-> **Pedido:** Roi quer definir, contato a contato, quem exige análise e autorização dele
-> antes de um comentário gerado ser publicado — e quem pode fluir direto
-> (gerar → postar) sem passar por ele.
+> **Data:** 10 jul 2026 (v2 — revisado com as decisões do Marco) · **Status:** pronto para implementar
+> **Escopo:** exclusivamente a seção **People's Posts** (Radar). Nenhuma outra área do dashboard muda.
+
+## O que mudou da v1 para v2 (decisões do Marco)
+
+| Item da v1 | Decisão | Consequência no desenho |
+|---|---|---|
+| PIN de aprovação | ❌ Removido por ora | Sem burocracia: qualquer operador do dashboard alterna política e aprova. Coerente porque a postagem continua manual — o gate real é quem tem o login do LinkedIn do Roi. O PIN volta como **pré-requisito** só quando houver auto-post. |
+| Integração Slack | ❌ Descartada | Roi não usa Slack. A notificação de pendências é o **badge na própria seção** (e, se quiser no futuro, resumo por e-mail — decisão adiada). |
+| Cap de comentários/dia | ❌ Não existe agora | O fluxo inicial é manual — um limite só atrapalharia. Caps (e kill switch) entram **junto com a automação futura**, quando os resultados atuais derem confiança. |
+| Fila na aba Queue | 🔁 Movida | A fila de aprovação vive **dentro do People's Posts**, no topo da seção — tudo num lugar só. |
 
 ---
 
 ## 1. Resumo executivo
 
-A proposta transforma o fluxo atual de comentários (100% manual: gerar → copiar →
-colar no LinkedIn) em um **pipeline com política por contato**:
+Cada contato do Radar ganha uma **política de comentário**, alternada por um chip
+clicável no próprio card — este é o botão do Roi:
 
-| Política do contato | O que acontece ao gerar |
+| Política | Comportamento ao gerar o comentário |
 |---|---|
-| 🔒 **Review** (exige Roi) | Comentário vira rascunho em uma **Fila de Aprovação**. Roi lê, edita se quiser, aprova ou rejeita. Só depois é postado. |
-| ⚡ **Auto** (não faz diferença) | Comentário é gerado e vai direto para a **fila de postagem** — sem parada no Roi. |
+| 🔒 **Review** | O comentário gerado **não é postado**: vira pendência na fila "Aguardando aprovação do Roi", no topo do People's Posts. Roi lê, edita se quiser, aprova ou rejeita. Só depois de aprovado aparece o botão de copiar/postar. |
+| ⚡ **Auto** | Fluxo idêntico ao de hoje: gera, navega até o comentário, copia e posta — sem parada. A única novidade é o registro de status para rastreabilidade. |
 
-A postagem em si tem duas gerações: **Fase 1** mantém a publicação manual (copiar/colar,
-zero risco novo) e **Fase 2** ativa a publicação automática via **PhantomBuster LinkedIn
-Auto Commenter** — que o plano Start já cobre e se integra à planilha exatamente no
-formato "URL do post + comentário".
-
-**Recomendação central:** implementar em 3 fases (aprovação → auto-post → zero-touch),
-com 4 guardrails inegociáveis descritos na seção 5 — em especial o **classificador de
-posts sensíveis** (nenhum comentário automático em post sobre demissão, doença, luto ou
-política, mesmo de contato ⚡ Auto) e um **PIN de aprovação**, porque o dashboard hoje
-não tem login.
+Postagem permanece **100% manual** (copiar → LinkedIn → colar → marcar como postado).
+Automação é uma fase futura condicionada à confiança nos resultados — e é nela que
+entram os guardrails hoje removidos (caps, kill switch, classificador de posts
+sensíveis e controle de acesso).
 
 ---
 
 ## 2. Estado atual (baseline)
 
-- **Radar (People's Posts):** PhantomBuster monitora 73+ contatos diariamente às 08:00;
-  posts chegam via webhook no Supabase (`linkedin_contacts_posts`) com tier automático
-  (★ Priority / Client / Network / Yedda) via `contact_tiers` + trigger.
-- **Botão por post (já existe):** "💬 Generate Roi's Comment" → troca para a aba Create,
-  gera o comentário na voz do Roi (Gemini + persona MAS + few-shots + anti-AI-tells) e
-  leva o usuário até o resultado.
-- **Publicação:** manual — copiar comentário → abrir LinkedIn → colar → "Mark commented"
-  (grava `roi_comment`, `commented=true`, alimenta `lead_interactions` e o sinal de
-  warm-lead → Hermes).
-- **Limitações relevantes:**
-  - Não existe conceito de aprovação: quem clica gera e posta o que quiser.
-  - O dashboard **não tem autenticação** — qualquer pessoa com a URL usa tudo.
-  - A chave Gemini vive no `localStorage` do browser (não há geração server-side).
-  - A fila de aprovação do MAS (F31, posts semanais) é localhost-only — padrão parecido,
-    mas não reutilizável diretamente; este projeto pode virar o modelo para migrá-la.
+- Radar monitora 73+ contatos via PhantomBuster (diário, 08:00) com tier automático.
+- Botão por post "💬 Generate Roi's Comment" → gera na voz do Roi → usuário copia e
+  posta manualmente → "Mark commented" grava no Supabase e alimenta o funil
+  warm-lead → Hermes.
+- Não existe conceito de aprovação nem rastro de quem autorizou o quê.
 
----
+## 3. Modelo proposto
 
-## 3. Modelo proposto — política por contato
+### 3.1 Política por contato (o "botão do Roi")
 
-### 3.1 O conceito
+- Chip **🔒 Review / ⚡ Auto** ao lado do tier em cada card — 1 clique alterna e vale
+  para todos os posts futuros daquele contato (persistido em `contact_tiers`).
+- Botão "Definir por tier…" no topo do Radar para o setup inicial em massa.
+- **Defaults sugeridos** (Roi ajusta caso a caso): ★ Priority e Client = 🔒 Review;
+  Network e Yedda = ⚡ Auto.
 
-A política mora no **contato** (não no post): é uma decisão de relacionamento
-("com o CEO da Central eu reviso tudo; com contatos de network tanto faz").
-Cada card do Radar mostra a política do autor e o botão de geração muda de
-comportamento conforme ela.
+### 3.2 Fluxos
 
-### 3.2 Modelo de dados (Supabase)
+```
+Post no Radar → operador clica gerar
+        │
+   [política do autor]
+   ┌────┴──────────────────────┐
+   🔒 Review                   ⚡ Auto
+   │                           │
+   Gera (voz Roi, fluxo atual) Gera (voz Roi, fluxo atual)
+   │                           │
+   Botão: "📥 Enviar p/        Comentário pronto na tela →
+   aprovação do Roi"           copiar → postar no LinkedIn →
+   │                           "✓ Mark posted"
+   status: pending_approval    status: posted
+   │
+   ▼
+   FILA no topo do People's Posts — "⏳ Aguardando Roi (3)"
+   Roi: lê │ edita inline │ [✅ Aprovar] [🔁 Regenerar] [❌ Rejeitar]
+   │ aprovado
+   ▼
+   Card mostra "✅ Aprovado — copiar e postar" → copiar → LinkedIn →
+   "✓ Mark posted" → status: posted → lead_interactions → warm-lead → Hermes
+```
+
+Observações de desenho:
+- Para ⚡ Auto, **nada muda na experiência de hoje** — só ganha bookkeeping.
+- Para 🔒 Review, quem gera não posta: o novo botão "Enviar p/ aprovação" salva o
+  rascunho e devolve o operador ao Radar.
+- Rejeição pede um motivo curto (1 linha) — vira aprendizado para regenerar melhor.
+
+### 3.3 UI (dentro do People's Posts apenas)
+
+**Topo da seção — fila de aprovação** (visível só quando houver pendências):
+
+```
+┌─ ⏳ Aguardando aprovação do Roi (2) ─────────────────────┐
+│ ★ Uday Sinha · post de 2 Jul                     [ver ↗] │
+│ ┌──────────────────────────────────────────────────────┐ │
+│ │ Congrats, Uday — 32 years and still building...      │ │ ← editável inline
+│ └──────────────────────────────────────────────────────┘ │
+│ [✅ Aprovar] [🔁 Regenerar] [❌ Rejeitar…]                │
+└───────────────────────────────────────────────────────────┘
+```
+
+**Card do feed — chip de política + botão adaptativo:**
+
+```
+│ ★ Priority · 🔒 Review   Uday Shankar Sinha              │
+│ [💬 Gerar p/ aprovação]  [✓ Mark commented]              │
+
+│ Network · ⚡ Auto        Amit Bendor                      │
+│ [💬 Generate Roi's Comment]  [✓ Mark commented]          │
+```
+
+**Estados do card conforme o comentário avança:**
+`sem comentário → ⏳ aguardando Roi → ✅ aprovado (copiar e postar) → ✓ postado`
+(rejeitado volta para "sem comentário" com o motivo visível ao passar o mouse).
+
+### 3.4 Modelo de dados (Supabase)
 
 ```sql
--- 1. Política por contato
+-- Política por contato
 alter table contact_tiers
   add column approval_policy text not null default 'review'
   check (approval_policy in ('review','auto'));
 
--- 2. Workflow do comentário no próprio post (1 post = 1 comentário)
+-- Workflow no post (1 post = 1 comentário; roi_comment já existe)
 alter table linkedin_contacts_posts
   add column comment_status text not null default 'none'
-  check (comment_status in
-    ('none',              -- sem comentário ainda
-     'pending_approval',  -- gerado, aguardando Roi
-     'approved',          -- aprovado (ou contato auto) — pronto para postar
-     'rejected',          -- Roi rejeitou (fica registrado o motivo)
-     'posted')),          -- publicado no LinkedIn
+  check (comment_status in ('none','pending_approval','approved','rejected','posted')),
   add column approved_at timestamptz,
-  add column approved_by text,          -- 'roi' | 'marco' (auditoria)
   add column rejection_note text,
-  add column posted_at timestamptz,
-  add column comment_source text;       -- 'manual' | 'auto-policy'
+  add column posted_at timestamptz;
 ```
 
-**Defaults recomendados por tier** (Roi ajusta individualmente depois):
+Transições apenas para frente (`none → pending_approval → approved → posted`);
+`rejected` pode voltar a `pending_approval` via Regenerar. Re-scrapes do
+PhantomBuster nunca tocam nessas colunas (o merge-duplicates atual já preserva
+`roi_comment` — mesmo mecanismo).
 
-| Tier | Default sugerido | Racional |
+### 3.5 Mudanças de API (tudo em `api/linkedin-posts.js`, sem endpoint novo)
+
+| Ação | Chamada | Notas |
 |---|---|---|
-| ★ 1-priority | 🔒 review | Relações de maior valor — erro custa caro |
-| 2-client | 🔒 review | Clientes ativos — tom importa |
-| 3-network | ⚡ auto | Volume, menor risco relacional |
-| internal (Yedda) | ⚡ auto | Time interno — engajamento só ajuda |
+| Alternar política | `POST {action:'set-policy', profile_url, approval_policy}` | Sem PIN (decisão v2) |
+| Enviar p/ aprovação | `PATCH {post_url, roi_comment, comment_status:'pending_approval'}` | Estende o PATCH atual |
+| Aprovar / rejeitar | `POST {action:'approve'\|'reject', post_url, roi_comment?, rejection_note?}` | Aprovar aceita o texto editado |
+| Marcar postado | `PATCH {post_url, commented:true, comment_status:'posted'}` | Une-se ao "Mark commented" atual |
+| Listar fila | `GET /api/linkedin-posts` (já traz tudo) | Front filtra `pending_approval` |
 
-### 3.3 Fluxos
+## 4. Fase futura (fora de escopo agora) — automação
 
-```
-Post chega no Radar
-        │
-   [política do autor?]
-        │
-   ┌────┴─────────────────┐
-   🔒 review              ⚡ auto
-   │                      │
-   Gerar (voz Roi)        Gerar (voz Roi)
-   │                      │
-   status:                [classificador sensível?]──sim──► vira 🔒 review
-   pending_approval       │não
-   │                      status: approved
-   ▼                      │
-   FILA DE APROVAÇÃO      ▼
-   (Roi: lê/edita/        FILA DE POSTAGEM
-    aprova/rejeita)       │
-   │ aprovado             ├─ Fase 1: card "pronto — copiar e postar"
-   ▼                      └─ Fase 2: PhantomBuster Auto Commenter
-   FILA DE POSTAGEM              (máx. 10/dia, horário comercial)
-                                 │
-                          status: posted → commented=true →
-                          lead_interactions → sinal warm-lead → Hermes
-```
+Documentada para não se perder; **só entra quando os resultados manuais derem
+confiança**, e cada item abaixo é pré-requisito dela (não do fluxo atual):
 
-### 3.4 UI proposta
+1. **Postagem automática** via PhantomBuster LinkedIn Auto Commenter (plano Start já
+   cobre) lendo um feed CSV da nossa API (`postUrl,comment` dos aprovados).
+2. **Caps diários** (~10/dia, recomendação PhantomBuster) + janela de horário comercial
+   + **kill switch** ("⏸ Pausar auto-post").
+3. **Classificador de posts sensíveis** — mesmo ⚡ Auto rebaixa para 🔒 se o post for
+   sobre demissão, luto, doença ou política.
+4. **Controle de acesso** (PIN ou login) — passa a ser obrigatório no momento em que
+   um clique puder publicar como Roi sem humano no meio.
+5. **Geração automática na chegada** (webhook → Gemini server-side, requer
+   `GEMINI_API_KEY` no Vercel) e notificação por e-mail das pendências (sem Slack).
 
-**Card do Radar** — chip de política ao lado do tier + botão adaptativo:
+## 5. Implementação da Fase 1 (escopo aprovado)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│ ★ Priority · 🔒 Review   Uday Shankar Sinha             │
-│ 2 Jul 2026 · 👍 333 · 💬 273 · View post ↗              │
-│ "After 32 years in the CPG world..."                    │
-│ [🔒 Gerar p/ aprovação do Roi]  [✓ Mark commented]      │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│ Network · ⚡ Auto        Amit Bendor                     │
-│ [⚡ Gerar e enfileirar]  [✓ Mark commented]              │
-└─────────────────────────────────────────────────────────┘
-```
-
-- O **chip 🔒/⚡ é clicável** (com PIN — seção 5.2) e alterna a política do contato.
-  Esse é o "botão do Roi": um clique por contato, vale para todos os posts futuros dele.
-- Botão de política em massa no topo do Radar: "Definir política por tier…" para o
-  setup inicial.
-
-**Nova seção "Approvals"** (aba Queue, ao lado da fila de posts da empresa —
-badge com contagem de pendências):
-
-```
-┌─ APPROVALS — Roi's comments ── 3 pending ───────────────┐
-│ ★ Uday Sinha — post de 2 Jul (marco de carreira)        │
-│ Post: "After 32 years in the CPG world..."       [ver ↗]│
-│ Comentário proposto:                                     │
-│ ┌─────────────────────────────────────────────────────┐ │
-│ │ Congrats, Uday — 32 years and still building. The  │ │  ← editável
-│ │ operator's-chair angle is exactly right...          │ │
-│ └─────────────────────────────────────────────────────┘ │
-│ [✅ Aprovar] [✏️ Salvar edição e aprovar] [🔁 Regenerar] │
-│ [❌ Rejeitar…]                                           │
-└──────────────────────────────────────────────────────────┘
-```
-
-### 3.5 Mudanças de API (`api/linkedin-posts.js` + 1 endpoint novo)
-
-| Ação | Método | Descrição |
+| # | Entrega | Detalhe |
 |---|---|---|
-| Alternar política | `PATCH /api/contact-policy` (novo) | `{profile_url, approval_policy, pin}` — valida PIN server-side |
-| Salvar comentário gerado | `PATCH /api/linkedin-posts` (estende) | `{post_url, roi_comment, comment_status}` |
-| Aprovar/rejeitar | `POST /api/linkedin-posts {action:'approve'\|'reject', pin}` | grava `approved_at/by` ou `rejection_note` |
-| Fila p/ Auto Commenter | `GET /api/comment-feed?format=csv&secret=…` (novo) | Devolve `postUrl,comment` dos `approved` — o PhantomBuster lê direto |
+| 1 | Migração Supabase | `approval_policy` + colunas de workflow (§3.4) |
+| 2 | API | 2 actions novas + extensão do PATCH (§3.5) |
+| 3 | Chip de política no card | Clicável, otimista, persiste via API |
+| 4 | Botão adaptativo | 🔒 → "Gerar p/ aprovação" (salva pendência) · ⚡ → fluxo atual |
+| 5 | Fila de aprovação | Topo do People's Posts, badge, editar inline, aprovar/regenerar/rejeitar |
+| 6 | Estados no card | ⏳ / ✅ copiar e postar / ✓ postado |
+| 7 | Testes E2E | Puppeteer local (mock API + Gemini), padrão dos anteriores |
 
-O endpoint `comment-feed` em CSV elimina a necessidade de escrever numa planilha
-Google: o Auto Commenter aceita URL de planilha **ou** CSV público — apontamos o
-Phantom para a nossa própria API (com `?secret=`), e o pipeline fica 100% nosso.
+**Esforço:** 1 sessão. **Risco:** baixo — nada sai da plataforma; postagem segue humana.
 
----
+## 6. Única decisão pendente
 
-## 4. A perna de postagem — opções avaliadas
+- [ ] Defaults de política por tier: ★ Priority e Client = 🔒 / Network e Yedda = ⚡ — confirma?
+      (alternativa conservadora: todos começam 🔒 e o Roi vai liberando ⚡ contato a contato)
 
-| Opção | Viável? | Análise |
-|---|---|---|
-| **A. Manual (status quo)** | ✅ | Zero risco novo. Continua sendo o fallback permanente. |
-| **B. PhantomBuster LinkedIn Auto Commenter** | ✅ recomendada p/ Fase 2 | Já coberto pelo plano Start; consome a mesma sessão LinkedIn do Roi já conectada; aceita fonte "URL + comentário" 1:1; gerenciável pelo nosso config-as-code (`pb-sync.mjs`). Limite seguro: **10 comentários/launch, 1 launch/dia**. |
-| **C. API oficial do LinkedIn** | ❌ | A API de membros não permite comentar em posts de terceiros (restrita a parceiros Marketing/Community — inviável no nosso porte). |
-| **D. Taplio/Publer etc.** | ❌ p/ este caso | Agendam posts próprios; não comentam em posts alheios. |
+## Fontes (fase futura)
 
-**Custo de execução adicional (Fase 2):** Auto Commenter ~10 posts/launch ≈ minutos/dia
-→ ~1–2 h/mês extras. Somado às ~13–19 h/mês do Activity Extractor, encosta no teto de
-20 h do plano Start. **Mitigação:** reduzir Activity Extractor para 5x/semana (seg–sex,
-economiza ~28%) ou considerar upgrade Grow ($159, 80 h) se o auto-post se provar valioso.
-
----
-
-## 5. Guardrails inegociáveis
-
-### 5.1 Classificador de posts sensíveis (o mais importante)
-Contato ⚡ Auto **não** significa incondicional. Antes de enfileirar auto-post, um
-classificador (mesmo prompt Gemini, 1 chamada barata) rotula o post:
-`milestone | opinion | company_news | personal_story | SENSITIVE`
-(demissões, doença, luto, desastres, política/guerra, polêmica). `SENSITIVE` →
-**rebaixa para 🔒 review** com aviso. Um comentário automático errado num post de
-luto custa mais que todos os ganhos de eficiência do projeto.
-
-### 5.2 Controle de acesso — PIN de aprovação
-O dashboard é público (sem login). Aprovar/alternar política **assina como Roi**, então:
-`ROI_APPROVAL_PIN` como env no Vercel; endpoints de aprovação/política exigem o PIN;
-o browser guarda em `sessionStorage` após o primeiro uso. Simples, suficiente, e
-nada de auto-post pode ser acionado por um visitante anônimo.
-
-### 5.3 Caps e kill switch
-- Máx. **10 auto-comentários/dia** (recomendação PhantomBuster para engajamento).
-- Janela de postagem: horário comercial da APAC (fuso dos contatos), não madrugada.
-- **Kill switch:** flag `AUTO_POST_ENABLED` no Vercel + botão "⏸ Pausar auto-post"
-  na seção Approvals. Um clique congela a perna B inteira (o Phantom recebe feed vazio).
-- Nunca incluir links nos comentários (padrão de spam para o LinkedIn).
-
-### 5.4 Auditoria
-Toda aprovação grava `approved_by` + `approved_at`; toda postagem automática grava
-`comment_source='auto-policy'` + `posted_at`. O `lead_interactions` já existente
-passa a receber também os auto-posts — o funil Marketing→Sales (Hermes) enxerga tudo.
-
----
-
-## 6. Fases de implementação
-
-| Fase | Escopo | Esforço | Risco |
-|---|---|---|---|
-| **1 — Aprovação** | Coluna `approval_policy` + chips 🔒/⚡ no Radar + botão adaptativo + seção Approvals + PIN + statuses no DB. Postagem continua manual. | ~1 sessão | Baixo (nada novo sai da plataforma) |
-| **2 — Auto-post** | Endpoint `comment-feed` CSV + Phantom Auto Commenter (config-as-code, 10/dia) + kill switch + confirmação de postagem (webhook do Phantom → `posted`). | ~1 sessão | Médio (conta LinkedIn do Roi — mitigado pelos caps) |
-| **3 — Zero-touch** | Geração automática na chegada do post (webhook → Gemini server-side com `GEMINI_API_KEY` no Vercel) + classificador sensível na entrada + aprovação via Slack (aproveita o SLACK_BOT_TOKEN já planejado p/ MAS) + métricas (aprovação %, tempo até post, respostas). | ~1–2 sessões | Médio |
-
-Fase 1 já entrega o pedido do Roi na íntegra (o botão de política + a fila de
-autorização). As fases 2–3 removem progressivamente o trabalho manual restante.
-
----
-
-## 7. Decisões necessárias (checklist para o Roi)
-
-- [ ] Defaults de política por tier — aceita a tabela da seção 3.2?
-- [ ] Cap diário de auto-comentários (sugestão: 10/dia)
-- [ ] Classificador sensível sempre ativo, sem exceção? (recomendação: sim)
-- [ ] Quem além do Roi pode aprovar? (Marco? — define os valores de `approved_by`)
-- [ ] Valor do PIN de aprovação (definir no Vercel, não em chat/e-mail)
-- [ ] Fase 2 (auto-post via PhantomBuster na conta pessoal do Roi): autorizada?
-- [ ] Se Fase 2 sim: manter plano Start com Extractor 5x/semana, ou upgrade Grow?
-
----
-
-## 8. Apêndice — notas técnicas
-
-- **Idempotência:** `comment_status` transita apenas para frente
-  (`none → pending_approval → approved → posted`); `rejected` pode voltar a
-  `pending_approval` via "Regenerar". Re-scrapes do PhantomBuster nunca tocam nessas
-  colunas (merge-duplicates já preserva `roi_comment` hoje — mesmo mecanismo).
-- **Geração server-side (Fase 3):** requer `GEMINI_API_KEY` como env no Vercel — hoje a
-  chave é client-side (localStorage). O prompt/persona é o mesmo (`/api/roi-voice`).
-- **Auto Commenter — fonte de dados:** apontar para
-  `https://yedda-marketing-dashboard.vercel.app/api/comment-feed?secret=…&format=csv`.
-  Colunas: `postUrl,comment` (formato nativo do Phantom, match 1:1, sem "random").
-- **Config-as-code:** o Auto Commenter entra no `desired-config.json` como segundo
-  agent gerenciado pelo `pb-sync.mjs` (o script já descobre agents por nome).
-- **Reuso futuro:** a seção Approvals é o mesmo padrão da fila localhost do MAS (F31) —
-  migrar a fila do MAS para este mecanismo Supabase unifica as aprovações do Roi
-  num lugar só (e destrava aprovação mobile via Slack na Fase 3).
-
-## Fontes
-
-- [PhantomBuster — LinkedIn Auto Commenter (doc oficial)](https://support.phantombuster.com/hc/en-us/articles/26971012177042-How-to-use-the-LinkedIn-Auto-Commenter)
-- [PhantomBuster — catálogo do Auto Commenter](https://phantombuster.com/automations/linkedin/16226/linkedin-auto-commenter)
-- [PhantomBuster — use case: gerar comentários automaticamente](https://support.phantombuster.com/hc/en-us/community/posts/27658722540562--Use-case-Generate-LinkedIn-comments-automatically-with-PhantomBuster)
+- [PhantomBuster — LinkedIn Auto Commenter](https://support.phantombuster.com/hc/en-us/articles/26971012177042-How-to-use-the-LinkedIn-Auto-Commenter)
+- [PhantomBuster — catálogo Auto Commenter](https://phantombuster.com/automations/linkedin/16226/linkedin-auto-commenter)
