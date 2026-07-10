@@ -8,23 +8,55 @@
 > Ver seção **"Plano Start — configuração pós-upgrade"** abaixo para os ajustes
 > que destravam a operação completa (70 contatos/dia + agendamento automático).
 
-## Plano Start — configuração pós-upgrade (fazer 1 vez, ≈ 5 min)
+## Plano Start — configuração pós-upgrade (automatizada via API/CI)
 
-Com o plano pago, os limites do trial caem. Ajustar no Phantom
-**LinkedIn Activity Extractor** já existente:
+Com o plano pago, os limites do trial caem. A configuração do Phantom agora é
+**config-as-code** — não precisa clicar na interface:
 
-1. **Cobrir todos os 70 contatos por dia**
-   - Abrir o Phantom → **Settings** (Behavior)
-   - **Number of profiles to process per launch** → `70`
-     (no trial estava `10` — só cobria 1/7 da planilha por run)
-2. **Ativar o agendamento diário** (estava em launch manual)
-   - **Settings → Repeated launches** → **Once per day** · **08:00**
-   - Salvar. A partir daí os posts chegam sozinhos no Radar todo dia de manhã.
-3. **Conferir o webhook** (não muda com o upgrade, só confirmar)
-   - Settings → Notifications → HTTP webhook URL =
-     `https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts`
-4. **(Opcional) Enriquecer contatos** — rodar o **LinkedIn Profile Scraper**
-   uma vez na mesma planilha para nome/cargo/empresa limpos.
+### Setup único (≈ 3 min): criar a API key
+
+1. PhantomBuster → **Workspace settings → Third-party apps & API → API keys**
+   → gerar uma chave
+2. Adicionar como secret no GitHub (uma vez):
+   ```bash
+   gh secret set PHANTOMBUSTER_API_KEY
+   ```
+   (cola a chave quando pedir)
+
+### Como funciona a partir daí
+
+- **Estado desejado:** `scripts/phantombuster/desired-config.json`
+  (hoje: 70 perfis/launch + agendamento diário 08:00 America/Sao_Paulo)
+- **Aplicar:** push na `main` tocando `scripts/phantombuster/**` dispara o
+  workflow **PhantomBuster config sync** automaticamente, ou rode manualmente:
+  ```bash
+  gh workflow run phantombuster-sync.yml            # aplicar
+  gh workflow run phantombuster-sync.yml -f dry_run=true   # só prever
+  ```
+- **Local (sem CI):**
+  ```bash
+  PHANTOMBUSTER_API_KEY=xxx node scripts/phantombuster/pb-sync.mjs --show      # inspecionar
+  PHANTOMBUSTER_API_KEY=xxx node scripts/phantombuster/pb-sync.mjs --apply     # aplicar + verificar
+  ```
+- O script acha o Phantom pelo nome ("LinkedIn Activity Extractor"), aplica o
+  argument e o agendamento em chamadas separadas (falha no schedule nunca
+  bloqueia o ajuste de perfis) e verifica o resultado relendo o agent.
+
+### MCP (controle conversacional pelo Claude)
+
+O MCP oficial da PhantomBuster já está registrado no projeto (`.mcp.json` →
+`https://mcp.phantombuster.com`). **Autenticar 1 vez:** abrir uma sessão
+interativa do Claude Code neste diretório e rodar `/mcp` → login OAuth na
+PhantomBuster → escolher o workspace. Depois disso o Claude consegue lançar
+Phantoms, checar runs, buscar resultados e ajustar configs por conversa.
+
+### Fallback manual (interface web, se preferir)
+
+1. Phantom → Settings → **Number of profiles to process per launch** → `70`
+2. Settings → **Repeated launches** → Once per day · 08:00
+3. Conferir webhook: Settings → Notifications → HTTP webhook URL =
+   `https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts`
+4. (Opcional) rodar o **LinkedIn Profile Scraper** uma vez na mesma planilha
 
 ### Higiene da planilha de contatos (recomendado junto com o passo 1)
 
@@ -164,8 +196,10 @@ https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts
 - [x] LinkedIn Activity Extractor configurado (cookie + planilha + Posts + 5 por perfil)
 - [x] Webhook apontando para `/api/linkedin-posts`
 - [x] Launch manual de teste → cards visíveis no dashboard (38 resultados, 8 jul)
-- [ ] **Profiles per launch = 70** (pós-upgrade, passo 1 acima)
-- [ ] **Agendamento diário às 08:00 ativo** (pós-upgrade, passo 2 acima)
+- [ ] **API key criada + `gh secret set PHANTOMBUSTER_API_KEY`** (setup único do CI)
+- [ ] **Profiles per launch = 70** (aplicado pelo workflow `phantombuster-sync`)
+- [ ] **Agendamento diário às 08:00 ativo** (aplicado pelo workflow `phantombuster-sync`)
+- [ ] **MCP autenticado** (`/mcp` numa sessão interativa → OAuth PhantomBuster)
 - [ ] URLs mortas corrigidas na planilha (Philippe Broianigo + verificar 2 suspeitas)
 
 ## Como funciona o fluxo no dashboard

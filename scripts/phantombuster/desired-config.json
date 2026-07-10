@@ -1,0 +1,12 @@
+{
+  "$comment": "Desired state for the PhantomBuster LinkedIn Activity Extractor. Applied by pb-sync.mjs (locally or via GitHub Actions). Edit + push to main to reconfigure the Phantom.",
+  "agentNameMatch": "LinkedIn Activity Extractor",
+  "profilesPerLaunch": 70,
+  "argumentOverrides": {},
+  "schedule": {
+    "enabled": true,
+    "hour": 8,
+    "minute": 0,
+    "timezone": "America/Sao_Paulo"
+  }
+}

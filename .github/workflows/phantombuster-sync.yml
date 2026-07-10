@@ -1,0 +1,44 @@
+name: PhantomBuster config sync
+
+# Applies scripts/phantombuster/desired-config.json to the LinkedIn Activity
+# Extractor via the PhantomBuster API. Config-as-code: edit the JSON, push to
+# main, the Phantom is reconfigured. Requires repo secret PHANTOMBUSTER_API_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview changes without writing"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - "scripts/phantombuster/**"
+      - ".github/workflows/phantombuster-sync.yml"
+
+concurrency:
+  group: phantombuster-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Apply desired config to PhantomBuster
+        env:
+          PHANTOMBUSTER_API_KEY: ${{ secrets.PHANTOMBUSTER_API_KEY }}
+        run: |
+          if [ -z "$PHANTOMBUSTER_API_KEY" ]; then
+            echo "::error::Repo secret PHANTOMBUSTER_API_KEY is not set. Create an API key in PhantomBuster (Workspace settings → Third-party apps & API) and add it with: gh secret set PHANTOMBUSTER_API_KEY"
+            exit 1
+          fi
+          FLAGS="--apply"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then FLAGS="--apply --dry-run"; fi
+          node scripts/phantombuster/pb-sync.mjs $FLAGS
