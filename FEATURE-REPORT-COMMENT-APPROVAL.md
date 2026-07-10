@@ -1,7 +1,24 @@
 # Relatório v2 — Política de Aprovação por Contato para Comentários do Roi
 
-> **Data:** 10 jul 2026 (v2 — revisado com as decisões do Marco) · **Status:** pronto para implementar
+> **Data:** 10 jul 2026 (v2 — revisado com as decisões do Marco) · **Status:** ✅ FASE 1 IMPLANTADA (commit aad4065)
 > **Escopo:** exclusivamente a seção **People's Posts** (Radar). Nenhuma outra área do dashboard muda.
+
+## ✅ Fase 1 entregue e em produção (10 jul 2026)
+
+Escolha conservadora aplicada: **todo contato começa em 🔒 Review**; o Roi libera
+⚡ Auto contato a contato pelo chip clicável no card. Tudo em inglês na interface.
+
+- Chip **🔒 Review / ⚡ Auto** em cada card (clicável = o botão do Roi)
+- Botão adaptativo: Review → "Generate for Roi's approval" (salva rascunho na fila);
+  Auto → fluxo atual "Generate Roi's Comment" (gerar → copiar → postar)
+- Fila **"Awaiting Roi's approval"** no topo do People's Posts — editar inline,
+  ✅ Approve / 🔁 Regenerate / ❌ Reject (com motivo)
+- Estados no card: ⏳ awaiting Roi → ✅ approved, ready to post → ✓ posted
+- Postagem 100% manual (nenhum guardrail de automação nesta fase)
+
+Verificação: 16 checks E2E do workflow + smoke em produção contra o Supabase real
+(set-policy ida/volta prova a RLS + migração) + suítes de regressão (filtros, navegação).
+As seções abaixo descrevem o desenho completo; a Fase futura (§4) segue pendente.
 
 ## O que mudou da v1 para v2 (decisões do Marco)
 
