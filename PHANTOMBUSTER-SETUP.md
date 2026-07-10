@@ -66,8 +66,8 @@ Phantoms, checar runs, buscar resultados e ajustar configs por conversa.
 | Bruno Jousselin (`/in/103300`) | Handle numérico suspeito | ✅ Verificado — é vanity URL legítima (MD MM Mega Market VN). Sem mudança |
 | Souly Hamed (handle gigante) | URL possivelmente inválida | ✅ Verificado — perfil ativo (Founder THEOTHER4). Sem mudança |
 | Kfir Chervinski (prio 5/5) | Sem LinkedIn no CRM | ✅ Encontrado: `/in/kfir-chervinski-b77542` (SkillOnNet). Supabase + CSV atualizados; **falta colar na planilha** |
-| Tomer Weisman | Sem LinkedIn no CRM | 🟡 Candidato forte: `/in/tomer-weissman-4123b04` (sócio EBN, litígio, Israel — grafia "Weissman"). Confirmar com Roi antes de adicionar |
-| Oded Grinstein | Sem LinkedIn no CRM | 🟡 3 homônimos em Israel — confirmar com Roi qual é |
+| Tomer Weisman | Sem LinkedIn no CRM | ✅ Confirmado 10 jul: `/in/tomer-weissman-4123b04` (sócio EBN, litígio). Supabase + CSV atualizados; **falta colar na planilha** |
+| Oded Grinstein | Sem LinkedIn no CRM | ✅ Confirmado 10 jul: `/in/oded-grinstein-a2a0673`. Supabase + CSV atualizados; **falta colar na planilha** |
 | Dan Thai (CEO Pho24) | Sem LinkedIn no CRM | 🟡 Nenhum perfil público confiável ligado à Pho24/VTI — confirmar com Roi |
 | Nguyen Phan | Sem LinkedIn no CRM | 🟡 É do time Yedda (e-mail interno) — pedir a URL diretamente a ele |
 | Kham | Sem sobrenome/empresa no CRM | 🔴 Não localizável — pedir dados ao Roi |
