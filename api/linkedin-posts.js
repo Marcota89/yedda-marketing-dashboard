@@ -10,12 +10,15 @@ export const config = {
 const SUPABASE_URL = 'https://mxjlvgzmjmnltfzcwfsh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14amx2Z3ptam1ubHRmemN3ZnNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTM4MzAsImV4cCI6MjA5MjQ2OTgzMH0.eurPDN8iGug8jYRxKsUgxvjtJ88jRexUMoQb7lgpSAY';
 const TABLE = `${SUPABASE_URL}/rest/v1/linkedin_contacts_posts`;
+const TABLE_TIERS = `${SUPABASE_URL}/rest/v1/contact_tiers`;
 
 const HEADERS = {
   'Content-Type': 'application/json',
   'apikey': SUPABASE_KEY,
   'Authorization': `Bearer ${SUPABASE_KEY}`,
 };
+
+const VALID_STATUS = ['none', 'pending_approval', 'approved', 'rejected', 'posted'];
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,6 +48,13 @@ export default async function handler(req, res) {
     // dashboard. status=pending so Hermes review gates any actual outreach.
     if (req.body && req.body.action === 'handoff') return handleHandoff(req, res);
 
+    // Approval-policy workflow (People's Posts). No auth gate by design — posting
+    // stays manual, so the real gate is who holds Roi's LinkedIn login. A PIN
+    // becomes a prerequisite only when auto-posting is introduced later.
+    if (req.body && req.body.action === 'set-policy') return handleSetPolicy(req, res);
+    if (req.body && req.body.action === 'approve')    return handleApprove(req, res);
+    if (req.body && req.body.action === 'reject')     return handleReject(req, res);
+
     // If PB_WEBHOOK_SECRET is set in Vercel env, require it (?secret=... on the webhook URL).
     const secret = process.env.PB_WEBHOOK_SECRET;
     if (secret && req.query.secret !== secret)
@@ -69,12 +79,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    const { post_url, roi_comment, commented, contact_name, contact_company } = req.body || {};
+    const { post_url, roi_comment, commented, comment_status, contact_name, contact_company } = req.body || {};
     if (!post_url) return res.status(400).json({ error: 'post_url required' });
 
     const patch = { updated_at: new Date().toISOString() };
     if (roi_comment !== undefined) patch.roi_comment = roi_comment;
     if (commented !== undefined) patch.commented = !!commented;
+    if (comment_status !== undefined) {
+      if (!VALID_STATUS.includes(comment_status))
+        return res.status(400).json({ error: 'invalid comment_status' });
+      patch.comment_status = comment_status;
+      if (comment_status === 'posted') patch.posted_at = new Date().toISOString();
+    }
+    // Marking a post as commented is the terminal "posted" state — keep the
+    // legacy `commented` flag (warm-lead signal reads it) and the new status aligned.
+    if (commented === true) { patch.comment_status = 'posted'; patch.posted_at = new Date().toISOString(); }
 
     const r = await fetch(`${TABLE}?post_url=eq.${encodeURIComponent(post_url)}`, {
       method: 'PATCH',
@@ -159,6 +178,81 @@ async function handleHandoff(req, res) {
     }).catch(() => {});
   }
   return res.status(200).json({ ok: true, task_id: taskId });
+}
+
+// ── Approval-policy workflow ──────────────────────────────────────────────
+
+// Toggle a contact's approval policy. Writes the durable value to contact_tiers
+// (so future scraped posts inherit it via the trigger) AND to every existing
+// post from that contact (denormalized, like `tier`), so all their cards update.
+async function handleSetPolicy(req, res) {
+  const b = req.body || {};
+  const policy = b.approval_policy;
+  if (policy !== 'review' && policy !== 'auto')
+    return res.status(400).json({ error: "approval_policy must be 'review' or 'auto'" });
+
+  const url  = (b.contact_profile_url || b.profile_url || '').trim();
+  const name = (b.contact_name || '').trim();
+  if (!url && !name)
+    return res.status(400).json({ error: 'contact_profile_url or contact_name required' });
+
+  // 1. Durable source of truth — upsert on the contact sheet (PK profile_url).
+  if (url) {
+    await fetch(`${TABLE_TIERS}?on_conflict=profile_url`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ profile_url: url, approval_policy: policy, ...(name ? { contact_name: name } : {}) }]),
+    }).catch(() => {});
+  }
+
+  // 2. Denormalized copy — every existing post from this contact.
+  const filter = url
+    ? `contact_profile_url=eq.${encodeURIComponent(url)}`
+    : `contact_name=eq.${encodeURIComponent(name)}`;
+  const r = await fetch(`${TABLE}?${filter}`, {
+    method: 'PATCH',
+    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ approval_policy: policy, updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    return res.status(r.status).json({ error: err });
+  }
+  return res.status(200).json({ ok: true, approval_policy: policy });
+}
+
+// Approve a pending comment (optionally with Roi's edited text). Ready to post.
+async function handleApprove(req, res) {
+  const { post_url, roi_comment } = req.body || {};
+  if (!post_url) return res.status(400).json({ error: 'post_url required' });
+  const patch = {
+    comment_status: 'approved',
+    approved_at: new Date().toISOString(),
+    rejection_note: null,
+    updated_at: new Date().toISOString(),
+  };
+  if (roi_comment !== undefined) patch.roi_comment = roi_comment;
+  const r = await fetch(`${TABLE}?post_url=eq.${encodeURIComponent(post_url)}`, {
+    method: 'PATCH', headers: HEADERS, body: JSON.stringify(patch),
+  });
+  if (!r.ok) { const err = await r.json().catch(() => ({})); return res.status(r.status).json({ error: err }); }
+  return res.status(200).json({ ok: true });
+}
+
+// Reject a pending comment with a short reason (kept for the regenerate cycle).
+async function handleReject(req, res) {
+  const { post_url, rejection_note } = req.body || {};
+  if (!post_url) return res.status(400).json({ error: 'post_url required' });
+  const patch = {
+    comment_status: 'rejected',
+    rejection_note: (rejection_note || '').slice(0, 500) || null,
+    updated_at: new Date().toISOString(),
+  };
+  const r = await fetch(`${TABLE}?post_url=eq.${encodeURIComponent(post_url)}`, {
+    method: 'PATCH', headers: HEADERS, body: JSON.stringify(patch),
+  });
+  if (!r.ok) { const err = await r.json().catch(() => ({})); return res.status(r.status).json({ error: err }); }
+  return res.status(200).json({ ok: true });
 }
 
 // Accepts the three payload shapes that reach this endpoint:

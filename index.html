@@ -2923,6 +2923,8 @@ textarea::placeholder {
       </div>
     </div>
 
+    <div id="peopleApprovalQueue" class="reveal" style="max-width:920px;margin-bottom:18px;"></div>
+
     <div id="peopleFilterBar" class="reveal" style="max-width:920px;display:none;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
       <div id="ppTierChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       <select id="ppDays" class="sched-input" style="width:auto;font-size:12px;padding:6px 10px;" onchange="setPeopleFilter('days', this.value)">
@@ -6076,12 +6078,39 @@ async function generateRoiComment(btn) {
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
 
   setLoading(btn, true, '⏳ Generating…');
+  outputEl.style.display = 'block';
+  textEl.value = '';
+  try {
+    const { comment, truncated } = await _roiCommentCore({
+      postText, style, apiKey,
+      activePost: window._activePeoplePost,
+      onStatus: s => { statusEl.textContent = s; },
+    });
+    if (truncated) showToast('⚠️ Comment may be truncated — edit before posting', 'error', 5000);
+    textEl.value = comment;
+    statusEl.className = 'modal-status st-ok';
+    statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
+    showToast('✅ Comment generated!', 'success');
+  } catch (e) {
+    statusEl.className = 'modal-status st-err';
+    statusEl.textContent = /timeout|abort/i.test(`${e.message} ${e.name}`) ? '❌ Timeout — try again.' : `❌ Error: ${e.message}`;
+    showToast('❌ Generation failed', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// Headless comment generator — builds the persona prompt, calls Gemini (model
+// fallback + anti-AI-tells retry) and returns { comment, truncated }. No DOM
+// writes, so the Create-tab UI and the Radar approval flow both reuse it.
+async function _roiCommentCore({ postText, style, apiKey, activePost, onStatus }) {
+  const setStatus = onStatus || (() => {});
 
   // MAS-synced persona — identity, principles, views (silently null if API down)
   const voice = await _getRoiVoice();
 
   // Author context — present when the post came from a People's Posts card
-  const _ap = window._activePeoplePost;
+  const _ap = activePost;
   const _fromCard = _ap && _ap.post_text && postText.slice(0, 80) === String(_ap.post_text).slice(0, 80);
   const authorContext = _fromCard ? `
 WHO WROTE THIS POST (from Roi's CRM — use it):
@@ -6191,9 +6220,7 @@ Output the comment text only. Nothing else.`;
 
   const userPrompt = `Post:\n${postText}\n\nWrite the comment.`;
 
-  statusEl.textContent = '⏳ Reading post…';
-  outputEl.style.display = 'block';
-  textEl.value = '';
+  setStatus('⏳ Reading post…');
 
   // Comments need a fast, non-thinking model — 2.5-flash thinking tokens eat output budget
   const _COMMENT_MODELS = ['gemini-2.0-flash', getGeminiModel()];
@@ -6230,7 +6257,7 @@ Output the comment text only. Nothing else.`;
   const ctrl = new AbortController();
   const tId = setTimeout(() => ctrl.abort(), 25000);
   try {
-    statusEl.textContent = '⏳ Writing comment… (~5s)';
+    setStatus('⏳ Writing comment… (~5s)');
     let data;
     try {
       data = await _callGemini(ctrl.signal, _COMMENT_MODELS[0]);
@@ -6246,7 +6273,7 @@ Output the comment text only. Nothing else.`;
 
     // ── FASE 4: auto-retry if AI tells detected ───────────────────────
     if (_hasAiTells(comment)) {
-      statusEl.textContent = '🔁 First draft sounded generic — regenerating in Roi\'s voice…';
+      setStatus('🔁 First draft sounded generic — regenerating in Roi\'s voice…');
       const ctrl2 = new AbortController();
       const tId2 = setTimeout(() => ctrl2.abort(), 20000);
       try {
@@ -6258,18 +6285,11 @@ Output the comment text only. Nothing else.`;
       } catch(_) { clearTimeout(tId2); }
     }
 
-    if (candidate?.finishReason === 'MAX_TOKENS') showToast('⚠️ Comment may be truncated — edit before posting', 'error', 5000);
-    textEl.value = comment;
-    statusEl.className = 'modal-status st-ok';
-    statusEl.textContent = '✅ Comment ready — review, edit if needed, then copy and post on LinkedIn as Roi.';
-    showToast('✅ Comment generated!', 'success');
-  } catch(e) {
+    return { comment, truncated: candidate?.finishReason === 'MAX_TOKENS' };
+  } catch (e) {
     clearTimeout(tId);
-    statusEl.className = 'modal-status st-err';
-    statusEl.textContent = e.name === 'AbortError' ? '❌ Timeout — try again.' : `❌ Error: ${e.message}`;
-    showToast('❌ Generation failed', 'error');
-  } finally {
-    setLoading(btn, false);
+    if (e.name === 'AbortError') throw new Error('timeout');
+    throw e;
   }
 }
 
@@ -6766,6 +6786,7 @@ function renderPeoplePosts() {
     return;
   }
   _renderTierChips();
+  renderApprovalQueue();
   // Warm-lead signal: count commented posts per contact. 2+ engagements → the
   // relationship is warming and worth handing to Hermes. Show the CTA once per
   // contact (on their first card in the list) to avoid repetition.
@@ -6801,6 +6822,9 @@ function renderPeoplePosts() {
       : '';
     const text = p.post_text ? String(p.post_text) : '';
     const tier = _tierChip(p.tier);
+    const policy = _policyChip(p, i);
+    const st = p.comment_status || 'none';
+    const isPosted = p.commented === true || st === 'posted';
 
     const k = _ck(p);
     const warm = k && engaged[k] && engaged[k].count >= 2;
@@ -6812,10 +6836,42 @@ function renderPeoplePosts() {
     const handoffBadge = (k && engaged[k] && engaged[k].handoff)
       ? ' <span style="color:var(--orange);font-size:11px;font-weight:700;">→ in Hermes queue</span>' : '';
 
+    // Status badge reflects where the comment is in the approval → post pipeline.
+    const statusBadge = isPosted
+      ? ' <span style="color:var(--teal-deep);font-size:11px;">✓ posted</span>'
+      : ({
+          pending_approval: ' <span style="color:#b8860b;font-size:11px;font-weight:700;">⏳ awaiting Roi</span>',
+          approved: ' <span style="color:var(--teal-deep);font-size:11px;font-weight:700;">✅ approved — ready to post</span>',
+          rejected: ' <span style="color:var(--orange);font-size:11px;font-weight:700;">✕ needs changes</span>',
+        }[st] || '');
+
+    // Action buttons depend on the comment's status (and, when generating, on
+    // the contact's approval policy).
+    let actions = '';
+    if (isPosted) {
+      actions = '';
+    } else if (st === 'approved') {
+      actions = `
+        <button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="copyApprovedComment(${i})">📋 Copy approved comment</button>
+        <button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="markPeoplePostCommented(${i})">✓ Mark posted</button>`;
+    } else if (st === 'pending_approval') {
+      actions = `<button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="document.getElementById('peopleApprovalQueue').scrollIntoView({behavior:'smooth'})">⏳ In Roi's approval queue ↑</button>`;
+    } else {
+      // 'none' or 'rejected' → generate. Review contacts route to the queue;
+      // auto contacts keep the existing generate-copy-post flow.
+      const genBtn = p.approval_policy === 'auto'
+        ? `<button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="usePeoplePost(${i})">💬 Generate Roi's Comment</button>`
+        : `<button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="generateForApproval(${i})">💬 Generate for Roi's approval</button>`;
+      actions = `${genBtn}<button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="markPeoplePostCommented(${i})">✓ Mark posted</button>`;
+    }
+
+    const rejNote = st === 'rejected' && p.rejection_note
+      ? `<div style="font-size:11px;color:var(--orange);margin-top:6px;">Roi's note: ${esc(p.rejection_note)}</div>` : '';
+
     return `
-    <div class="news-item" style="cursor:default;${p.commented ? 'opacity:.72;' : ''}">
+    <div class="news-item" style="cursor:default;${isPosted ? 'opacity:.72;' : ''}">
       <div class="news-item-body" style="width:100%;">
-        <div class="news-item-title">${tier}${header}${p.commented ? ' <span style="color:var(--teal-deep);font-size:11px;">✓ commented</span>' : ''}${handoffBadge}</div>
+        <div class="news-item-title">${tier}${policy}${header}${statusBadge}${handoffBadge}</div>
         <div class="news-item-meta">
           ${date ? `<span>${date}</span>` : ''}
           <span>👍 ${p.likes_count || 0} · 💬 ${p.comments_count || 0}</span>
@@ -6823,9 +6879,9 @@ function renderPeoplePosts() {
           ${p.source === 'manual' ? '<span style="opacity:.7;">added manually</span>' : ''}
         </div>
         ${text ? `<div class="news-snippet">${esc(text.slice(0, 220))}${text.length > 220 ? '…' : ''}</div>` : ''}
+        ${rejNote}
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-          <button class="news-use-btn" style="font-size:12px;padding:6px 14px;" onclick="usePeoplePost(${i})">💬 Generate Roi's Comment</button>
-          ${!p.commented ? `<button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="markPeoplePostCommented(${i})">✓ Mark commented</button>` : ''}
+          ${actions}
           ${handoffCta}
         </div>
       </div>
@@ -6848,6 +6904,184 @@ function _tierChip(tier) {
   };
   const m = map[tier] || [tier, 'var(--text-soft)', 'var(--line-soft)'];
   return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;margin-right:6px;color:${m[1]};background:${m[2]};vertical-align:middle;">${esc(m[0])}</span>`;
+}
+
+// ── Approval policy — the "Roi button" on each card ──────────────────────────
+// Clickable chip: 🔒 Review (comment needs Roi's approval before posting) vs
+// ⚡ Auto (generate and post, no approval step). Default is Review (conservative).
+function _policyChip(p, i) {
+  const auto = p.approval_policy === 'auto';
+  const label = auto ? '⚡ Auto' : '🔒 Review';
+  const color = auto ? 'var(--teal-deep)' : '#b8860b';
+  const bg    = auto ? 'var(--teal-xl)' : '#fbf3dd';
+  return `<span onclick="togglePolicy(${i})" title="Click to switch: ${auto ? 'auto-post → require Roi approval' : 'require approval → auto-post'}" style="cursor:pointer;display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;margin-right:6px;color:${color};background:${bg};vertical-align:middle;user-select:none;">${label}</span>`;
+}
+
+// Flip a contact's approval policy (affects all their posts + future scrapes).
+async function togglePolicy(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  const next = p.approval_policy === 'auto' ? 'review' : 'auto';
+  const key = p.contact_profile_url || p.contact_name;
+  const prev = {};
+  // Optimistic — flip every card from the same contact at once.
+  _peoplePosts.forEach(q => {
+    if ((q.contact_profile_url || q.contact_name) === key) { prev[q.post_url] = q.approval_policy; q.approval_policy = next; }
+  });
+  renderPeoplePosts();
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-policy', approval_policy: next,
+        contact_profile_url: p.contact_profile_url || null, contact_name: p.contact_name || null }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    showToast(next === 'auto'
+      ? `⚡ ${p.contact_name || 'Contact'} set to Auto — comments post without approval.`
+      : `🔒 ${p.contact_name || 'Contact'} set to Review — comments need Roi's approval.`, 'success', 4500);
+  } catch (e) {
+    _peoplePosts.forEach(q => { if (q.post_url in prev) q.approval_policy = prev[q.post_url]; });
+    renderPeoplePosts();
+    showToast('Failed to change policy: ' + e.message, 'error', 6000);
+  }
+}
+
+// Generate a comment for a Review contact and send it to the approval queue.
+async function generateForApproval(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  if (!p.post_text) { alert('This post has no text captured — open it on LinkedIn, copy the text and use "Add post manually".'); return; }
+  const apiKey = localStorage.getItem('yedda_claude_key') || '';
+  if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+
+  showToast('⏳ Drafting comment in Roi\'s voice…', 'info', 3000);
+  try {
+    const { comment } = await _roiCommentCore({ postText: p.post_text, style: 'insight', apiKey, activePost: p });
+    await fetch('/api/linkedin-posts', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_url: p.post_url, roi_comment: comment, comment_status: 'pending_approval' }),
+    }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); });
+    p.roi_comment = comment;
+    p.comment_status = 'pending_approval';
+    p.rejection_note = null;
+    renderPeoplePosts();
+    document.getElementById('peopleApprovalQueue').scrollIntoView({ behavior: 'smooth' });
+    showToast('📥 Draft sent for Roi\'s approval.', 'success', 4500);
+  } catch (e) {
+    showToast('Failed to draft comment: ' + (e.message || e), 'error', 6000);
+  }
+}
+
+// Approval queue — pending comments waiting on Roi, rendered above the feed.
+function renderApprovalQueue() {
+  const box = document.getElementById('peopleApprovalQueue');
+  if (!box) return;
+  const pending = _peoplePosts
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => p.comment_status === 'pending_approval');
+  if (!pending.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  const items = pending.map(({ p, i }) => {
+    const who = [p.contact_name, p.contact_title, p.contact_company].filter(Boolean).join(' · ') || 'Unknown contact';
+    const post = p.post_text ? esc(String(p.post_text).slice(0, 200)) + (String(p.post_text).length > 200 ? '…' : '') : '';
+    return `
+      <div style="border:1px solid var(--line-soft);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--surface);">
+        <div style="font-weight:700;font-size:14px;">${_tierChip(p.tier)}${esc(who)}
+          ${p.post_url ? `<a href="${esc(p.post_url)}" target="_blank" rel="noopener" style="font-size:12px;font-weight:500;margin-left:6px;">view post ↗</a>` : ''}</div>
+        ${post ? `<div style="font-size:12px;color:var(--text-soft);margin:6px 0;">"${post}"</div>` : ''}
+        <label style="font-size:11px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;">Proposed comment (editable)</label>
+        <textarea id="approveText-${i}" rows="3" class="sched-input" style="width:100%;margin-top:5px;resize:vertical;background:#f8fffe;border-color:var(--teal);">${esc(p.roi_comment || '')}</textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="sched-gen-run" style="font-size:12px;padding:7px 16px;" onclick="approveComment(${i})">✅ Approve</button>
+          <button class="btn-outline" style="font-size:12px;padding:7px 16px;" onclick="regenerateApproval(${i})">🔁 Regenerate</button>
+          <button class="btn-outline" style="font-size:12px;padding:7px 16px;border-color:var(--orange);color:var(--orange);" onclick="rejectComment(${i})">❌ Reject</button>
+        </div>
+      </div>`;
+  }).join('');
+  box.innerHTML = `
+    <div style="border:1px solid var(--orange);border-radius:12px;padding:16px;background:var(--orange-xl);">
+      <h3 style="margin:0 0 12px;font-size:15px;color:var(--ink);">⏳ Awaiting Roi's approval <span style="color:var(--orange);">(${pending.length})</span></h3>
+      ${items}
+    </div>`;
+}
+
+async function approveComment(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  const ta = document.getElementById(`approveText-${i}`);
+  const edited = ta ? ta.value.trim() : (p.roi_comment || '');
+  if (!edited) { alert('The comment is empty.'); return; }
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', post_url: p.post_url, roi_comment: edited }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    p.roi_comment = edited;
+    p.comment_status = 'approved';
+    renderPeoplePosts();
+    showToast('✅ Approved — copy the comment and post it on LinkedIn.', 'success', 5000);
+  } catch (e) {
+    showToast('Failed to approve: ' + e.message, 'error', 6000);
+  }
+}
+
+async function rejectComment(i) {
+  const p = _peoplePosts[i];
+  if (!p) return;
+  const note = prompt('Reject this comment. Optional note for the next draft (e.g. "too formal", "wrong angle"):', '');
+  if (note === null) return; // cancelled
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reject', post_url: p.post_url, rejection_note: note }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    p.comment_status = 'rejected';
+    p.rejection_note = note || null;
+    renderPeoplePosts();
+    showToast('❌ Rejected — regenerate a new draft when ready.', 'success', 4500);
+  } catch (e) {
+    showToast('Failed to reject: ' + e.message, 'error', 6000);
+  }
+}
+
+// Regenerate a fresh draft for a pending item (keeps it in the queue).
+async function regenerateApproval(i) {
+  const p = _peoplePosts[i];
+  if (!p || !p.post_text) return;
+  const apiKey = localStorage.getItem('yedda_claude_key') || '';
+  if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
+  const ta = document.getElementById(`approveText-${i}`);
+  if (ta) ta.value = '⏳ Regenerating…';
+  try {
+    const { comment } = await _roiCommentCore({ postText: p.post_text, style: 'insight', apiKey, activePost: p });
+    await fetch('/api/linkedin-posts', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_url: p.post_url, roi_comment: comment, comment_status: 'pending_approval' }),
+    }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); });
+    p.roi_comment = comment;
+    renderApprovalQueue();
+    showToast('🔁 New draft ready for review.', 'success', 4000);
+  } catch (e) {
+    if (ta) ta.value = p.roi_comment || '';
+    showToast('Failed to regenerate: ' + (e.message || e), 'error', 6000);
+  }
+}
+
+async function copyApprovedComment(i) {
+  const p = _peoplePosts[i];
+  if (!p || !p.roi_comment) return;
+  try {
+    await navigator.clipboard.writeText(p.roi_comment);
+    showToast('📋 Comment copied — paste it on LinkedIn, then Mark posted.', 'success', 4500);
+  } catch (_) {
+    // Fallback: put it in the Create tab textarea so it can be copied manually.
+    switchTab('create', { noScroll: true });
+    const t = document.getElementById('roiCommentText');
+    const o = document.getElementById('roiCommentOutput');
+    if (t) { t.value = p.roi_comment; if (o) o.style.display = 'block'; t.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
 }
 
 async function sendToHermes(i) {
@@ -6928,9 +7162,10 @@ async function markPeoplePostCommented(i) {
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     p.commented = true;
+    p.comment_status = 'posted';
     if (body.roi_comment) p.roi_comment = body.roi_comment;
     renderPeoplePosts();
-    showToast('✓ Post marked as commented.', 'success', 4000);
+    showToast('✓ Post marked as posted.', 'success', 4000);
   } catch (e) {
     showToast('Failed to save: ' + e.message, 'error', 6000);
   }
