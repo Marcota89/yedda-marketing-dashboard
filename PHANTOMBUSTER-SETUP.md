@@ -58,19 +58,22 @@ Phantoms, checar runs, buscar resultados e ajustar configs por conversa.
    `https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts`
 4. (Opcional) rodar o **LinkedIn Profile Scraper** uma vez na mesma planilha
 
-### Higiene da planilha de contatos (recomendado junto com o passo 1)
+### Higiene da planilha de contatos — status 10 jul 2026
 
-Problemas conhecidos detectados no primeiro run (8 jul):
-
-| Contato | Problema | Ação |
+| Contato | Situação | Resolução |
 |---|---|---|
-| Philippe Broianigo (`/in/philippe-broianigo-46715654`) | URL morta | Buscar o perfil atual no LinkedIn e substituir na planilha |
-| Bruno Jousselin (`/in/103300`) | URL suspeita (handle numérico) | Verificar se abre; corrigir se não |
-| Souly Hamed (handle gigante) | URL possivelmente inválida | Verificar se abre; corrigir se não |
+| Philippe Broianigo | URL antiga morta | ✅ Novo perfil: `/in/philippe-broianigo-ba0921300` (hoje The CrownX/Masan). Supabase + CSV atualizados; **falta colar na planilha** |
+| Bruno Jousselin (`/in/103300`) | Handle numérico suspeito | ✅ Verificado — é vanity URL legítima (MD MM Mega Market VN). Sem mudança |
+| Souly Hamed (handle gigante) | URL possivelmente inválida | ✅ Verificado — perfil ativo (Founder THEOTHER4). Sem mudança |
+| Kfir Chervinski (prio 5/5) | Sem LinkedIn no CRM | ✅ Encontrado: `/in/kfir-chervinski-b77542` (SkillOnNet). Supabase + CSV atualizados; **falta colar na planilha** |
+| Tomer Weisman | Sem LinkedIn no CRM | 🟡 Candidato forte: `/in/tomer-weissman-4123b04` (sócio EBN, litígio, Israel — grafia "Weissman"). Confirmar com Roi antes de adicionar |
+| Oded Grinstein | Sem LinkedIn no CRM | 🟡 3 homônimos em Israel — confirmar com Roi qual é |
+| Dan Thai (CEO Pho24) | Sem LinkedIn no CRM | 🟡 Nenhum perfil público confiável ligado à Pho24/VTI — confirmar com Roi |
+| Nguyen Phan | Sem LinkedIn no CRM | 🟡 É do time Yedda (e-mail interno) — pedir a URL diretamente a ele |
+| Kham | Sem sobrenome/empresa no CRM | 🔴 Não localizável — pedir dados ao Roi |
 
-**6 contatos prioritários sem LinkedIn no CRM** (adicionar na planilha quando
-localizar os perfis): Kfir Chervinski (prioridade 5/5), Dan Thai, Nguyen Phan,
-Oded Grinstein, Tomer Weisman, Kham.
+O trigger de tier no Supabase agora tolera barra final e maiúsculas/minúsculas
+na comparação de URLs (migração `normalize_tier_url_match`).
 
 ### O que já foi ajustado no dashboard para o novo volume (10 jul 2026)
 
