@@ -6889,10 +6889,23 @@ function usePeoplePost(i) {
   input.value = p.post_text;
   if (typeof checkRoiPostInput === 'function') checkRoiPostInput(input);
   window._activePeoplePost = p;
+  // The Comment Generator lives in the Create tab — from the Radar the section
+  // is display:none, so scrollIntoView alone lands nowhere. Switch tabs first.
+  switchTab('create', { noScroll: true });
   document.getElementById('roi-comments').scrollIntoView({ behavior: 'smooth' });
   // auto-generate only when a Gemini key is available — otherwise leave prefilled
   if (localStorage.getItem('yedda_claude_key')) {
-    setTimeout(() => generateRoiComment(document.getElementById('roiCommentBtn')), 400);
+    setTimeout(async () => {
+      await generateRoiComment(document.getElementById('roiCommentBtn'));
+      const out = document.getElementById('roiCommentOutput');
+      const txt = document.getElementById('roiCommentText');
+      if (out && out.style.display !== 'none' && txt && txt.value.trim()) {
+        out.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        txt.style.transition = 'box-shadow .3s';
+        txt.style.boxShadow = '0 0 0 3px rgba(75,173,184,.5)';
+        setTimeout(() => { txt.style.boxShadow = ''; }, 1800);
+      }
+    }, 400);
   }
 }
 
