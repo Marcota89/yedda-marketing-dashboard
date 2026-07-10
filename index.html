@@ -2902,7 +2902,7 @@ textarea::placeholder {
       <div>
         <span class="eyebrow">Roi's Account · Client Radar</span>
         <h2 class="sec-title">People's Posts</h2>
-        <p class="sec-lede">Latest LinkedIn posts from CEO contacts at client accounts — delivered daily by PhantomBuster. One click sends any post to the Comment Generator below.</p>
+        <p class="sec-lede">Latest LinkedIn posts from CEO contacts at client accounts — delivered daily by the PhantomBuster automated run (all 70 tracked contacts). One click sends any post to the Comment Generator below.</p>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
         <button class="btn-outline" style="font-size:13px;padding:8px 18px;" onclick="togglePeopleManualForm()">＋ Add post manually</button>
@@ -2921,6 +2921,20 @@ textarea::placeholder {
       <div style="display:flex;gap:10px;margin-top:14px;">
         <button class="sched-gen-run" onclick="addManualPeoplePost(this)">💾 Save to radar</button>
       </div>
+    </div>
+
+    <div id="peopleFilterBar" class="reveal" style="max-width:920px;display:none;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div id="ppTierChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <select id="ppDays" class="sched-input" style="width:auto;font-size:12px;padding:6px 10px;" onchange="setPeopleFilter('days', this.value)">
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="0">All time</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft);cursor:pointer;user-select:none;">
+        <input type="checkbox" id="ppHideCommented" onchange="setPeopleFilter('hideCommented', this.checked)"> Hide commented
+      </label>
+      <span id="ppCount" style="font-size:12px;color:var(--text-soft);margin-left:auto;"></span>
     </div>
 
     <div id="peoplePostsList" class="reveal" style="max-width:920px;"></div>
@@ -6667,6 +6681,52 @@ openSettings = function() {
 
 /* ═══ PEOPLE'S POSTS — LinkedIn contact monitoring (PhantomBuster feed) ═══ */
 let _peoplePosts = [];
+// Paid-plan volume (70 contacts × 5 posts/day) needs filters — fetched once,
+// filtered client-side so switching filters never refetches.
+const _ppFilter = { tier: 'all', days: 30, hideCommented: false };
+let _ppShowMax = 30;
+
+function setPeopleFilter(key, value) {
+  if (key === 'days') _ppFilter.days = parseInt(value) || 0;
+  else if (key === 'hideCommented') _ppFilter.hideCommented = !!value;
+  else if (key === 'tier') _ppFilter.tier = value;
+  _ppShowMax = 30; // reset pagination whenever a filter changes
+  renderPeoplePosts();
+}
+
+function showMorePeoplePosts() {
+  _ppShowMax += 30;
+  renderPeoplePosts();
+}
+
+function _ppFiltered() {
+  const cutoff = _ppFilter.days > 0 ? Date.now() - _ppFilter.days * 86400000 : 0;
+  return _peoplePosts
+    .map((p, i) => ({ p, i })) // keep original index — card buttons address _peoplePosts[i]
+    .filter(({ p }) => {
+      if (_ppFilter.tier !== 'all' && p.tier !== _ppFilter.tier) return false;
+      if (_ppFilter.hideCommented && p.commented) return false;
+      if (cutoff && p.published_at && new Date(p.published_at).getTime() < cutoff) return false;
+      return true;
+    });
+}
+
+function _renderTierChips() {
+  const box = document.getElementById('ppTierChips');
+  if (!box) return;
+  const counts = { all: _peoplePosts.length };
+  _peoplePosts.forEach(p => { if (p.tier) counts[p.tier] = (counts[p.tier] || 0) + 1; });
+  const defs = [
+    ['all', 'All'], ['1-priority', '★ Priority'], ['2-client', 'Client'],
+    ['3-network', 'Network'], ['internal', 'Yedda'],
+  ];
+  box.innerHTML = defs
+    .filter(([key]) => key === 'all' || counts[key])
+    .map(([key, label]) => {
+      const active = _ppFilter.tier === key;
+      return `<button onclick="setPeopleFilter('tier','${key}')" style="font-size:12px;padding:5px 12px;border-radius:14px;cursor:pointer;border:1px solid ${active ? 'var(--teal-deep)' : 'var(--line-soft)'};background:${active ? 'var(--teal-xl)' : 'transparent'};color:${active ? 'var(--teal-deep)' : 'var(--text-soft)'};font-weight:${active ? '700' : '500'};">${label}${counts[key] ? ` · ${counts[key]}` : ''}</button>`;
+    }).join('');
+}
 
 async function loadPeoplePosts(manual) {
   const btn  = document.getElementById('peoplePostsRefreshBtn');
@@ -6693,16 +6753,19 @@ async function loadPeoplePosts(manual) {
 function renderPeoplePosts() {
   const list = document.getElementById('peoplePostsList');
   if (!list) return;
+  const bar = document.getElementById('peopleFilterBar');
+  if (bar) bar.style.display = _peoplePosts.length ? 'flex' : 'none';
   if (!_peoplePosts.length) {
     list.innerHTML = `<div class="news-empty-state">
       <h4>👥 No contact posts yet</h4>
       <ul>
-        <li>Posts arrive automatically once the PhantomBuster daily run is configured</li>
+        <li>Posts arrive automatically from the PhantomBuster daily run</li>
         <li>Or use <strong>＋ Add post manually</strong> to paste a post from any contact right now</li>
       </ul>
     </div>`;
     return;
   }
+  _renderTierChips();
   // Warm-lead signal: count commented posts per contact. 2+ engagements → the
   // relationship is warming and worth handing to Hermes. Show the CTA once per
   // contact (on their first card in the list) to avoid repetition.
@@ -6717,7 +6780,18 @@ function renderPeoplePosts() {
   });
   const _shownHandoff = {};
 
-  const cards = _peoplePosts.map((p, i) => {
+  const filtered = _ppFiltered();
+  const countEl = document.getElementById('ppCount');
+  if (countEl) countEl.textContent = `${filtered.length} of ${_peoplePosts.length} posts`;
+  if (!filtered.length) {
+    list.innerHTML = `<div class="news-empty-state">
+      <h4>🔍 No posts match the current filters</h4>
+      <p style="font-size:13px;">Try a longer time window or switch the tier back to <strong>All</strong>.</p>
+    </div>`;
+    return;
+  }
+
+  const cards = filtered.slice(0, _ppShowMax).map(({ p, i }) => {
     const who = [p.contact_name, p.contact_title, p.contact_company].filter(Boolean);
     const header = who.length
       ? `${esc(who[0])}${who.length > 1 ? ' <span style="font-weight:500;color:var(--text-soft);">— ' + esc(who.slice(1).join(' · ')) + '</span>' : ''}`
@@ -6757,7 +6831,10 @@ function renderPeoplePosts() {
       </div>
     </div>`;
   }).join('');
-  list.innerHTML = `<div class="news-results">${cards}</div>`;
+  const more = filtered.length > _ppShowMax
+    ? `<div style="text-align:center;margin-top:14px;"><button class="btn-outline" style="font-size:13px;padding:8px 22px;" onclick="showMorePeoplePosts()">Show more (${filtered.length - _ppShowMax} remaining)</button></div>`
+    : '';
+  list.innerHTML = `<div class="news-results">${cards}</div>${more}`;
 }
 
 // Tier chip — mirrors the Roi CRM tiers from the contact sheet

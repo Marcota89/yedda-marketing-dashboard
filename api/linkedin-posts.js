@@ -24,10 +24,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const r = await fetch(
-      `${TABLE}?select=*&order=published_at.desc.nullslast&limit=100`,
-      { headers: HEADERS }
-    );
+    // Paid-plan volume: 70 contacts × 5 posts/day — default 300, cap 500.
+    // Optional filters: ?days=N (published_at window), ?tier=1-priority
+    const limit = Math.min(parseInt(req.query.limit) || 300, 500);
+    let url = `${TABLE}?select=*&order=published_at.desc.nullslast&limit=${limit}`;
+    const days = parseInt(req.query.days);
+    if (days > 0) {
+      const since = new Date(Date.now() - days * 86400000).toISOString();
+      url += `&published_at=gte.${encodeURIComponent(since)}`;
+    }
+    if (req.query.tier) url += `&tier=eq.${encodeURIComponent(req.query.tier)}`;
+    const r = await fetch(url, { headers: HEADERS });
     const data = await r.json();
     if (!r.ok) return res.status(r.status).json({ error: data });
     return res.status(200).json({ posts: data });
