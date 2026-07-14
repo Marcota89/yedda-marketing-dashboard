@@ -3019,10 +3019,23 @@ textarea::placeholder {
         <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;">Generated Post — review, edit, then post on LinkedIn as Roi</label>
         <textarea id="roiPostText" rows="8" class="sched-input" style="width:100%;margin-top:8px;resize:vertical;background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(240,120,48,0.5);"></textarea>
         <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+          <button class="sched-gen-run" style="background:#F07830;font-size:13px;padding:8px 18px;" onclick="approveRoiPostForPublishing(this)">🚀 Approve &amp; auto-publish</button>
           <button class="btn-outline" onclick="copyRoiPost()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">📋 Copy Post</button>
           <button class="btn-outline" onclick="openLinkedIn()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">🔗 Open LinkedIn</button>
         </div>
         <p id="roiPostStatus" style="font-size:12px;margin-top:8px;color:#F07830;"></p>
+      </div>
+
+      <!-- Publishing queue — fed to the PhantomBuster LinkedIn Auto Poster -->
+      <div style="margin-top:26px;border-top:1px solid rgba(255,255,255,0.12);padding-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#fff;">📤 Publishing queue</h3>
+            <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);">Approved posts are published automatically to Roi's LinkedIn by PhantomBuster. Nothing is published unless it is approved here.</p>
+          </div>
+          <button class="btn-outline" style="font-size:12px;padding:6px 14px;color:#fff;border-color:rgba(255,255,255,0.3);" onclick="loadRoiPostQueue(true)">↻ Refresh</button>
+        </div>
+        <div id="roiPostQueue" style="margin-top:12px;"></div>
       </div>
     </div>
   </div>
@@ -6503,6 +6516,95 @@ function copyRoiPost() {
   if (!text) return;
   clipWrite(text, () => { document.getElementById('roiPostStatus').textContent = '📋 Copied! Paste on LinkedIn as Roi.'; });
 }
+
+/* ═══ ROI POST PUBLISHING QUEUE — feeds the PhantomBuster LinkedIn Auto Poster ═══
+   Approval IS the safety gate: /api/roi-posts?format=csv only ever exposes rows
+   with status='approved', so nothing reaches LinkedIn without a human approving. */
+let _roiQueue = [];
+
+async function approveRoiPostForPublishing(btn) {
+  const text = (document.getElementById('roiPostText').value || '').trim();
+  if (!text) { alert('Generate a post first.'); return; }
+  const type = (document.getElementById('roiPostType') || {}).value || null;
+  if (!confirm('Approve this post for automatic publishing?\n\nPhantomBuster will publish it to Roi\'s LinkedIn on the next run. It stays editable in the queue until then.')) return;
+  setLoading(btn, true, '⏳ Queueing…');
+  try {
+    const r = await fetch('/api/roi-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_text: text, post_type: type, status: 'approved' }),
+    });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error ? JSON.stringify(e.error) : `HTTP ${r.status}`); }
+    document.getElementById('roiPostStatus').textContent = '🚀 Approved — it will be published automatically on the next run.';
+    await loadRoiPostQueue(false);
+    document.getElementById('roiPostQueue').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('🚀 Post approved for auto-publishing.', 'success', 5000);
+  } catch (e) {
+    showToast('Failed to queue post: ' + e.message, 'error', 6000);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function loadRoiPostQueue(manual) {
+  const box = document.getElementById('roiPostQueue');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/roi-posts');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    _roiQueue = (await r.json()).posts || [];
+    renderRoiPostQueue();
+  } catch (e) {
+    box.innerHTML = `<p style="font-size:12px;color:rgba(255,255,255,.5);">Queue unavailable (${esc(e.message)}).</p>`;
+  }
+}
+
+function renderRoiPostQueue() {
+  const box = document.getElementById('roiPostQueue');
+  if (!box) return;
+  if (!_roiQueue.length) {
+    box.innerHTML = `<p style="font-size:12px;color:rgba(255,255,255,.45);">Nothing queued. Generate a post above and click <strong>Approve &amp; auto-publish</strong>.</p>`;
+    return;
+  }
+  const badge = {
+    approved: ['⏳ waiting to publish', '#F07830'],
+    posted:   ['✓ published', '#4BADB8'],
+    draft:    ['draft', 'rgba(255,255,255,.5)'],
+  };
+  box.innerHTML = _roiQueue.map(p => {
+    const [label, color] = badge[p.status] || [p.status, 'rgba(255,255,255,.5)'];
+    const when = p.posted_at || p.approved_at || p.created_at;
+    const date = when ? new Date(when).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+    return `
+      <div style="border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px;margin-bottom:8px;background:rgba(255,255,255,.04);">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;color:${color};">${label}${date ? ` · ${date}` : ''}</span>
+          <div style="display:flex;gap:6px;">
+            ${p.status === 'approved' ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px;color:#fff;border-color:rgba(255,255,255,.3);" onclick="unqueueRoiPost(${p.id})">✕ Cancel</button>` : ''}
+            ${p.status === 'posted' && p.post_url ? `<a href="${esc(p.post_url)}" target="_blank" rel="noopener" style="font-size:11px;color:#4BADB8;">view ↗</a>` : ''}
+          </div>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:6px;white-space:pre-wrap;">${esc(String(p.post_text).slice(0, 200))}${String(p.post_text).length > 200 ? '…' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+// Pull an approved post back out of the publish feed before PhantomBuster picks it up.
+async function unqueueRoiPost(id) {
+  if (!confirm('Cancel this post? It will not be published.')) return;
+  try {
+    const r = await fetch('/api/roi-posts', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: 'archived' }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    _roiQueue = _roiQueue.filter(p => p.id !== id);
+    renderRoiPostQueue();
+    showToast('✕ Post pulled from the publishing queue.', 'success', 4000);
+  } catch (e) {
+    showToast('Failed to cancel: ' + e.message, 'error', 6000);
+  }
+}
+setTimeout(() => loadRoiPostQueue(false), 2000);
 
 function copyRoiComment() {
   const text = document.getElementById('roiCommentText').value;
