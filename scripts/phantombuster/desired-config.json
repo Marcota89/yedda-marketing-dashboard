@@ -34,6 +34,23 @@
         "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
         "note": "One post per weekday, max. Publishes nothing when no post is approved."
       }
+    },
+    {
+      "key": "warm-engagers",
+      "agentNameMatch": "Roi Warm Engagers",
+      "note": "Warm leads: who liked the posts Roi took part in (his own published posts + posts he commented on). Feed: /api/engagers?format=csv. WEEKLY on purpose — this is the most execution-hungry agent, and the 20h/month cap is the binding constraint.",
+      "argumentOverrides": {
+        "numberOfLinesPerLaunch": 10,
+        "numberMaxOfProfiles": 50
+      },
+      "schedule": {
+        "enabled": true,
+        "hour": 10,
+        "minute": 0,
+        "timezone": "America/Sao_Paulo",
+        "daysOfWeek": ["mon"],
+        "note": "Mondays only — a weekly sweep of the week's engagement."
+      }
     }
   ]
 }
