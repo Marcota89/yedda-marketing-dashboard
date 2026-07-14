@@ -1,17 +1,15 @@
-// PhantomBuster config-as-code — applies desired-config.json to the Activity Extractor
+// PhantomBuster config-as-code — applies desired-config.json to every managed agent.
 //
 // Usage:
-//   node scripts/phantombuster/pb-sync.mjs --show               inspect agent (read-only)
+//   node scripts/phantombuster/pb-sync.mjs --show               inspect agents (read-only)
 //   node scripts/phantombuster/pb-sync.mjs --apply --dry-run    preview changes
 //   node scripts/phantombuster/pb-sync.mjs --apply              apply + verify
 //
 // Env:
 //   PHANTOMBUSTER_API_KEY  (required) — workspace API key
-//   PB_AGENT_ID            (optional) — skip name-based discovery
 //
-// The argument update and the schedule update are two separate /agents/save
-// calls, so an unexpected repeatedLaunchTimes schema never blocks the
-// profiles-per-launch change.
+// Each agent's argument and schedule are two separate /agents/save calls, so an
+// unexpected schedule schema never blocks the argument change.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -21,11 +19,13 @@ const API = 'https://api.phantombuster.com/api/v2';
 const KEY = process.env.PHANTOMBUSTER_API_KEY;
 const CONFIG = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'desired-config.json'), 'utf8'));
 
-// Keys PhantomBuster has used across Phantom versions for "profiles per launch"
-const PROFILE_KEY_ALIASES = [
-  'numberOfProfilesPerLaunch', 'numberOfLinesPerLaunch', 'numberOfProfiles',
-  'profilesPerLaunch', 'numberOfProfilesToProcess', 'spreadsheetUrlExclusionListNumberOfLinesPerLaunch',
-];
+// CRITICAL: day/dow/month must be FULLY POPULATED. Empty arrays pass API
+// validation but match no date, so the agent silently never launches (that bug
+// cost 4 days of missed runs). dow/month are string enums, not numbers.
+const ALL_DAYS   = Array.from({ length: 31 }, (_, n) => n + 1);
+const ALL_DOW    = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const ALL_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const CRON_FIELDS = ['minute', 'hour', 'day', 'dow', 'month'];
 
 const args = new Set(process.argv.slice(2));
 const MODE = args.has('--show') ? 'show' : args.has('--apply') ? 'apply' : null;
@@ -33,6 +33,10 @@ const DRY = args.has('--dry-run');
 
 if (!MODE) { console.error('Usage: pb-sync.mjs --show | --apply [--dry-run]'); process.exit(2); }
 if (!KEY) { console.error('FATAL: PHANTOMBUSTER_API_KEY env var is not set.'); process.exit(2); }
+
+const die = e => { console.error(`FATAL: ${e.message || e}`); process.exit(1); };
+process.on('unhandledRejection', die);
+process.on('uncaughtException', die);
 
 // Both header spellings are accepted across PB API versions — send both.
 const HEADERS = {
@@ -46,123 +50,103 @@ async function pb(path, opts = {}) {
   const text = await r.text();
   let body;
   try { body = JSON.parse(text); } catch { body = text; }
-  if (!r.ok) throw new Error(`${opts.method || 'GET'} ${path} → HTTP ${r.status}: ${typeof body === 'string' ? body.slice(0, 500) : JSON.stringify(body).slice(0, 500)}`);
+  if (!r.ok) throw new Error(`${opts.method || 'GET'} ${path} → HTTP ${r.status}: ${typeof body === 'string' ? body.slice(0, 400) : JSON.stringify(body).slice(0, 400)}`);
   return body;
 }
 
-function parseArgument(agent) {
-  if (agent.argument == null) return {};
-  return typeof agent.argument === 'string' ? JSON.parse(agent.argument) : agent.argument;
-}
+const parseArgument = a => a.argument == null ? {} : (typeof a.argument === 'string' ? JSON.parse(a.argument) : a.argument);
 
-async function findAgent() {
-  if (process.env.PB_AGENT_ID) return pb(`/agents/fetch?id=${encodeURIComponent(process.env.PB_AGENT_ID)}`);
-  const all = await pb('/agents/fetch-all');
-  const list = Array.isArray(all) ? all : all.agents || [];
-  const needle = CONFIG.agentNameMatch.toLowerCase();
-  const hits = list.filter(a => (a.name || '').toLowerCase().includes(needle) || (a.scriptName || '').toLowerCase().includes(needle));
+const allAgents = await pb('/agents/fetch-all');
+const agentList = Array.isArray(allAgents) ? allAgents : (allAgents.agents || []);
+
+function resolve(spec) {
+  const needle = spec.agentNameMatch.toLowerCase();
+  const hits = agentList.filter(a => (a.name || '').toLowerCase().includes(needle));
   if (!hits.length) {
-    console.error(`FATAL: no agent matching "${CONFIG.agentNameMatch}". Agents in workspace:`);
-    list.forEach(a => console.error(`  - [${a.id}] ${a.name}`));
+    console.error(`FATAL: no agent matching "${spec.agentNameMatch}". Agents in workspace:`);
+    agentList.forEach(a => console.error(`  - [${a.id}] ${a.name}`));
     process.exit(1);
   }
-  if (hits.length > 1) console.warn(`WARN: ${hits.length} agents match — using the first. Pin PB_AGENT_ID to disambiguate.`);
-  return pb(`/agents/fetch?id=${encodeURIComponent(hits[0].id)}`);
+  if (hits.length > 1) console.warn(`WARN: ${hits.length} agents match "${spec.agentNameMatch}" — using [${hits[0].id}].`);
+  return hits[0].id;
 }
 
-function summarize(agent) {
-  const arg = parseArgument(agent);
-  console.log(`\nAgent: [${agent.id}] ${agent.name}`);
-  console.log(`launchType: ${agent.launchType ?? '(unset)'}`);
-  console.log(`repeatedLaunchTimes: ${JSON.stringify(agent.repeatedLaunchTimes ?? null)}`);
-  console.log('argument:');
-  console.log(JSON.stringify(arg, null, 2));
-  return arg;
-}
+const specs = CONFIG.agents || [];
+if (!specs.length) { console.error('FATAL: desired-config.json has no "agents".'); process.exit(2); }
 
-const die = e => { console.error(`FATAL: ${e.message || e}`); process.exit(1); };
-process.on('unhandledRejection', die);
-process.on('uncaughtException', die);
+let failures = 0;
 
-const agent = await findAgent();
-const currentArg = summarize(agent);
+for (const spec of specs) {
+  const id = resolve(spec);
+  const agent = await pb(`/agents/fetch?id=${encodeURIComponent(id)}`);
+  const currentArg = parseArgument(agent);
 
-if (MODE === 'show') process.exit(0);
+  console.log(`\n=== ${spec.key} — [${agent.id}] ${agent.name} ===`);
+  if (MODE === 'show') {
+    console.log(`launchType: ${agent.launchType ?? '(unset)'}`);
+    console.log(`repeatedLaunchTimes: ${JSON.stringify(agent.repeatedLaunchTimes ?? null)}`);
+    console.log(`argument: ${JSON.stringify(currentArg, null, 2)}`);
+    continue;
+  }
 
-// ── 1. Argument update: profiles per launch (+ explicit overrides) ──
-const newArg = { ...currentArg, ...(CONFIG.argumentOverrides || {}) };
-const profileKey = PROFILE_KEY_ALIASES.find(k => k in currentArg);
-if (profileKey) {
-  newArg[profileKey] = CONFIG.profilesPerLaunch;
-} else if (!Object.keys(CONFIG.argumentOverrides || {}).length) {
-  console.error(`\nFATAL: none of the known profiles-per-launch keys exist in this agent's argument.`);
-  console.error(`Known aliases: ${PROFILE_KEY_ALIASES.join(', ')}`);
-  console.error(`Run --show, find the right key above, and pin it in desired-config.json "argumentOverrides".`);
-  process.exit(1);
-}
+  // ── 1. Argument ──
+  const overrides = spec.argumentOverrides || {};
+  const newArg = { ...currentArg, ...overrides };
+  const argChanged = JSON.stringify(newArg) !== JSON.stringify(currentArg);
+  const changedKeys = Object.keys(overrides).filter(k => JSON.stringify(currentArg[k]) !== JSON.stringify(overrides[k]));
+  console.log(`[1/2] argument: ${argChanged ? `set ${changedKeys.join(', ')}` : 'already at desired state'}`);
+  if (argChanged && !DRY) {
+    await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, argument: newArg }) });
+    console.log('      saved.');
+  }
 
-const argChanged = JSON.stringify(newArg) !== JSON.stringify(currentArg);
-console.log(`\n[1/2] argument: ${argChanged ? `set ${profileKey || Object.keys(CONFIG.argumentOverrides).join(', ')} → ${profileKey ? CONFIG.profilesPerLaunch : 'overrides'}` : 'already at desired state'}`);
-
-if (argChanged && !DRY) {
-  await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, argument: newArg }) });
-  console.log('      saved.');
-}
-
-// ── 2. Schedule update: daily launch ──
-// CRITICAL (found Jul 14 2026): day/dow/month must be FULLY POPULATED. Empty
-// arrays pass API validation but match no date, so the agent silently never
-// launches (we lost 4 days of scheduled runs to exactly this). `dow` and
-// `month` are string enums per the official schema — not numbers.
-const ALL_DAYS   = Array.from({ length: 31 }, (_, n) => n + 1);
-const ALL_DOW    = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-const ALL_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-
-const s = CONFIG.schedule || {};
-if (s.enabled) {
-  const desired = {
-    minute: [s.minute ?? 0], hour: [s.hour ?? 8],
-    day: ALL_DAYS, dow: ALL_DOW, month: ALL_MONTHS,
-    timezone: s.timezone || 'America/Sao_Paulo',
-    isSimplePresetEnabled: false,
-  };
-  const cur = agent.repeatedLaunchTimes || {};
-  const already = agent.launchType === 'repeatedly'
-    && JSON.stringify(cur.hour) === JSON.stringify(desired.hour)
-    && JSON.stringify(cur.minute) === JSON.stringify(desired.minute)
-    // a schedule with an empty day/dow/month set never fires — treat as NOT set
-    && (cur.day || []).length === 31 && (cur.dow || []).length === 7 && (cur.month || []).length === 12;
-  console.log(`[2/2] schedule: ${already ? 'already daily at desired time' : `set launchType=repeatedly, daily ${String(s.hour).padStart(2, '0')}:${String(s.minute).padStart(2, '0')} ${desired.timezone}`}`);
-  if (!already && !DRY) {
-    try {
-      await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, launchType: 'repeatedly', repeatedLaunchTimes: desired }) });
-      console.log('      saved.');
-    } catch (e) {
-      console.error(`      SCHEDULE FAILED (argument update was NOT rolled back): ${e.message}`);
-      console.error('      → set the schedule once in the PB UI, run --show, and mirror the exact shape here.');
-      process.exit(1);
+  // ── 2. Schedule ──
+  const s = spec.schedule || {};
+  if (!s.enabled) {
+    console.log('[2/2] schedule: disabled in desired-config.json — skipped');
+  } else {
+    const dow = (s.daysOfWeek && s.daysOfWeek.length) ? s.daysOfWeek : ALL_DOW;
+    const desired = {
+      minute: [s.minute ?? 0], hour: [s.hour ?? 8],
+      day: ALL_DAYS, dow, month: ALL_MONTHS,
+      timezone: s.timezone || 'America/Sao_Paulo',
+      isSimplePresetEnabled: false,
+    };
+    const cur = agent.repeatedLaunchTimes || {};
+    const sameCron = CRON_FIELDS.every(k => JSON.stringify(cur[k]) === JSON.stringify(desired[k]));
+    const already = agent.launchType === 'repeatedly' && sameCron;
+    console.log(`[2/2] schedule: ${already ? 'already at desired state' : `set repeatedly ${String(s.hour).padStart(2, '0')}:${String(s.minute ?? 0).padStart(2, '0')} ${desired.timezone} [${dow.join(',')}]`}`);
+    if (!already && !DRY) {
+      try {
+        await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, launchType: 'repeatedly', repeatedLaunchTimes: desired }) });
+        console.log('      saved.');
+      } catch (e) {
+        console.error(`      SCHEDULE FAILED (argument update was NOT rolled back): ${e.message}`);
+        failures++;
+        continue;
+      }
     }
   }
-} else {
-  console.log('[2/2] schedule: disabled in desired-config.json — skipped');
+
+  if (DRY) continue;
+
+  // ── Verify: prove the cron can actually MATCH a date. Checking only
+  //    launchType==='repeatedly' is what let the empty-array bug ship silently.
+  const after = await pb(`/agents/fetch?id=${encodeURIComponent(agent.id)}`);
+  const afterArg = parseArgument(after);
+  const rlt = after.repeatedLaunchTimes || {};
+  const cronFires = CRON_FIELDS.every(k => Array.isArray(rlt[k]) && rlt[k].length > 0);
+  const okArg = Object.entries(overrides).every(([k, v]) => JSON.stringify(afterArg[k]) === JSON.stringify(v));
+  const okSched = !s.enabled || (after.launchType === 'repeatedly' && cronFires);
+
+  if (s.enabled && after.launchType === 'repeatedly' && !cronFires) {
+    console.error(`      SCHEDULE WILL NEVER FIRE — empty cron field(s): ${CRON_FIELDS.filter(k => !(rlt[k] || []).length).join(', ')}`);
+  }
+  console.log(`VERIFY: ${Object.keys(overrides).map(k => `${k}=${JSON.stringify(afterArg[k])}`).join(' ')} launchType=${after.launchType} cronFires=${cronFires}`);
+  if (!okArg || !okSched) { console.error('VERIFY FAILED'); failures++; }
 }
 
 if (DRY) { console.log('\nDRY RUN — nothing written.'); process.exit(0); }
-
-// ── Verify ──
-// The schedule check must prove the cron can actually MATCH a date. Checking
-// only launchType==='repeatedly' is what let the empty-array bug ship silently.
-const after = await pb(`/agents/fetch?id=${encodeURIComponent(agent.id)}`);
-const afterArg = parseArgument(after);
-const okArg = !profileKey || afterArg[profileKey] === CONFIG.profilesPerLaunch;
-const rlt = after.repeatedLaunchTimes || {};
-const cronFires = ['minute', 'hour', 'day', 'dow', 'month'].every(k => Array.isArray(rlt[k]) && rlt[k].length > 0);
-const okSched = !s.enabled || (after.launchType === 'repeatedly' && cronFires);
-if (s.enabled && after.launchType === 'repeatedly' && !cronFires) {
-  const empty = ['minute', 'hour', 'day', 'dow', 'month'].filter(k => !(rlt[k] || []).length);
-  console.error(`\nSCHEDULE WILL NEVER FIRE — empty cron field(s): ${empty.join(', ')}`);
-}
-console.log(`\nVERIFY: profilesPerLaunch=${profileKey ? afterArg[profileKey] : 'n/a'} launchType=${after.launchType} cronFires=${cronFires}`);
-console.log(`repeatedLaunchTimes: ${JSON.stringify(after.repeatedLaunchTimes ?? null)}`);
-if (!okArg || !okSched) { console.error('VERIFY FAILED'); process.exit(1); }
-console.log('SYNC OK');
+if (MODE === 'show') process.exit(0);
+console.log(failures ? `\n${failures} AGENT(S) FAILED` : '\nSYNC OK');
+process.exit(failures ? 1 : 0);

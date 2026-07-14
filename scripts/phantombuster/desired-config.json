@@ -1,12 +1,39 @@
 {
-  "$comment": "Desired state for the PhantomBuster LinkedIn Activity Extractor. Applied by pb-sync.mjs (locally or via GitHub Actions). Edit + push to main to reconfigure the Phantom.",
-  "agentNameMatch": "LinkedIn Activity Extractor",
-  "profilesPerLaunch": 75,
-  "argumentOverrides": {},
-  "schedule": {
-    "enabled": true,
-    "hour": 8,
-    "minute": 0,
-    "timezone": "America/Sao_Paulo"
-  }
+  "$comment": "Desired state for every PhantomBuster agent. Applied by pb-sync.mjs (locally or via GitHub Actions). Edit + push to main to reconfigure.",
+  "$scheduleWarning": "day/dow/month MUST stay fully populated. Empty arrays pass API validation but match no date, so the agent silently never runs (cost us 4 days of missed runs on Jul 10-14 2026). dow/month are string enums, not numbers.",
+
+  "agents": [
+    {
+      "key": "activity-extractor",
+      "agentNameMatch": "LinkedIn Activity Extractor",
+      "note": "Radar: scrapes the tracked contacts' latest posts -> webhook -> dashboard.",
+      "argumentOverrides": {
+        "numberOfLinesPerLaunch": 75
+      },
+      "schedule": {
+        "enabled": true,
+        "hour": 8,
+        "minute": 0,
+        "timezone": "America/Sao_Paulo",
+        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+        "note": "Weekdays only. Frees ~28% of the 20h/month execution cap for the other agents; contacts rarely post at weekends anyway."
+      }
+    },
+    {
+      "key": "roi-auto-poster",
+      "agentNameMatch": "Roi Auto Poster",
+      "note": "Publishes Roi's APPROVED personal posts. The feed (/api/roi-posts?format=csv) only ever exposes status='approved', so approval in the dashboard is the safety gate. Text-only: the Auto Poster does not support images.",
+      "argumentOverrides": {
+        "numberOfLinesPerLaunch": 1
+      },
+      "schedule": {
+        "enabled": true,
+        "hour": 9,
+        "minute": 30,
+        "timezone": "America/Sao_Paulo",
+        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+        "note": "One post per weekday, max. Publishes nothing when no post is approved."
+      }
+    }
+  ]
 }
