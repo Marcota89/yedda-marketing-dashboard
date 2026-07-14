@@ -87,7 +87,23 @@ Phantoms, checar runs, buscar resultados e ajustar configs por conversa.
    `https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts`
 4. (Opcional) rodar o **LinkedIn Profile Scraper** uma vez na mesma planilha
 
-### Higiene da planilha de contatos — status 10 jul 2026
+### ✅ DECISÃO (14 jul 2026): 4 contatos ficam FORA da varredura
+
+Por decisão do Marco, estes **não** entram na planilha e **não** são monitorados.
+A planilha permanece com **70 contatos** — e o Supabase (`contact_tiers`) foi
+alinhado a ela, para o sistema não afirmar que monitora quem não monitora:
+
+| Contato | Situação |
+|---|---|
+| **Philippe Broianigo** | Continua na planilha com a URL antiga, que está **morta** (o perfil atual é `/in/philippe-broianigo-ba0921300`). Na prática não gera posts. |
+| **Kfir Chervinski** | Removido do `contact_tiers` — nunca esteve na planilha |
+| **Tomer Weissman** | Removido do `contact_tiers` — nunca esteve na planilha |
+| **Oded Grinstein** | Removido do `contact_tiers` — nunca esteve na planilha |
+
+Para reverter no futuro: colar a URL na coluna A da planilha e inserir a linha
+correspondente em `contact_tiers` (o trigger cuida do resto).
+
+### Higiene da planilha de contatos — status histórico (10 jul 2026)
 
 | Contato | Situação | Resolução |
 |---|---|---|
