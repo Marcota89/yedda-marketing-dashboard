@@ -6112,10 +6112,16 @@ async function _roiCommentCore({ postText, style, apiKey, activePost, onStatus }
   // Author context — present when the post came from a People's Posts card
   const _ap = activePost;
   const _fromCard = _ap && _ap.post_text && postText.slice(0, 80) === String(_ap.post_text).slice(0, 80);
+  // On a repost the text was written by someone else and merely SHARED by Roi's
+  // contact. The comment lands on the contact's share, so it must address the
+  // CONTACT — never the original author, who Roi does not know.
+  const _repostNote = (_fromCard && _ap.is_repost && _ap.post_author)
+    ? `- IMPORTANT: this is a RESHARE. The text below was written by ${_ap.post_author}, not by ${_ap.contact_name || 'the contact'}. Your comment goes on ${(_ap.contact_name || 'the contact').split(' ')[0]}'s reshare — engage with the content, but address ${(_ap.contact_name || 'the contact').split(' ')[0]}, never ${_ap.post_author}. Do not congratulate the contact for something they did not do.\n`
+    : '';
   const authorContext = _fromCard ? `
-WHO WROTE THIS POST (from Roi's CRM — use it):
-- Author: ${_ap.contact_name || 'unknown'}${_ap.contact_title ? ', ' + _ap.contact_title : ''}${_ap.contact_company ? ' at ' + _ap.contact_company : ''}
-- Roi knows this person personally — a warm relationship that has been dormant and is being reactivated. Address them by FIRST NAME where it fits naturally.
+WHO ROI IS REPLYING TO (from Roi's CRM — use it):
+- Contact: ${_ap.contact_name || 'unknown'}${_ap.contact_title ? ', ' + _ap.contact_title : ''}${_ap.contact_company ? ' at ' + _ap.contact_company : ''}
+${_repostNote}- Roi knows this person personally — a warm relationship that has been dormant and is being reactivated. Address them by FIRST NAME where it fits naturally.
 - This comment is a relationship touchpoint as much as thought leadership. Warmth first.
 ` : '';
 
@@ -6878,6 +6884,7 @@ function renderPeoplePosts() {
           ${p.post_url ? `<a href="${esc(p.post_url)}" target="_blank" rel="noopener">View post ↗</a>` : ''}
           ${p.source === 'manual' ? '<span style="opacity:.7;">added manually</span>' : ''}
         </div>
+        ${p.is_repost && p.post_author ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;">↻ reshared from <strong>${esc(p.post_author)}</strong> — comment addresses ${esc((p.contact_name || '').split(' ')[0] || 'the contact')}</div>` : ''}
         ${text ? `<div class="news-snippet">${esc(text.slice(0, 220))}${text.length > 220 ? '…' : ''}</div>` : ''}
         ${rejNote}
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">

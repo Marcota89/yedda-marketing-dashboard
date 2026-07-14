@@ -304,8 +304,17 @@ function normalize(r) {
     }
   }
 
+  // On a repost, PhantomBuster's `author` is the ORIGINAL author — NOT our
+  // contact. Keep it in post_author; the DB trigger restores the real contact
+  // identity (name/title/company) from the CRM using contact_profile_url, which
+  // always points at the profile we actually scraped.
+  const sharedPostUrl = pick('sharedPostUrl', 'shared_post_url');
+  const action = String(pick('action') || '');
+  const isRepost = !!sharedPostUrl || /shared|compartilh|repost/i.test(action);
+
   return {
     post_url:            postUrl,
+    post_author:         pick('author', 'fullName', 'name', 'profileName'),
     contact_name:        pick('fullName', 'contact_name', 'name', 'profileName', 'author'),
     contact_title:       pick('title', 'headline', 'contact_title', 'occupation', 'job'),
     contact_company:     pick('company', 'companyName', 'contact_company'),
@@ -315,6 +324,8 @@ function normalize(r) {
     published_at:        publishedAt,
     likes_count:         parseInt(pick('likeCount', 'likesCount', 'likes')) || 0,
     comments_count:      parseInt(pick('commentCount', 'commentsCount', 'comments')) || 0,
+    shared_post_url:     sharedPostUrl,
+    is_repost:           isRepost,
     source:              r._manual ? 'manual' : 'phantombuster',
     updated_at:          new Date().toISOString(),
   };
