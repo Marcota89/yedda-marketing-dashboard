@@ -110,19 +110,28 @@ if (argChanged && !DRY) {
 }
 
 // ── 2. Schedule update: daily launch ──
+// CRITICAL (found Jul 14 2026): day/dow/month must be FULLY POPULATED. Empty
+// arrays pass API validation but match no date, so the agent silently never
+// launches (we lost 4 days of scheduled runs to exactly this). `dow` and
+// `month` are string enums per the official schema — not numbers.
+const ALL_DAYS   = Array.from({ length: 31 }, (_, n) => n + 1);
+const ALL_DOW    = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const ALL_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
 const s = CONFIG.schedule || {};
 if (s.enabled) {
-  // Cron-style arrays (mirrors PB's "advanced" scheduling UI). If PB rejects
-  // this shape, the argument update above has already landed — fix the shape
-  // here, or set the schedule once in the UI and read it back with --show.
   const desired = {
     minute: [s.minute ?? 0], hour: [s.hour ?? 8],
-    day: [], dow: [], month: [],
+    day: ALL_DAYS, dow: ALL_DOW, month: ALL_MONTHS,
     timezone: s.timezone || 'America/Sao_Paulo',
+    isSimplePresetEnabled: false,
   };
+  const cur = agent.repeatedLaunchTimes || {};
   const already = agent.launchType === 'repeatedly'
-    && JSON.stringify(agent.repeatedLaunchTimes?.hour) === JSON.stringify(desired.hour)
-    && JSON.stringify(agent.repeatedLaunchTimes?.minute) === JSON.stringify(desired.minute);
+    && JSON.stringify(cur.hour) === JSON.stringify(desired.hour)
+    && JSON.stringify(cur.minute) === JSON.stringify(desired.minute)
+    // a schedule with an empty day/dow/month set never fires — treat as NOT set
+    && (cur.day || []).length === 31 && (cur.dow || []).length === 7 && (cur.month || []).length === 12;
   console.log(`[2/2] schedule: ${already ? 'already daily at desired time' : `set launchType=repeatedly, daily ${String(s.hour).padStart(2, '0')}:${String(s.minute).padStart(2, '0')} ${desired.timezone}`}`);
   if (!already && !DRY) {
     try {
@@ -141,11 +150,19 @@ if (s.enabled) {
 if (DRY) { console.log('\nDRY RUN — nothing written.'); process.exit(0); }
 
 // ── Verify ──
+// The schedule check must prove the cron can actually MATCH a date. Checking
+// only launchType==='repeatedly' is what let the empty-array bug ship silently.
 const after = await pb(`/agents/fetch?id=${encodeURIComponent(agent.id)}`);
 const afterArg = parseArgument(after);
 const okArg = !profileKey || afterArg[profileKey] === CONFIG.profilesPerLaunch;
-const okSched = !s.enabled || after.launchType === 'repeatedly';
-console.log(`\nVERIFY: profilesPerLaunch=${profileKey ? afterArg[profileKey] : 'n/a'} launchType=${after.launchType}`);
+const rlt = after.repeatedLaunchTimes || {};
+const cronFires = ['minute', 'hour', 'day', 'dow', 'month'].every(k => Array.isArray(rlt[k]) && rlt[k].length > 0);
+const okSched = !s.enabled || (after.launchType === 'repeatedly' && cronFires);
+if (s.enabled && after.launchType === 'repeatedly' && !cronFires) {
+  const empty = ['minute', 'hour', 'day', 'dow', 'month'].filter(k => !(rlt[k] || []).length);
+  console.error(`\nSCHEDULE WILL NEVER FIRE — empty cron field(s): ${empty.join(', ')}`);
+}
+console.log(`\nVERIFY: profilesPerLaunch=${profileKey ? afterArg[profileKey] : 'n/a'} launchType=${after.launchType} cronFires=${cronFires}`);
 console.log(`repeatedLaunchTimes: ${JSON.stringify(after.repeatedLaunchTimes ?? null)}`);
 if (!okArg || !okSched) { console.error('VERIFY FAILED'); process.exit(1); }
 console.log('SYNC OK');
