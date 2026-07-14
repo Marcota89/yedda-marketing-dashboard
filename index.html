@@ -2940,6 +2940,18 @@ textarea::placeholder {
     </div>
 
     <div id="peoplePostsList" class="reveal" style="max-width:920px;"></div>
+
+    <!-- Warm engagers — people who liked the posts Roi took part in -->
+    <div id="engagersPanel" class="reveal" style="max-width:920px;margin-top:34px;display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0;font-size:16px;">🔥 Warm engagers</h3>
+          <p style="margin:4px 0 0;font-size:12px;color:var(--text-soft);">People who engaged with posts Roi took part in — they have likely seen him. Collected weekly by PhantomBuster.</p>
+        </div>
+        <button class="btn-outline" style="font-size:12px;padding:6px 14px;" onclick="loadEngagers(true)">↻ Refresh</button>
+      </div>
+      <div id="engagersList" style="margin-top:12px;"></div>
+    </div>
   </div>
 </section>
 
@@ -7193,6 +7205,87 @@ async function copyApprovedComment(i) {
   }
 }
 
+/* ═══ WARM ENGAGERS — people who engaged with posts Roi took part in ═══ */
+let _engagers = [];
+
+async function loadEngagers(manual) {
+  const panel = document.getElementById('engagersPanel');
+  const list = document.getElementById('engagersList');
+  if (!panel || !list) return;
+  try {
+    const r = await fetch('/api/engagers');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    _engagers = (await r.json()).engagers || [];
+  } catch (e) {
+    if (manual) showToast('Could not load engagers: ' + e.message, 'error', 5000);
+    _engagers = [];
+  }
+  // Hide the panel entirely until the weekly sweep has actually found someone.
+  panel.style.display = _engagers.length ? 'block' : 'none';
+  renderEngagers();
+}
+
+function renderEngagers() {
+  const list = document.getElementById('engagersList');
+  if (!list) return;
+  // Known contacts are already on the radar — they are not new leads.
+  const leads = _engagers.filter(e => !e.is_known_contact);
+  if (!leads.length) {
+    list.innerHTML = `<p style="font-size:12px;color:var(--text-soft);">No new people yet — everyone who engaged is already a tracked contact.</p>`;
+    return;
+  }
+  list.innerHTML = `<div class="news-results">${leads.slice(0, 30).map(e => `
+    <div class="news-item" style="cursor:default;${e.handoff_sent ? 'opacity:.7;' : ''}">
+      <div class="news-item-body" style="width:100%;">
+        <div class="news-item-title">
+          ${esc(e.full_name || 'Unknown')}
+          ${e.times_seen > 1 ? `<span style="color:var(--orange);font-size:11px;font-weight:700;"> · engaged ${e.times_seen}×</span>` : ''}
+          ${e.handoff_sent ? ' <span style="color:var(--orange);font-size:11px;font-weight:700;">→ in Hermes queue</span>' : ''}
+        </div>
+        <div class="news-item-meta">
+          ${e.headline ? `<span>${esc(String(e.headline).slice(0, 80))}</span>` : ''}
+          ${e.company ? `<span>${esc(e.company)}</span>` : ''}
+          ${e.profile_url ? `<a href="${esc(e.profile_url)}" target="_blank" rel="noopener">Profile ↗</a>` : ''}
+          ${e.source_post_url ? `<a href="${esc(e.source_post_url)}" target="_blank" rel="noopener">Engaged here ↗</a>` : ''}
+        </div>
+        ${!e.handoff_sent ? `<div style="margin-top:8px;">
+          <button class="btn-outline" style="font-size:12px;padding:6px 14px;border-color:var(--orange);color:var(--orange);" onclick="sendEngagerToHermes('${esc(e.profile_url)}')">🔥 Send warm lead to Hermes</button>
+        </div>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function sendEngagerToHermes(profileUrl) {
+  const e = _engagers.find(x => x.profile_url === profileUrl);
+  if (!e) return;
+  if (!confirm(`Send ${e.full_name || 'this person'} to the Hermes prospecting queue?\n\nThey engaged with a post Roi took part in. Status is set to "pending" for review before any outreach.`)) return;
+  try {
+    // Reuse the existing Hermes handoff on the radar endpoint.
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'handoff',
+        prospect_name: e.full_name || 'Unknown',
+        company: e.company || 'Unknown',
+        title: e.headline || null,
+        contact_profile_url: e.profile_url,
+        contact_name: e.full_name || null,
+        problem_text: `Warm LinkedIn engager — reacted to a post Roi took part in (${e.source_post_url || 'n/a'}). Engaged ${e.times_seen || 1}x.`,
+      }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await fetch('/api/engagers', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_url: e.profile_url, handoff_sent: true }),
+    });
+    e.handoff_sent = true;
+    renderEngagers();
+    showToast('🔥 Lead sent to Hermes (status: pending).', 'success', 5000);
+  } catch (err) {
+    showToast('Failed to send to Hermes: ' + err.message, 'error', 6000);
+  }
+}
+
 async function sendToHermes(i) {
   const p = _peoplePosts[i];
   if (!p) return;
@@ -7362,6 +7455,7 @@ function restoreGeneratedPosts() {
 restoreGeneratedPosts();
 setTimeout(loadRemotePosts, 1200); // pull cloud posts after local restore settles
 setTimeout(() => loadPeoplePosts(false), 1600); // pull people's posts (PhantomBuster feed)
+setTimeout(() => loadEngagers(false), 2400);    // warm engagers (weekly PhantomBuster sweep)
 _applyCollapseState();
 
 /* ── Generated Posts Management ── */
