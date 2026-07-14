@@ -23,6 +23,35 @@ Com o plano pago, os limites do trial caem. A configuração do Phantom agora é
    ```
    (cola a chave quando pedir)
 
+## Os 3 agents gerenciados (14 jul 2026)
+
+| Agent | ID | Quando roda | O que faz |
+|---|---|---|---|
+| **LinkedIn Activity Extractor** | `2486032159169760` | Seg–sex, 08:00 | Raspa os posts dos 73 contatos → webhook → Radar |
+| **Roi Auto Poster** | `5602106599388257` | Seg–sex, 09:30 | Publica no LinkedIn do Roi os posts **aprovados** no dashboard (1/dia, máx.) |
+| **Roi Warm Engagers** | `4834961874375109` | Segundas, 10:00 | Coleta quem engajou nos posts em que o Roi participou → leads mornos → Hermes |
+
+**Orçamento (teto de 20h/mês):** o Extractor passou de 7 → 5 dias/semana, liberando
+~28% da quota — é o que abre espaço para os outros dois. Auto Poster custa segundos
+por run; o Warm Engagers é semanal justamente por ser o mais caro.
+
+### ⚠️ Armadilha crítica do agendamento (custou 4 dias de runs perdidos)
+
+`repeatedLaunchTimes` precisa de `day`/`dow`/`month` **totalmente preenchidos**.
+Arrays vazios passam na validação da API — o agendamento *parece* configurado — mas
+o cron não casa com nenhuma data e **o agent nunca dispara, silenciosamente**.
+`dow` e `month` são enums de texto (`"mon"`, `"jan"`), não números. O `pb-sync`
+agora verifica `cronFires` (todos os campos não-vazios) em vez de confiar só no
+`launchType`.
+
+### Segurança da publicação automática
+
+O Auto Poster lê `/api/roi-posts?format=csv`, que **só expõe posts com
+`status='approved'`**. Nada chega ao LinkedIn do Roi sem alguém aprovar
+explicitamente no dashboard — a aprovação é a trava. Limitação do Phantom: só
+texto e links (**não suporta imagens**) e só perfil pessoal — por isso serve aos
+posts pessoais do Roi, e não aos posts da empresa (que levam imagem).
+
 ### Como funciona a partir daí
 
 - **Estado desejado:** `scripts/phantombuster/desired-config.json`
