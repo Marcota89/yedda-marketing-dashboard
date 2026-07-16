@@ -5457,7 +5457,14 @@ Return JSON:
     }
   }
 
-  const bodyText = unwrapJsonBody(parsed.content || parsed.body || '');
+  let bodyText = unwrapJsonBody(parsed.content || parsed.body || '');
+
+  // Brand-vocabulary gate: rewrite once, and never let a violation pass silently.
+  const _enf = await _enforceBrandVoice(bodyText, apiKey, brand);
+  bodyText = _enf.text;
+  if (_enf.violations.length) {
+    showToast(`⚠️ Post contains forbidden brand words (${_enf.violations.join(', ')}) — edit before publishing`, 'error', 8000);
+  }
 
   return {
     name: 'Yedda.ai',
@@ -5990,6 +5997,13 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
   let bodyText = parsed.body || parsed.content || '';
   bodyText = unwrapJsonBody(bodyText);
 
+  // Brand-vocabulary gate: rewrite once, and never let a violation pass silently.
+  const _enf = await _enforceBrandVoice(bodyText, apiKey, brand);
+  bodyText = _enf.text;
+  if (_enf.violations.length) {
+    showToast(`⚠️ Post contains forbidden brand words (${_enf.violations.join(', ')}) — edit before publishing`, 'error', 8000);
+  }
+
   return {
     name: "Yedda.ai",
     headline: "Intelligence Augmentation · AI + IA for Enterprise Operations",
@@ -6367,6 +6381,59 @@ AUDIENCE: ${b.audience ? b.audience.primary : ''}
 TONE: ${b.audience ? b.audience.tone : ''}`;
 }
 
+/* ── OUTPUT ENFORCEMENT: forbidden brand vocabulary ─────────────────────────
+   Prompt rules alone leak — a published post shipped with "real time" because
+   no generator validated its OUTPUT (only the Roi comment generator had a
+   retry, and only for AI-tells). Every post generator now runs its final text
+   through this gate: detect → one rewrite pass → flag loudly if still dirty. */
+const _FORBIDDEN_FALLBACK = ['revolutionary', 'game-changing', 'leverage', 'AI-powered',
+  'real-time', 'disruptive', 'cutting-edge', 'best-in-class', 'seamless', 'robust',
+  'artificial intelligence', 'utilize', 'synergy'];
+
+function _forbiddenHits(text, brand) {
+  const base = (brand && Array.isArray(brand.forbidden_words) && brand.forbidden_words.length)
+    ? brand.forbidden_words : _FORBIDDEN_FALLBACK;
+  // "real-time" must also catch the spaced and fused spellings
+  const list = base.flatMap(w => /^real[- ]?time$/i.test(w) ? ['real-time', 'real time', 'realtime'] : [w]);
+  const lower = String(text || '').toLowerCase();
+  return [...new Set(list.filter(w => {
+    const esc = w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|[^a-z])${esc}([^a-z]|$)`).test(lower);
+  }))];
+}
+
+// Returns { text, violations } — text possibly rewritten, violations whatever
+// survived. Callers must surface non-empty violations to the human.
+async function _enforceBrandVoice(text, apiKey, brand) {
+  const hits = _forbiddenHits(text, brand);
+  if (!hits.length || !apiKey) return { text, violations: hits };
+  try {
+    const ctrl = new AbortController();
+    const tId = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: `You are a brand-voice editor. Rewrite the text to remove these forbidden terms: ${hits.join(', ')}.
+Replacement guidance: "real-time"/"real time" → "continuous", "as it happens" or "automatically"; "AI" alone or "artificial intelligence" → "Visual AI"; other forbidden words → plain concrete language.
+Change ONLY what is needed to remove the forbidden terms. Keep length, structure, line breaks, tone, numbers and hashtags identical. Output only the rewritten text — nothing else.` }] },
+        contents: [{ role: 'user', parts: [{ text }] }],
+        generationConfig: { maxOutputTokens: 2048, temperature: 0.2 },
+      }),
+    });
+    clearTimeout(tId);
+    if (res.ok) {
+      const data = await res.json();
+      const fixed = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      if (fixed) {
+        const still = _forbiddenHits(fixed, brand);
+        if (still.length < hits.length) return { text: fixed, violations: still };
+      }
+    }
+  } catch (_) { /* fall through — original text + its violations */ }
+  return { text, violations: hits };
+}
+
 // Builds the authoritative image-generation suffix, per content pillar.
 function _imageStyleSuffix(b, pillar) {
   if (!b || !b.image_style) return '';
@@ -6505,8 +6572,17 @@ Return ONLY the post text (and poll options if poll type). No preamble, no expla
     clearTimeout(tId);
     if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
     const data = await res.json();
-    const post = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    let post = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
     if (!post) throw new Error('Empty response');
+
+    // Brand-vocabulary gate — Roi's personal posts follow the same forbidden list.
+    const _enfBrand = await _getBrandPrompts();
+    const _enf = await _enforceBrandVoice(post, apiKey, _enfBrand);
+    post = _enf.text;
+    if (_enf.violations.length) {
+      showToast(`⚠️ Post contains forbidden brand words (${_enf.violations.join(', ')}) — edit before publishing`, 'error', 8000);
+    }
+
     textEl.value = post;
     statusEl.className = 'modal-status st-ok';
     statusEl.textContent = postType === 'poll'

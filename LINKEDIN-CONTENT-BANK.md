@@ -78,7 +78,7 @@ SLIDE 2:
 **#1 — Shrinkage**
 $55B lost annually in retail.
 Most detected at month-end inventory.
-Your cameras caught it in real time.
+Your cameras caught it as it happened.
 The data just wasn't connected to anyone.
 
 SLIDE 3:
@@ -145,7 +145,7 @@ We layered Yedda onto their existing CCTV network — no new cameras, no hardwar
 
 The fix wasn't technology. It was information.
 
-With real-time queue and flow data:
+With continuous queue and flow data:
 
 ✦ Fitting room wait times dropped — fast service incidents up 84%
 ✦ Staff positioning was adjusted using live heatmaps — not shift-end reports
@@ -193,7 +193,7 @@ That's what operational intelligence actually means — not a dashboard with bet
 
 What's the longest lag between an operational event and your team finding out about it?
 
-#OperationalExcellence #RetailOps #SupplyChain #RealTimeData #Yedda #LogisticsTech
+#OperationalExcellence #RetailOps #SupplyChain #OperationalIntelligence #Yedda #LogisticsTech
 
 ---
 
@@ -323,7 +323,7 @@ When a shrinkage event, safety incident, or compliance violation happens in one 
 How long before your team knows about it?
 
 **[POLL OPTIONS]**
-- Same shift (real time or near real time)
+- Same shift (within minutes, not days)
 - Same day (end-of-day report)
 - Same week (weekly report or audit)
 - Month-end (inventory or review cycle)
@@ -391,7 +391,7 @@ That's not a projection. That's a result — measured over 12 months across a 30
 
 What changed:
 → Shrinkage alerts moved from month-end inventory to the moment of detection
-→ Compliance monitoring shifted from weekly audits to per-shift real time
+→ Compliance monitoring shifted from weekly audits to every single shift
 → Loss prevention team response time dropped from 48 hours to 4 minutes average
 
 What didn't change:
@@ -437,7 +437,7 @@ The incident is the failure to act on it.
 
 What we see in operations running with Yedda:
 
-✦ Real-time alerts on precursor behaviors: unsecured loads, zone violations, equipment path deviations
+✦ Immediate alerts on precursor behaviors: unsecured loads, zone violations, equipment path deviations
 ✦ Near-miss detection logged automatically — no verbal report required
 ✦ Pattern analysis across shifts: "This same near-miss type occurred 7 times in the last 14 days at loading bay 3"
 
@@ -524,7 +524,7 @@ Drop "BASELINE" below and I'll send you the calculation template for your indust
 
 ### Batch B — Social Proof (1 per 2 weeks)
 - Hypermarket queue management: 55s reduction, 18-point NPS lift — deep dive
-- Manufacturing PPE compliance: from weekly audit to per-shift real-time
+- Manufacturing PPE compliance: from weekly audit to every shift, automatically
 - Logistics dock productivity: throughput increase without headcount addition
 - UAE market: multi-language compliance monitoring across 3 store formats
 
@@ -535,7 +535,7 @@ Drop "BASELINE" below and I'll send you the calculation template for your indust
 - "The best operational insight I've heard from a field team this quarter" — community sourcing post
 
 ### Batch D — Product Education (1 per 2 weeks)
-- Abbey in action: what real-time anomaly detection looks like on a live feed
+- Abbey in action: what continuous anomaly detection looks like on a camera feed
 - Kai's weekly brief: what an operational intelligence summary actually contains
 - The difference between a security alert and an operational alert
 - How Yedda integrates with existing tools (no new platform to learn)

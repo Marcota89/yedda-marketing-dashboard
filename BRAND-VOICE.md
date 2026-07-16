@@ -45,7 +45,7 @@ Slightly above midpoint toward simple. Uses domain terminology (CCTV, computer v
 
 **Evidence:**
 - "Computer vision AI layered onto existing CCTV" — explains the tech in operational terms, not engineering terms
-- "Turns passive footage into real-time operational intelligence" — translates tech into business value
+- "Turns passive footage into continuous operational intelligence" — translates tech into business value
 - Never uses: RAG, embeddings, LLM, inference, transformer — deliberately absent
 - Does use: shrinkage, throughput, compliance, workforce — domain-standard operations vocabulary
 
@@ -210,15 +210,15 @@ Beneath the authority is a step-by-step logic: "Here's the problem. Here's why e
 **"Your operations are already talking. We help you listen."**
 
 ### Value Propositions
-1. Turn passive CCTV infrastructure into real-time operational intelligence — no new hardware
+1. Turn passive CCTV infrastructure into continuous operational intelligence — no new hardware
 2. Measurable results from week one: shrinkage, throughput, safety, compliance, all in one platform
 3. Proven in retail, logistics, and manufacturing across APAC, Middle East, Europe, and LATAM
 
 ### Elevator Pitch
-Yedda.ai helps enterprise operations teams in retail, logistics, and manufacturing unlock the data already flowing through their existing CCTV infrastructure. Using computer vision AI, we turn passive footage into live operational intelligence — flagging shrinkage as it happens, optimizing throughput in real time, and surfacing safety and compliance risks before they become incidents. No new hardware. Measurable ROI starting week one. Deployed across markets in APAC, Middle East, Europe, and LATAM.
+Yedda.ai helps enterprise operations teams in retail, logistics, and manufacturing unlock the data already flowing through their existing CCTV infrastructure. Using Visual AI, we turn passive footage into continuous operational intelligence — flagging shrinkage as it happens, optimizing throughput automatically, and surfacing safety and compliance risks before they become incidents. No new hardware. Measurable ROI starting week one. Deployed across markets in APAC, Middle East, Europe, and LATAM.
 
 ### Boilerplate
-Yedda.ai is an operational intelligence platform that activates the untapped data in enterprise CCTV infrastructure. Using computer vision AI layered onto existing hardware, Yedda gives operations leaders in retail, logistics, and manufacturing real-time visibility into shrinkage, workforce productivity, throughput, and compliance — without replacing people or ripping out systems. Customers report 54% reductions in fraud incidents, 55-second checkout wait reductions, and ROI of 180–400% with payback under 9 months. Yedda is deployed across global operations in Malaysia, UAE, Germany, Spain, the Philippines, Thailand, India, and Brazil.
+Yedda.ai is an operational intelligence platform that activates the untapped data in enterprise CCTV infrastructure. Using computer vision AI layered onto existing hardware, Yedda gives operations leaders in retail, logistics, and manufacturing continuous visibility into shrinkage, workforce productivity, throughput, and compliance — without replacing people or ripping out systems. Customers report 54% reductions in fraud incidents, 55-second checkout wait reductions, and ROI of 180–400% with payback under 9 months. Yedda is deployed across global operations in Malaysia, UAE, Germany, Spain, the Philippines, Thailand, India, and Brazil.
 
 ---
 
@@ -241,7 +241,7 @@ That's an information architecture problem.
 
 The retailers closing the gap between footage and action aren't buying new surveillance systems — they're activating the data inside the systems they already own.
 
-Real-time. No new hardware. Starting week one.
+Alerts as they happen. No new hardware. Starting week one.
 
 What operational blind spot costs your team the most time every week?"
 
@@ -255,7 +255,7 @@ What operational blind spot costs your team the most time every week?"
 "We couldn't load that dashboard. Our team has been notified. In the meantime, your live feeds are still running."
 
 **8. Customer Thank You:**
-"You're now connected to live operational intelligence. Your team will start seeing real-time alerts within the first shift. If anything looks off — reach out directly. We're watching alongside you."
+"You're now connected to continuous operational intelligence. Your team will start seeing alerts within the first shift. If anything looks off — reach out directly. We're watching alongside you."
 
 ---
 
