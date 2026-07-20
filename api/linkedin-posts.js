@@ -61,8 +61,12 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'invalid webhook secret' });
 
     const rows = extractRows(req.body).map(normalize).filter(r => r.post_url);
-    if (!rows.length)
+    if (!rows.length) {
+      // PhantomBuster removes the webhook URL on any 4xx — an empty or failed
+      // run must be acknowledged with 200, never rejected.
+      if (isPhantomWebhook(req.body)) return res.status(200).json({ ok: true, count: 0 });
       return res.status(400).json({ error: 'no rows with a post URL found in payload' });
+    }
 
     // on_conflict=post_url: re-scrapes update engagement counts but never touch
     // roi_comment / commented (those columns are absent from this payload)
@@ -253,6 +257,14 @@ async function handleReject(req, res) {
   });
   if (!r.ok) { const err = await r.json().catch(() => ({})); return res.status(r.status).json({ error: err }); }
   return res.status(200).json({ ok: true });
+}
+
+// PhantomBuster completion payloads carry agent/container metadata even when
+// there is no result data. Anything with those markers must never get a 4xx.
+function isPhantomWebhook(body) {
+  if (!body || typeof body !== 'object') return false;
+  return ['agentId', 'agentName', 'containerId', 'exitCode', 'exitMessage', 'resultObject', 'launchDuration']
+    .some(k => k in body);
 }
 
 // Accepts the three payload shapes that reach this endpoint:

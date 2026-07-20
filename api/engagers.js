@@ -62,7 +62,13 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const rows = extractRows(req.body).map(normalize).filter(e => e.profile_url);
-    if (!rows.length) return res.status(400).json({ error: 'no rows with a profile URL found' });
+    // PhantomBuster treats any 4xx as a broken webhook and REMOVES the URL from
+    // the agent (it did — Jul 20 2026). Its completion pings can legitimately
+    // carry no rows (failed or empty run), so those must get a 200.
+    if (!rows.length) {
+      if (isPhantomWebhook(req.body)) return res.status(200).json({ ok: true, count: 0 });
+      return res.status(400).json({ error: 'no rows with a profile URL found' });
+    }
 
     // Dedupe within the payload — the same person can like several posts.
     const byUrl = new Map();
@@ -114,6 +120,14 @@ function extractRows(body) {
     } catch (_) { return []; }
   }
   return [];
+}
+
+// PhantomBuster completion payloads carry agent/container metadata even when
+// there is no result data. Anything with those markers must never get a 4xx.
+function isPhantomWebhook(body) {
+  if (!body || typeof body !== 'object') return false;
+  return ['agentId', 'agentName', 'containerId', 'exitCode', 'exitMessage', 'resultObject', 'launchDuration']
+    .some(k => k in body);
 }
 
 // Field names differ between the Likers Export and the Commenters Export.

@@ -54,7 +54,14 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     // Auto Poster webhook: it reports what it published. Match rows back by text
     // and flip them to posted, so they leave the feed.
+    // CRITICAL: on days with an empty queue the Auto Poster still pings this
+    // webhook with no rows. PhantomBuster removes the webhook URL on any 4xx,
+    // so those pings must be acknowledged with 200 — never fall through to the
+    // queue-a-post branch (whose validation would answer 400).
     const rows = extractRows(req.body);
+    if (isPhantomWebhook(req.body) && !rows.length) {
+      return res.status(200).json({ ok: true, marked: 0 });
+    }
     if (req.body?.action === 'webhook' || rows.length) {
       const marked = [];
       for (const row of rows) {
@@ -121,6 +128,14 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// PhantomBuster completion payloads carry agent/container metadata even when
+// there is no result data. Anything with those markers must never get a 4xx.
+function isPhantomWebhook(body) {
+  if (!body || typeof body !== 'object') return false;
+  return ['agentId', 'agentName', 'containerId', 'exitCode', 'exitMessage', 'resultObject', 'launchDuration']
+    .some(k => k in body);
 }
 
 // Same tolerant shapes the LinkedIn radar webhook accepts.
