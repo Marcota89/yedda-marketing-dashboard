@@ -3081,9 +3081,9 @@ textarea::placeholder {
     <hr class="modal-divider">
     <div class="modal-section">
       <div class="modal-section-title">✨ Gemini AI — Auto Post Generator <span style="color:#dc2626;font-size:11px;font-weight:700;margin-left:6px;">REQUIRED</span></div>
-      <p class="modal-desc">Add your Google Gemini API key to enable automatic LinkedIn post generation from selected news articles. Get your key at <strong>aistudio.google.com → Get API Key</strong>.</p>
+      <p class="modal-desc">A shared Gemini key is already built into the platform — generation works out of the box, no setup needed. Add a personal key here only if you want to use your own quota; it overrides the shared one for this browser. Get a key at <strong>aistudio.google.com → Get API Key</strong>.</p>
       <div class="modal-field">
-        <label for="claudeApiKey">Gemini API Key</label>
+        <label for="claudeApiKey">Gemini API Key <span style="font-weight:400;color:var(--text-soft);">(optional)</span></label>
         <div class="token-field-wrap">
           <input type="password" id="claudeApiKey" class="modal-input" placeholder="AIza...">
           <button type="button" class="token-vis-btn" onclick="toggleTokenVis('claudeApiKey', this)" title="Show/hide key">👁</button>
@@ -4698,7 +4698,7 @@ function toggleTokenVis(inputId, btn) {
 
 /* ── SETTINGS PROGRESS INDICATOR ── */
 function updateSettingsProgress() {
-  const hasGemini = !!localStorage.getItem('yedda_claude_key');
+  const hasGemini = !!_getGeminiKeySync();
   const hasApify  = !!localStorage.getItem('yedda_apify');
   const gEl = document.getElementById('spGemini');
   const aEl = document.getElementById('spApify');
@@ -5483,7 +5483,7 @@ async function _generateWeekPostsDirectInner(btn) {
   const persona  = document.getElementById('sgPersona').value;
   const topic    = document.getElementById('sgTopic').value.trim();
   const pillars  = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
-  const apiKey   = localStorage.getItem('yedda_claude_key');
+  const apiKey   = await _getGeminiKey();
   const articles = window._apifyArticles || [];
 
   if (!startVal || !endVal) { showToast('⚠️ Select start and end dates.', 'error'); return; }
@@ -5782,7 +5782,7 @@ async function useSelectedNews(btn) {
   topicEl.value = selected.map(a => a.title).join(' / ');
   window._selectedSources = sourceLines;
 
-  const apiKey = localStorage.getItem('yedda_claude_key');
+  const apiKey = await _getGeminiKey();
   if (!apiKey) {
     document.getElementById('apifyNewsResults').insertAdjacentHTML('beforeend',
       `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--orange);">⚠️ No Gemini API key found — open Settings and add your Google AI Studio key to auto-generate posts. Sources added to the prompt form below.</div>`);
@@ -6097,7 +6097,7 @@ async function generateRoiComment(btn) {
   const outputEl = document.getElementById('roiCommentOutput');
   const textEl = document.getElementById('roiCommentText');
   const statusEl = document.getElementById('roiCommentStatus');
-  const apiKey = localStorage.getItem('yedda_claude_key') || '';
+  const apiKey = await _getGeminiKey();
 
   if (!postText) { alert('Paste a LinkedIn post first.'); return; }
   const isUrl = /^https?:\/\//i.test(postText) && !postText.includes('\n') && postText.length < 500;
@@ -6337,6 +6337,31 @@ async function _getRoiVoice() {
   return _roiVoiceCache;
 }
 
+/* ═══ SHARED GEMINI KEY ═══════════════════════════════════════════════════════
+   The Gemini key is a PLATFORM setting (Vercel env GEMINI_API_KEY served by
+   /api/gemini-key), so every user shares it — Marco updates it once, Roi reflects
+   it with no per-browser step. Precedence: a personal key pasted in Settings
+   (localStorage) wins; otherwise the shared platform key is used.
+   Use `await _getGeminiKey()` everywhere instead of reading localStorage. */
+let _platformGeminiKey; // undefined = not fetched, null = none configured
+async function _getPlatformGeminiKey() {
+  if (_platformGeminiKey !== undefined) return _platformGeminiKey;
+  try {
+    const r = await fetch('/api/gemini-key');
+    _platformGeminiKey = r.ok ? ((await r.json()).key || null) : null;
+  } catch (_) { _platformGeminiKey = null; }
+  return _platformGeminiKey;
+}
+async function _getGeminiKey() {
+  const personal = localStorage.getItem('yedda_claude_key');
+  if (personal) return personal;               // a user's own pasted key wins
+  return (await _getPlatformGeminiKey()) || ''; // else the shared platform key
+}
+// Synchronous best-effort for hot paths that already primed the cache above.
+function _getGeminiKeySync() {
+  return localStorage.getItem('yedda_claude_key') || _platformGeminiKey || '';
+}
+
 // ── SINGLE SOURCE OF TRUTH: company brand rules (MAS-synced) ──────────
 // One canonical set of proof points / forbidden words / audience / image
 // style, consumed by every company-voice generator. Fixes the drift where
@@ -6437,7 +6462,7 @@ async function generateRoiPost(btn) {
   const textEl = document.getElementById('roiPostText');
   const statusEl = document.getElementById('roiPostStatus');
 
-  const apiKey = localStorage.getItem('yedda_claude_key');
+  const apiKey = await _getGeminiKey();
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
 
   setLoading(btn, true, '⏳ Generating…');
@@ -7141,7 +7166,7 @@ async function generateForApproval(i) {
   const p = _peoplePosts[i];
   if (!p) return;
   if (!p.post_text) { alert('This post has no text captured — open it on LinkedIn, copy the text and use "Add post manually".'); return; }
-  const apiKey = localStorage.getItem('yedda_claude_key') || '';
+  const apiKey = await _getGeminiKey();
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
 
   showToast('⏳ Drafting comment in Roi\'s voice…', 'info', 3000);
@@ -7240,7 +7265,7 @@ async function rejectComment(i) {
 async function regenerateApproval(i) {
   const p = _peoplePosts[i];
   if (!p || !p.post_text) return;
-  const apiKey = localStorage.getItem('yedda_claude_key') || '';
+  const apiKey = await _getGeminiKey();
   if (!apiKey) { alert('Gemini API key required. Add it in Settings.'); return; }
   const ta = document.getElementById(`approveText-${i}`);
   if (ta) ta.value = '⏳ Regenerating…';
@@ -7399,7 +7424,7 @@ function usePeoplePost(i) {
   switchTab('create', { noScroll: true });
   document.getElementById('roi-comments').scrollIntoView({ behavior: 'smooth' });
   // auto-generate only when a Gemini key is available — otherwise leave prefilled
-  if (localStorage.getItem('yedda_claude_key')) {
+  if (_getGeminiKeySync()) {
     setTimeout(async () => {
       await generateRoiComment(document.getElementById('roiCommentBtn'));
       const out = document.getElementById('roiCommentOutput');
@@ -7525,6 +7550,9 @@ restoreGeneratedPosts();
 setTimeout(loadRemotePosts, 1200); // pull cloud posts after local restore settles
 setTimeout(() => loadPeoplePosts(false), 1600); // pull people's posts (PhantomBuster feed)
 setTimeout(() => loadEngagers(false), 2400);    // warm engagers (weekly PhantomBuster sweep)
+// Prime the shared platform Gemini key early so sync guards + Settings status
+// reflect it without a per-user step. Refreshes the Settings badge when it lands.
+_getPlatformGeminiKey().then(() => { try { updateSettingsProgress(); } catch (_) {} });
 _applyCollapseState();
 
 /* ── Generated Posts Management ── */
@@ -7894,7 +7922,7 @@ async function generatePostImage(btn, i) {
   const status = _genStatus(area, 'Preparing…', '~15–30s');
   if (area) area.style.display = 'block';
 
-  const apiKey = localStorage.getItem('yedda_claude_key');
+  const apiKey = await _getGeminiKey();
   // Cinematic, brand-consistent suffix from the single source of truth (with a
   // safe inline fallback if the endpoint is unavailable). Pillar-aware styling.
   const _brand = await _getBrandPrompts();
