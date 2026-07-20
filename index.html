@@ -3031,23 +3031,11 @@ textarea::placeholder {
         <label style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;">Generated Post — review, edit, then post on LinkedIn as Roi</label>
         <textarea id="roiPostText" rows="8" class="sched-input" style="width:100%;margin-top:8px;resize:vertical;background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(240,120,48,0.5);"></textarea>
         <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
-          <button class="sched-gen-run" style="background:#F07830;font-size:13px;padding:8px 18px;" onclick="approveRoiPostForPublishing(this)">🚀 Approve &amp; auto-publish</button>
-          <button class="btn-outline" onclick="copyRoiPost()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">📋 Copy Post</button>
+          <button class="sched-gen-run" style="background:#F07830;font-size:13px;padding:8px 18px;" onclick="copyRoiPost()">📋 Copy Post</button>
           <button class="btn-outline" onclick="openLinkedIn()" style="font-size:13px;padding:8px 18px;color:#fff;border-color:rgba(255,255,255,0.3);">🔗 Open LinkedIn</button>
         </div>
+        <p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.55);">Roi reviews, copies the text, and posts it from his own LinkedIn account.</p>
         <p id="roiPostStatus" style="font-size:12px;margin-top:8px;color:#F07830;"></p>
-      </div>
-
-      <!-- Publishing queue — fed to the PhantomBuster LinkedIn Auto Poster -->
-      <div style="margin-top:26px;border-top:1px solid rgba(255,255,255,0.12);padding-top:18px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div>
-            <h3 style="margin:0;font-size:15px;color:#fff;">📤 Publishing queue</h3>
-            <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);">Approved posts are published automatically to Roi's LinkedIn by PhantomBuster. Nothing is published unless it is approved here.</p>
-          </div>
-          <button class="btn-outline" style="font-size:12px;padding:6px 14px;color:#fff;border-color:rgba(255,255,255,0.3);" onclick="loadRoiPostQueue(true)">↻ Refresh</button>
-        </div>
-        <div id="roiPostQueue" style="margin-top:12px;"></div>
       </div>
     </div>
   </div>
@@ -6606,8 +6594,13 @@ function copyRoiPost() {
 }
 
 /* ═══ ROI POST PUBLISHING QUEUE — feeds the PhantomBuster LinkedIn Auto Poster ═══
-   Approval IS the safety gate: /api/roi-posts?format=csv only ever exposes rows
-   with status='approved', so nothing reaches LinkedIn without a human approving. */
+   DORMANT (Jul 20 2026): Roi posts manually (copy/paste) because every agent
+   runs on Marco's LinkedIn session — auto-publishing would post on the wrong
+   profile. The #roiPostQueue element and the "Approve & auto-publish" button are
+   removed from the DOM, so these functions are no-ops (they guard for missing
+   elements). Kept intact: re-add the HTML block + button and re-enable the
+   roi-auto-poster agent once Roi's own session is connected. Backend + api
+   (/api/roi-posts) stay live and were fully verified in prod. */
 let _roiQueue = [];
 
 async function approveRoiPostForPublishing(btn) {

@@ -103,7 +103,18 @@ for (const spec of specs) {
   // ── 2. Schedule ──
   const s = spec.schedule || {};
   if (!s.enabled) {
-    console.log('[2/2] schedule: disabled in desired-config.json — skipped');
+    // disabled must be ENFORCED, not skipped: an agent already on 'repeatedly'
+    // would keep firing. Force it back to manual so the config is the source of
+    // truth (e.g. Roi Auto Poster stays off until Roi's own session is connected).
+    if (agent.launchType === 'repeatedly') {
+      console.log('[2/2] schedule: disabled — forcing launchType=manually (was repeatedly)');
+      if (!DRY) {
+        await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, launchType: 'manually' }) });
+        console.log('      saved.');
+      }
+    } else {
+      console.log('[2/2] schedule: disabled in desired-config.json — already manual');
+    }
   } else {
     const dow = (s.daysOfWeek && s.daysOfWeek.length) ? s.daysOfWeek : ALL_DOW;
     const desired = {
@@ -137,7 +148,9 @@ for (const spec of specs) {
   const rlt = after.repeatedLaunchTimes || {};
   const cronFires = CRON_FIELDS.every(k => Array.isArray(rlt[k]) && rlt[k].length > 0);
   const okArg = Object.entries(overrides).every(([k, v]) => JSON.stringify(afterArg[k]) === JSON.stringify(v));
-  const okSched = !s.enabled || (after.launchType === 'repeatedly' && cronFires);
+  const okSched = s.enabled
+    ? (after.launchType === 'repeatedly' && cronFires)
+    : (after.launchType !== 'repeatedly'); // disabled must NOT be on a repeating schedule
 
   if (s.enabled && after.launchType === 'repeatedly' && !cronFires) {
     console.error(`      SCHEDULE WILL NEVER FIRE — empty cron field(s): ${CRON_FIELDS.filter(k => !(rlt[k] || []).length).join(', ')}`);

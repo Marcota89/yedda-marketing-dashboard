@@ -22,17 +22,17 @@
     {
       "key": "roi-auto-poster",
       "agentNameMatch": "Roi Auto Poster",
-      "note": "Publishes Roi's APPROVED personal posts. The feed (/api/roi-posts?format=csv) only ever exposes status='approved', so approval in the dashboard is the safety gate. Text-only: the Auto Poster does not support images.",
+      "note": "Publishes Roi's APPROVED personal posts. DISABLED (Jul 20 2026): every agent is connected to MARCO's LinkedIn session, so this would publish on Marco's profile, not Roi's. Roi's posting stays MANUAL (copy/paste) until Roi's OWN li_at cookie is connected to this agent via the PhantomBuster Chrome extension. TO RE-ENABLE: connect Roi's session, then set schedule.enabled=true and push.",
       "argumentOverrides": {
         "numberOfLinesPerLaunch": 1
       },
       "schedule": {
-        "enabled": true,
+        "enabled": false,
         "hour": 9,
         "minute": 30,
         "timezone": "America/Sao_Paulo",
         "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-        "note": "One post per weekday, max. Publishes nothing when no post is approved."
+        "note": "Disabled until Roi's own LinkedIn session is connected — see note above. When enabled: one post per weekday, max."
       }
     },
     {
