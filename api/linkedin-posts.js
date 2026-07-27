@@ -52,6 +52,7 @@ export default async function handler(req, res) {
     // stays manual, so the real gate is who holds Roi's LinkedIn login. A PIN
     // becomes a prerequisite only when auto-posting is introduced later.
     if (req.body && req.body.action === 'set-policy') return handleSetPolicy(req, res);
+    if (req.body && req.body.action === 'set-stars')  return handleSetStars(req, res);
     if (req.body && req.body.action === 'approve')    return handleApprove(req, res);
     if (req.body && req.body.action === 'reject')     return handleReject(req, res);
 
@@ -223,6 +224,43 @@ async function handleSetPolicy(req, res) {
     return res.status(r.status).json({ error: err });
   }
   return res.status(200).json({ ok: true, approval_policy: policy });
+}
+
+// Set a contact's treatment priority (1-5 stars). Roi's manual call — writes the
+// durable value to contact_tiers (future scrapes inherit via trigger) AND stamps
+// every existing post from that contact, mirroring handleSetPolicy.
+async function handleSetStars(req, res) {
+  const b = req.body || {};
+  const stars = parseInt(b.stars, 10);
+  if (!(stars >= 1 && stars <= 5))
+    return res.status(400).json({ error: 'stars must be an integer from 1 to 5' });
+
+  const url  = (b.contact_profile_url || b.profile_url || '').trim();
+  const name = (b.contact_name || '').trim();
+  if (!url && !name)
+    return res.status(400).json({ error: 'contact_profile_url or contact_name required' });
+
+  if (url) {
+    await fetch(`${TABLE_TIERS}?on_conflict=profile_url`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ profile_url: url, stars, ...(name ? { contact_name: name } : {}) }]),
+    }).catch(() => {});
+  }
+
+  const filter = url
+    ? `contact_profile_url=eq.${encodeURIComponent(url)}`
+    : `contact_name=eq.${encodeURIComponent(name)}`;
+  const r = await fetch(`${TABLE}?${filter}`, {
+    method: 'PATCH',
+    headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ stars, updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    return res.status(r.status).json({ error: err });
+  }
+  return res.status(200).json({ ok: true, stars });
 }
 
 // Approve a pending comment (optionally with Roi's edited text). Ready to post.

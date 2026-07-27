@@ -2936,8 +2936,15 @@ textarea::placeholder {
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft);cursor:pointer;user-select:none;">
         <input type="checkbox" id="ppHideCommented" onchange="setPeopleFilter('hideCommented', this.checked)"> Hide commented
       </label>
+      <select id="ppSort" class="sched-input" style="width:auto;font-size:12px;padding:6px 10px;" onchange="setPeopleFilter('sort', this.value)" title="Sort: Priority puts higher-star contacts first">
+        <option value="newest" selected>Sort: Newest</option>
+        <option value="priority">Sort: Priority ★</option>
+      </select>
       <span id="ppCount" style="font-size:12px;color:var(--text-soft);margin-left:auto;"></span>
     </div>
+
+    <!-- ⭐ Priority attention — untreated posts from Roi's 4-5 star contacts -->
+    <div id="peoplePriorityAttention" class="reveal" style="max-width:920px;display:none;margin-bottom:16px;"></div>
 
     <div id="peoplePostsList" class="reveal" style="max-width:920px;"></div>
 
@@ -6917,13 +6924,14 @@ openSettings = function() {
 let _peoplePosts = [];
 // Paid-plan volume (70 contacts × 5 posts/day) needs filters — fetched once,
 // filtered client-side so switching filters never refetches.
-const _ppFilter = { tier: 'all', days: 30, hideCommented: false };
+const _ppFilter = { tier: 'all', days: 30, hideCommented: false, sort: 'newest' };
 let _ppShowMax = 30;
 
 function setPeopleFilter(key, value) {
   if (key === 'days') _ppFilter.days = parseInt(value) || 0;
   else if (key === 'hideCommented') _ppFilter.hideCommented = !!value;
   else if (key === 'tier') _ppFilter.tier = value;
+  else if (key === 'sort') _ppFilter.sort = value === 'priority' ? 'priority' : 'newest';
   _ppShowMax = 30; // reset pagination whenever a filter changes
   renderPeoplePosts();
 }
@@ -6935,7 +6943,7 @@ function showMorePeoplePosts() {
 
 function _ppFiltered() {
   const cutoff = _ppFilter.days > 0 ? Date.now() - _ppFilter.days * 86400000 : 0;
-  return _peoplePosts
+  const out = _peoplePosts
     .map((p, i) => ({ p, i })) // keep original index — card buttons address _peoplePosts[i]
     .filter(({ p }) => {
       if (_ppFilter.tier !== 'all' && p.tier !== _ppFilter.tier) return false;
@@ -6943,6 +6951,14 @@ function _ppFiltered() {
       if (cutoff && p.published_at && new Date(p.published_at).getTime() < cutoff) return false;
       return true;
     });
+  // Priority sort: higher-star contacts first, newest within the same rating.
+  // (The API already returns newest-first, so 'newest' needs no re-sort.)
+  if (_ppFilter.sort === 'priority') {
+    out.sort((a, b) =>
+      ((b.p.stars ?? 3) - (a.p.stars ?? 3)) ||
+      (new Date(b.p.published_at || 0) - new Date(a.p.published_at || 0)));
+  }
+  return out;
 }
 
 function _renderTierChips() {
@@ -7001,6 +7017,7 @@ function renderPeoplePosts() {
   }
   _renderTierChips();
   renderApprovalQueue();
+  renderPriorityAttention();
   // Warm-lead signal: count commented posts per contact. 2+ engagements → the
   // relationship is warming and worth handing to Hermes. Show the CTA once per
   // contact (on their first card in the list) to avoid repetition.
@@ -7085,7 +7102,7 @@ function renderPeoplePosts() {
     return `
     <div class="news-item" style="cursor:default;${isPosted ? 'opacity:.72;' : ''}">
       <div class="news-item-body" style="width:100%;">
-        <div class="news-item-title">${tier}${policy}${header}${statusBadge}${handoffBadge}</div>
+        <div class="news-item-title">${_starRating(p, i)}${tier}${policy}${header}${statusBadge}${handoffBadge}</div>
         <div class="news-item-meta">
           ${date ? `<span>${date}</span>` : ''}
           <span>👍 ${p.likes_count || 0} · 💬 ${p.comments_count || 0}</span>
@@ -7119,6 +7136,86 @@ function _tierChip(tier) {
   };
   const m = map[tier] || [tier, 'var(--text-soft)', 'var(--line-soft)'];
   return `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;margin-right:6px;color:${m[1]};background:${m[2]};vertical-align:middle;">${esc(m[0])}</span>`;
+}
+
+// ── Star priority — Roi's manual treatment ranking (1-5) ─────────────────────
+// Every contact starts at ★3 (user decision — no CRM auto-mapping). Clicking
+// the Nth star sets that contact's priority; it applies to all their posts,
+// current and future (trigger stamps it on new scrapes).
+function _starRating(p, i) {
+  const n = p.stars ?? 3;
+  let html = '';
+  for (let s = 1; s <= 5; s++) {
+    html += `<span onclick="setStars(${i}, ${s})" title="Set ${p.contact_name || 'contact'}'s treatment priority: ${s} star${s > 1 ? 's' : ''}" style="cursor:pointer;color:${s <= n ? 'var(--orange)' : 'var(--line)'};font-size:13px;user-select:none;">${s <= n ? '★' : '☆'}</span>`;
+  }
+  return `<span style="display:inline-flex;gap:1px;margin-right:7px;vertical-align:middle;" aria-label="priority ${n} of 5">${html}</span>`;
+}
+
+// Set a contact's stars (optimistic across all their posts; reverts on failure).
+async function setStars(i, stars) {
+  const p = _peoplePosts[i];
+  if (!p || !(stars >= 1 && stars <= 5)) return;
+  const key = p.contact_profile_url || p.contact_name;
+  const prev = {};
+  _peoplePosts.forEach(q => {
+    if ((q.contact_profile_url || q.contact_name) === key) { prev[q.post_url] = q.stars; q.stars = stars; }
+  });
+  renderPeoplePosts();
+  try {
+    const r = await fetch('/api/linkedin-posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-stars', stars,
+        contact_profile_url: p.contact_profile_url || null, contact_name: p.contact_name || null }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    showToast(`${'★'.repeat(stars)}${'☆'.repeat(5 - stars)} ${p.contact_name || 'Contact'} set to priority ${stars}.`, 'success', 4000);
+  } catch (e) {
+    _peoplePosts.forEach(q => { if (q.post_url in prev) q.stars = prev[q.post_url]; });
+    renderPeoplePosts();
+    showToast('Failed to set priority: ' + e.message, 'error', 6000);
+  }
+}
+
+// ⭐ Priority attention — untreated posts from ★4+ contacts, surfaced above the
+// feed so "what do I handle first?" is answered before any scrolling. Pending /
+// approved items are excluded (they already live in the approval queue and the
+// card states); this block is strictly "no decision made yet".
+function renderPriorityAttention() {
+  const box = document.getElementById('peoplePriorityAttention');
+  if (!box) return;
+  const cutoff = _ppFilter.days > 0 ? Date.now() - _ppFilter.days * 86400000 : 0;
+  const items = _peoplePosts
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) =>
+      (p.stars ?? 3) >= 4 &&
+      !p.commented &&
+      (!p.comment_status || p.comment_status === 'none' || p.comment_status === 'rejected') &&
+      (!cutoff || !p.published_at || new Date(p.published_at).getTime() >= cutoff))
+    .sort((a, b) =>
+      ((b.p.stars ?? 3) - (a.p.stars ?? 3)) ||
+      (new Date(b.p.published_at || 0) - new Date(a.p.published_at || 0)))
+    .slice(0, 5);
+
+  if (!items.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="border:1px solid var(--teal);border-radius:12px;padding:14px 16px;background:var(--teal-xl);">
+      <h3 style="margin:0 0 10px;font-size:14px;color:var(--ink);">⭐ Priority attention <span style="font-weight:500;color:var(--text-soft);">— posts from your top contacts, untouched</span></h3>
+      ${items.map(({ p, i }) => {
+        const date = p.published_at ? new Date(p.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+        const who = [p.contact_name, p.contact_title].filter(Boolean).join(' — ');
+        const genBtn = p.approval_policy === 'auto'
+          ? `<button class="news-use-btn" style="font-size:11px;padding:4px 12px;" onclick="usePeoplePost(${i})">💬 Comment</button>`
+          : `<button class="news-use-btn" style="font-size:11px;padding:4px 12px;" onclick="generateForApproval(${i})">💬 For approval</button>`;
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line-soft);flex-wrap:wrap;">
+          ${_starRating(p, i)}
+          <span style="font-size:13px;font-weight:600;flex:1;min-width:180px;">${esc(who || 'Unknown contact')}
+            <span style="font-weight:400;color:var(--text-soft);font-size:12px;"> · ${date}${p.post_url ? ` · <a href="${esc(p.post_url)}" target="_blank" rel="noopener">view ↗</a>` : ''}</span></span>
+          ${genBtn}
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 // ── Approval policy — the "Roi button" on each card ──────────────────────────
