@@ -6,9 +6,10 @@
     {
       "key": "activity-extractor",
       "agentNameMatch": "LinkedIn Activity Extractor",
-      "note": "Radar: scrapes the tracked contacts' latest posts -> webhook -> dashboard.",
+      "note": "Radar: scrapes the tracked contacts' latest posts -> webhook -> dashboard. reprocessAll (Watcher mode) is REQUIRED for daily monitoring: without it the phantom processes each profile ONCE and every later run exits in ~20s with 'All inputs have already been processed' — the radar silently froze on Jul 15-27 2026 exactly this way.",
       "argumentOverrides": {
-        "numberOfLinesPerLaunch": 75
+        "numberOfLinesPerLaunch": 75,
+        "reprocessAll": true
       },
       "schedule": {
         "enabled": true,
