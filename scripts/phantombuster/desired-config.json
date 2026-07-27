@@ -1,7 +1,6 @@
 {
   "$comment": "Desired state for every PhantomBuster agent. Applied by pb-sync.mjs (locally or via GitHub Actions). Edit + push to main to reconfigure.",
   "$scheduleWarning": "day/dow/month MUST stay fully populated. Empty arrays pass API validation but match no date, so the agent silently never runs (cost us 4 days of missed runs on Jul 10-14 2026). dow/month are string enums, not numbers.",
-
   "agents": [
     {
       "key": "activity-extractor",
@@ -16,9 +15,16 @@
         "hour": 8,
         "minute": 0,
         "timezone": "America/Sao_Paulo",
-        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+        "daysOfWeek": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri"
+        ],
         "note": "Weekdays only. Frees ~28% of the 20h/month execution cap for the other agents; contacts rarely post at weekends anyway."
-      }
+      },
+      "webhook": "https://yedda-marketing-dashboard.vercel.app/api/linkedin-posts"
     },
     {
       "key": "roi-auto-poster",
@@ -32,9 +38,16 @@
         "hour": 9,
         "minute": 30,
         "timezone": "America/Sao_Paulo",
-        "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+        "daysOfWeek": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri"
+        ],
         "note": "Disabled until Roi's own LinkedIn session is connected — see note above. When enabled: one post per weekday, max."
-      }
+      },
+      "webhook": "https://yedda-marketing-dashboard.vercel.app/api/roi-posts"
     },
     {
       "key": "warm-engagers",
@@ -51,9 +64,12 @@
         "hour": 10,
         "minute": 0,
         "timezone": "America/Sao_Paulo",
-        "daysOfWeek": ["mon"],
+        "daysOfWeek": [
+          "mon"
+        ],
         "note": "Mondays only — a weekly sweep of the week's engagement."
-      }
+      },
+      "webhook": "https://yedda-marketing-dashboard.vercel.app/api/engagers"
     }
   ]
 }

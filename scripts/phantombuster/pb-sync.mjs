@@ -94,7 +94,7 @@ for (const spec of specs) {
   const newArg = { ...currentArg, ...overrides };
   const argChanged = JSON.stringify(newArg) !== JSON.stringify(currentArg);
   const changedKeys = Object.keys(overrides).filter(k => JSON.stringify(currentArg[k]) !== JSON.stringify(overrides[k]));
-  console.log(`[1/2] argument: ${argChanged ? `set ${changedKeys.join(', ')}` : 'already at desired state'}`);
+  console.log(`[1/3] argument: ${argChanged ? `set ${changedKeys.join(', ')}` : 'already at desired state'}`);
   if (argChanged && !DRY) {
     await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, argument: newArg }) });
     console.log('      saved.');
@@ -107,13 +107,13 @@ for (const spec of specs) {
     // would keep firing. Force it back to manual so the config is the source of
     // truth (e.g. Roi Auto Poster stays off until Roi's own session is connected).
     if (agent.launchType === 'repeatedly') {
-      console.log('[2/2] schedule: disabled — forcing launchType=manually (was repeatedly)');
+      console.log('[2/3] schedule: disabled — forcing launchType=manually (was repeatedly)');
       if (!DRY) {
         await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, launchType: 'manually' }) });
         console.log('      saved.');
       }
     } else {
-      console.log('[2/2] schedule: disabled in desired-config.json — already manual');
+      console.log('[2/3] schedule: disabled in desired-config.json — already manual');
     }
   } else {
     const dow = (s.daysOfWeek && s.daysOfWeek.length) ? s.daysOfWeek : ALL_DOW;
@@ -126,7 +126,7 @@ for (const spec of specs) {
     const cur = agent.repeatedLaunchTimes || {};
     const sameCron = CRON_FIELDS.every(k => JSON.stringify(cur[k]) === JSON.stringify(desired[k]));
     const already = agent.launchType === 'repeatedly' && sameCron;
-    console.log(`[2/2] schedule: ${already ? 'already at desired state' : `set repeatedly ${String(s.hour).padStart(2, '0')}:${String(s.minute ?? 0).padStart(2, '0')} ${desired.timezone} [${dow.join(',')}]`}`);
+    console.log(`[2/3] schedule: ${already ? 'already at desired state' : `set repeatedly ${String(s.hour).padStart(2, '0')}:${String(s.minute ?? 0).padStart(2, '0')} ${desired.timezone} [${dow.join(',')}]`}`);
     if (!already && !DRY) {
       try {
         await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, launchType: 'repeatedly', repeatedLaunchTimes: desired }) });
@@ -137,6 +137,26 @@ for (const spec of specs) {
         continue;
       }
     }
+  }
+
+  // ── 3. Webhook ──
+  // PhantomBuster DELETES the webhook URL from an agent whenever the endpoint
+  // answers any 4xx (it silently killed the radar's delivery leg on Jul 16-27
+  // and the engagers' on Jul 20). The config is the source of truth: restore it
+  // whenever it drifts.
+  if (spec.webhook) {
+    const curHook = (agent.notifications || {}).webhook || '';
+    if (curHook !== spec.webhook) {
+      console.log(`[3/3] webhook: ${curHook ? 'drifted' : 'MISSING (removed by PhantomBuster?)'} — restoring`);
+      if (!DRY) {
+        await pb('/agents/save', { method: 'POST', body: JSON.stringify({ id: agent.id, notifications: { ...(agent.notifications || {}), webhook: spec.webhook } }) });
+        console.log('      saved.');
+      }
+    } else {
+      console.log('[3/3] webhook: already at desired state');
+    }
+  } else {
+    console.log('[3/3] webhook: not managed for this agent');
   }
 
   if (DRY) continue;
@@ -151,12 +171,14 @@ for (const spec of specs) {
   const okSched = s.enabled
     ? (after.launchType === 'repeatedly' && cronFires)
     : (after.launchType !== 'repeatedly'); // disabled must NOT be on a repeating schedule
+  const okHook = !spec.webhook || ((after.notifications || {}).webhook === spec.webhook);
 
   if (s.enabled && after.launchType === 'repeatedly' && !cronFires) {
     console.error(`      SCHEDULE WILL NEVER FIRE — empty cron field(s): ${CRON_FIELDS.filter(k => !(rlt[k] || []).length).join(', ')}`);
   }
-  console.log(`VERIFY: ${Object.keys(overrides).map(k => `${k}=${JSON.stringify(afterArg[k])}`).join(' ')} launchType=${after.launchType} cronFires=${cronFires}`);
-  if (!okArg || !okSched) { console.error('VERIFY FAILED'); failures++; }
+  if (!okHook) console.error('      WEBHOOK VERIFY FAILED — delivery leg is dead');
+  console.log(`VERIFY: ${Object.keys(overrides).map(k => `${k}=${JSON.stringify(afterArg[k])}`).join(' ')} launchType=${after.launchType} cronFires=${cronFires} webhook=${okHook ? 'ok' : 'MISSING'}`);
+  if (!okArg || !okSched || !okHook) { console.error('VERIFY FAILED'); failures++; }
 }
 
 if (DRY) { console.log('\nDRY RUN — nothing written.'); process.exit(0); }
