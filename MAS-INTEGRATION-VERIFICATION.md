@@ -12,7 +12,42 @@ plataforma deveria construir.
 
 ---
 
-## 🔴 A1 — BUG BLOQUEANTE: os 4 endpoints retornam 404
+## ✅ A1 — BUG CORRIGIDO (MAS commit `def1950`, 10 ago 2026)
+
+> O bug abaixo foi **corrigido e verificado por HTTP real**. Mantido documentado
+> porque a causa e a lição valem para os dois lados.
+>
+> **Estado atual — servidor novo, `pycache` limpo:**
+> ```
+> GET  /api/v1/marketing/stats                  -> 200
+> GET  /api/v1/marketing/forbidden-vocabulary   -> 200  (35 termos)
+> GET  /api/v1/marketing/examples               -> 200
+> POST /api/v1/marketing/revision (curto)       -> 422  (intencional)
+> GET  /api/v1/version (rewrite legado)         -> 200  (sem regressão)
+> ```
+> Ciclo funcional confirmado: `POST /revision` → `{"stored":true,"similarity":0.093,
+> "corpus_size":2}` → `GET /stats` → `{"count":2,"mean_similarity":0.0941}`.
+> O corpus foi **limpo dos pares de teste** e está em 0, pronto para os 14 reais.
+>
+> **Escopo real do defeito:** não era só o marketing. O `onboarding_router` (Fase 6)
+> estava quebrado do mesmo jeito — 404 em todas as rotas. Por isso a correção foi feita
+> no **middleware** (causa única) e não no prefixo de cada router.
+>
+> **Correção aplicada** (`scripts/mas_dashboard.py`): o rewrite só remove a versão
+> quando o caminho **não** é servido por uma rota nativamente versionada. Os caminhos
+> registrados são coletados após todos os `include_router` e comparados com suporte a
+> parâmetros (`/api/v1/onboarding/{run_id}` resolve). O comportamento não-quebrante
+> permanece: `/api/v1/version` continua caindo no handler `/api/version`.
+>
+> **Cobertura contra regressão:** novo `tests/unit/test_api_version_rewrite.py` (9 testes)
+> que importa o **app real** com a pilha completa de middlewares — inclusive um teste
+> genérico que falha se *qualquer* rota aparecer no schema sendo inalcançável.
+> Validado por reintrodução do bug: **6 dos 9 falham**; com a correção, todos passam.
+> Suíte completa: **3236 passando** (3227 + 9), zero regressões.
+
+---
+
+## 🔴 A1 (registro do diagnóstico original)
 
 ### Sintoma
 
