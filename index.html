@@ -4804,10 +4804,10 @@ function getGeneratedPosts() {
 
 function _saveGeneratedPosts(arr) {
   _genPostsCache = arr;
-  try {
-    localStorage.setItem('yedda_generated_posts', JSON.stringify(arr));
-  } catch(e) {
-    if (e.name === 'QuotaExceededError') showToast('⚠️ Storage full — clear old posts to continue saving.', 'error', 6000);
+  // Degrades (drop images → keep 30 most recent) instead of losing the write.
+  // The cloud copy is authoritative, so a trimmed local cache costs a re-fetch.
+  if (!_persistGeneratedPosts(arr)) {
+    showToast('⚠️ Local storage is full — posts are saved in the cloud and reload each visit.', 'error', 6000);
   }
   if (arr.length) setTimeout(() => _pushToCloud(arr), 0);
 }
@@ -4825,6 +4825,44 @@ async function _pushToCloud(arr) {
       body: JSON.stringify({ posts: arr }),
     });
   } catch(_) {} finally { _cloudSyncBusy = false; }
+}
+
+/* Write the post cache, surviving a full localStorage.
+
+   Posts carry base64 images in `_image`, so a few dozen of them blow past the
+   ~5MB quota. The write used to sit in a bare `try/catch {}`, so once the quota
+   was hit the cloud sync failed silently: the API returned 52 posts, the merge
+   loop saw all 52 as new, and none of them ever reached the UI. That is how a
+   whole F31 batch could land in the database and be invisible to the reviewer.
+
+   Images live in the cloud anyway (`/api/posts` returns them), so dropping them
+   from the local cache costs a re-fetch, not data. */
+function _persistGeneratedPosts(list) {
+  const KEY = 'yedda_generated_posts';
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list));
+    return true;
+  } catch (_) { /* quota — fall through to the lighter payloads below */ }
+
+  try {
+    // 1st fallback: same posts, images stripped. They reload from the cloud.
+    const slim = list.map(p => { const { _image, ...rest } = p; return rest; });
+    localStorage.setItem(KEY, JSON.stringify(slim));
+    console.warn('post cache: images dropped to fit localStorage quota');
+    return true;
+  } catch (_) { /* still too big */ }
+
+  try {
+    // 2nd fallback: the 30 most recent, images stripped.
+    const recent = list.slice(-30).map(p => { const { _image, ...rest } = p; return rest; });
+    localStorage.setItem(KEY, JSON.stringify(recent));
+    console.warn('post cache: trimmed to the 30 most recent posts to fit quota');
+    return true;
+  } catch (_) {
+    // Give up on caching, but never on this session's data.
+    console.warn('post cache: localStorage full — posts load from the cloud each visit');
+    return false;
+  }
 }
 
 async function loadRemotePosts() {
@@ -4865,9 +4903,12 @@ async function loadRemotePosts() {
     if (syncBtn) syncBtn.textContent = `☁ ${remote.length}`;
 
     if (newCount || imageCount) {
-      // Persist merged data to localStorage (without re-triggering cloud push)
+      // Persist merged data to localStorage (without re-triggering cloud push).
+      // The cache is set regardless of whether the write succeeds — the posts
+      // must reach the UI this session even if they cannot be cached for the
+      // next one.
       _genPostsCache = local;
-      try { localStorage.setItem('yedda_generated_posts', JSON.stringify(local)); } catch(_) {}
+      _persistGeneratedPosts(local);
       // Update posts[] array with new images for already-rendered posts
       for (let i = POSTS_BASELINE_COUNT; i < posts.length; i++) {
         const cp = localById.get(posts[i]._id);
