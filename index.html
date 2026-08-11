@@ -3090,6 +3090,21 @@ textarea::placeholder {
         </div>
         <p style="font-size:12px;margin-top:10px;color:rgba(255,255,255,0.55);">Roi reviews, copies the text, and posts it from his own LinkedIn account.</p>
         <p id="roiPostStatus" style="font-size:12px;margin-top:8px;color:#F07830;"></p>
+
+        <!-- Personal-channel learning: without this the personal corpus never grows -->
+        <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.12);padding-top:14px;">
+          <button id="roiRevToggle" class="btn-outline" style="font-size:12px;padding:6px 14px;color:#fff;border-color:rgba(255,255,255,0.3);" onclick="toggleRoiPostRevision()">✍️ Posted a different version? Teach the AI</button>
+          <div id="roiRevBox" style="display:none;margin-top:12px;">
+            <label for="roiRevText" style="display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Paste what you actually published</label>
+            <textarea id="roiRevText" rows="7" class="sched-input" style="width:100%;resize:vertical;background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(240,120,48,0.5);" placeholder="Paste the post exactly as it went out on LinkedIn…"></textarea>
+            <input id="roiRevNote" class="sched-input" style="width:100%;margin-top:8px;background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.2);font-size:13px;" placeholder="Optional: what you changed and why">
+            <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+              <button class="sched-gen-run" style="background:#F07830;font-size:13px;padding:7px 16px;" onclick="saveRoiPostRevision(this)">💾 Save &amp; teach</button>
+              <button class="btn-outline" style="font-size:13px;padding:7px 16px;color:#fff;border-color:rgba(255,255,255,0.3);" onclick="toggleRoiPostRevision()">Cancel</button>
+            </div>
+            <p id="roiRevStatus" style="font-size:12px;margin-top:8px;color:#F07830;"></p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -5052,6 +5067,14 @@ function toggleRevisionBox(i, prefill) {
   }
 }
 
+/* Which corpus a post belongs to. The MAS keys its examples on this, and it
+   swaps persona and drops proof points for the personal channel — sending the
+   wrong one teaches Roi's voice with corporate copy. */
+function _channelForPost(post) {
+  return (post && (post._personal || post._channel === 'linkedin_post_personal'))
+    ? 'linkedin_post_personal' : 'linkedin_post';
+}
+
 async function saveRevision(i, btn) {
   const textEl = document.getElementById(`revText-${i}`);
   const noteEl = document.getElementById(`revNote-${i}`);
@@ -5075,7 +5098,7 @@ async function saveRevision(i, btn) {
   const pairId = `post-${(posts[i] && posts[i]._id) || i}-${new Date().toISOString().slice(0, 10)}`;
   const payload = {
     pair_id: pairId,
-    channel: 'linkedin_post',
+    channel: _channelForPost(posts[i]),
     draft,
     published,
     author: 'roi',
@@ -6567,10 +6590,38 @@ async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) 
 }
 
 /* ── Sectors ─────────────────────────────────────────────────────────────────
-   Keys MIRROR config/verticals/ in the MAS exactly. Inventing labels here would
-   give the two systems different taxonomies — the same drift risk as two
-   vocabulary lists. The blurbs are the operational hooks: enough for the model
-   to leave retail defaults behind. */
+   The MAS owns the taxonomy in config/verticals/ and now serves it at
+   /verticals, so the list below is only a fallback for when it is offline —
+   the hand-mirrored copy that used to drift is gone. The MAS `summary` carries
+   the real regulatory/KPI context per vertical, which beats our hooks; we keep
+   the hooks as the operational hint the summary does not include. */
+let _SECTORS_LIVE = null;   // [{key,label,summary}] from the MAS
+async function _loadSectors() {
+  if (_SECTORS_LIVE) return _SECTORS_LIVE;
+  try {
+    const r = await _masMarketing('/verticals');
+    if (r && r.ok) {
+      const d = await r.json();
+      if (Array.isArray(d.verticals) && d.verticals.length) {
+        _SECTORS_LIVE = d.verticals;
+        _refreshSectorOptions();
+      }
+    }
+  } catch (_) {}
+  return _SECTORS_LIVE;
+}
+
+// Rebuild the picker from the live taxonomy, so a new MAS vertical shows up
+// without a platform release.
+function _refreshSectorOptions() {
+  const sel = document.getElementById('sgSector');
+  if (!sel || !_SECTORS_LIVE) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="rotate">Rotate across sectors</option>'
+    + _SECTORS_LIVE.map(v => `<option value="${esc(v.key)}">${esc(v.label)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
 const _SECTORS = {
   food_retail:   { label: 'Food Retail',      hook: 'supermarkets and grocery — shrinkage at checkout and back-of-store, fresh-section waste, queue flow at peak, planogram compliance' },
   fashion:       { label: 'Fashion Retail',   hook: 'apparel stores — fitting-room conversion, floor staff positioning, theft of high-value items, visual merchandising compliance' },
@@ -6583,14 +6634,21 @@ const _SECTORS = {
 // Sector guidance for the prompt. 'rotate' picks one deterministically per post
 // so a week's calendar spreads across sectors instead of repeating one.
 function _sectorBlock(sector, seedIndex = 0) {
+  // Live taxonomy when available, local fallback otherwise.
+  const liveKeys = _SECTORS_LIVE ? _SECTORS_LIVE.map(v => v.key) : Object.keys(_SECTORS);
   let key = sector;
-  if (!key || key === 'rotate') {
-    const keys = Object.keys(_SECTORS);
-    key = keys[Math.abs(seedIndex) % keys.length];
-  }
-  const s = _SECTORS[key];
-  if (!s) return '';
-  return `\nSECTOR FOCUS — ${s.label}: ${s.hook}
+  if (!key || key === 'rotate') key = liveKeys[Math.abs(seedIndex) % liveKeys.length];
+
+  const live = _SECTORS_LIVE ? _SECTORS_LIVE.find(v => v.key === key) : null;
+  const local = _SECTORS[key];
+  if (!live && !local) return '';
+
+  const label = (live && live.label) || local.label;
+  // The MAS summary is the authoritative context; the local hook adds the
+  // operational angle it does not carry.
+  const context = [live && live.summary, local && local.hook].filter(Boolean).join('\n');
+
+  return `\nSECTOR FOCUS — ${label}\n${context}
 Ground the post in THIS sector's operational reality: its vocabulary, its KPIs, the people who run it. Yedda serves retail, logistics, manufacturing and F&B — do not default to supermarket examples unless the sector above is food retail.\n`;
 }
 
@@ -6902,6 +6960,11 @@ Return ONLY the post text (and poll options if poll type). No preamble, no expla
     }
 
     textEl.value = post;
+    _roiPostDraft = post; // snapshot before he edits, so the pair stays honest
+    const _rb = document.getElementById('roiRevBox');
+    const _rt = document.getElementById('roiRevText');
+    if (_rb) _rb.style.display = 'none';
+    if (_rt) _rt.value = '';
     statusEl.className = 'modal-status st-ok';
     statusEl.textContent = postType === 'poll'
       ? '✅ Post ready — copy text, then create the poll on LinkedIn (LinkedIn → Create a post → Add a poll).'
@@ -6921,6 +6984,79 @@ function copyRoiPost() {
   const text = document.getElementById('roiPostText').value;
   if (!text) return;
   clipWrite(text, () => { document.getElementById('roiPostStatus').textContent = '📋 Copied! Paste on LinkedIn as Roi.'; });
+}
+
+/* ── Personal-channel feedback loop ─────────────────────────────────────────
+   Roi's own posts must teach the personal corpus, not the company one: the MAS
+   swaps persona and drops proof points for linkedin_post_personal, so a pair
+   filed under the wrong channel teaches his voice with corporate copy.
+   Keeps the draft captured at generation time, since he edits in place. */
+let _roiPostDraft = '';
+
+function toggleRoiPostRevision() {
+  const box = document.getElementById('roiRevBox');
+  if (!box) return;
+  const open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const t = document.getElementById('roiRevText');
+    // Prefill with what is on screen — he usually edits from there.
+    if (t && !t.value) t.value = document.getElementById('roiPostText')?.value || '';
+    t?.focus();
+  }
+}
+
+async function saveRoiPostRevision(btn) {
+  const published = (document.getElementById('roiRevText')?.value || '').trim();
+  const note = (document.getElementById('roiRevNote')?.value || '').trim();
+  const statusEl = document.getElementById('roiRevStatus');
+  const draft = _roiPostDraft || '';
+
+  if (!draft) {
+    statusEl.textContent = 'Generate a post first — there is no draft to compare against.';
+    return;
+  }
+  if (published.length < 40) {
+    statusEl.textContent = 'Paste the full published post — at least a couple of sentences.';
+    return;
+  }
+  if (published === draft) {
+    statusEl.textContent = 'That is identical to the draft — nothing to learn from.';
+    return;
+  }
+
+  setLoading(btn, true, '⏳ Saving…');
+  try {
+    const r = await _masMarketing('/revision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pair_id: `roi-post-${Date.now()}`,
+        channel: 'linkedin_post_personal', // his voice, not the company's
+        draft,
+        published,
+        author: 'roi',
+        note: note || undefined,
+      }),
+    }, { timeout: 8000 });
+
+    if (r && r.ok) {
+      const d = await r.json().catch(() => ({}));
+      const sim = typeof d.similarity === 'number' ? Math.round(d.similarity * 100) : null;
+      statusEl.textContent = sim != null
+        ? `✓ Saved — only ${sim}% of the draft survived. Future personal posts will study this.`
+        : '✓ Saved — future personal posts will study this.';
+      showToast('🧠 Personal-voice example saved.', 'success', 4500);
+    } else if (r && r.status === 422) {
+      statusEl.textContent = 'The MAS rejected this as too short to learn from.';
+    } else {
+      statusEl.textContent = '⚠ The MAS is offline — this example was not saved. Try again when it is running.';
+    }
+  } catch (_) {
+    statusEl.textContent = '⚠ The MAS is offline — this example was not saved. Try again when it is running.';
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 /* ═══ ROI POST PUBLISHING QUEUE — feeds the PhantomBuster LinkedIn Auto Poster ═══
@@ -7948,6 +8084,8 @@ setTimeout(() => loadEngagers(false), 2400);    // warm engagers (weekly Phantom
 // Prime the shared platform Gemini key early so sync guards + Settings status
 // reflect it without a per-user step. Refreshes the Settings badge when it lands.
 _getPlatformGeminiKey().then(() => { try { updateSettingsProgress(); } catch (_) {} });
+// Pull the sector taxonomy from the MAS so the picker follows config/verticals/.
+setTimeout(() => { _loadSectors(); }, 2800);
 _applyCollapseState();
 
 /* ── Generated Posts Management ── */
