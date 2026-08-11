@@ -6,12 +6,19 @@ learn our product better." Today the AI knows loose proof points (54%, 55s,
 180-400% ROI) but nothing about modules, architecture, sector cases or the
 objections sales actually hears — so posts stay generic.
 
-Why this script exists: the MAS RAG ingests **.md only** (`ingest_directory`
-globs `*.md`), so a PDF/PPTX has no path in. This converts decks to structured
+Why this script exists: the MAS RAG's `ingest_directory` globs `*.md` only, so a
+deck has no path into the corpus. This converts decks to heading-structured
 markdown, screens every file for confidential content, and drops the result in
 `data/rag/product/` for the MAS to index.
 
-    pip install pdfplumber python-pptx      # only if you have those formats
+TEXT EXTRACTION IS NOT OURS. It comes from `yedda_mas.rag.extract`, the shared
+module the MAS promoted out of a script in Aug 2026. Two converters producing
+subtly different text from the same deck is the failure this integration has
+already had twice (two vocabulary lists, two sector taxonomies) — so this reads
+through theirs and only adds what is genuinely ours: sectioning and the
+confidentiality screen.
+
+    pip install python-docx pypdf python-pptx openpyxl   # per format needed
 
     python scripts/ingest_product_docs.py --input ~/decks --dry-run
     python scripts/ingest_product_docs.py --input ~/decks
@@ -24,9 +31,33 @@ the source rather than hoping the prompt holds.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
+
+# The MAS is the source of truth for reading documents. Fall back to a local
+# reader only for plain text, so a missing MAS checkout degrades to "md/txt
+# only" instead of failing outright.
+_MAS_SRC = Path(
+    os.getenv("YEDDA_MAS_DIR")
+    or (Path.home() / "OneDrive" / "Área de Trabalho" / "yedda-mas-step1")
+) / "src"
+if _MAS_SRC.is_dir():
+    sys.path.insert(0, str(_MAS_SRC))
+try:
+    from yedda_mas.rag.extract import extract_text_from_path, is_extractable
+    _SHARED_EXTRACTOR = True
+except ImportError:  # MAS not checked out next to this repo
+    _SHARED_EXTRACTOR = False
+
+    def extract_text_from_path(path: Path) -> str:  # type: ignore[misc]
+        if path.suffix.lower() in (".md", ".txt"):
+            return path.read_text(encoding="utf-8", errors="ignore")
+        return ""
+
+    def is_extractable(path: Path) -> bool:  # type: ignore[misc]
+        return path.suffix.lower() in (".md", ".txt")
 
 # Markers that must never enter a corpus feeding public posts. Deliberately
 # broader than the MAS gate: that one protects HR/legal data, this one also
@@ -42,48 +73,40 @@ CONFIDENTIAL_MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
 MIN_SECTION_CHARS = 60  # shorter than this is a slide title, not knowledge
 
 
-def extract_pdf(path: Path) -> list[tuple[str, str]]:
-    """Return [(section_title, text)] from a PDF, one entry per page."""
-    try:
-        import pdfplumber
-    except ImportError:
-        print(f"  ! {path.name}: install pdfplumber to read PDFs", file=sys.stderr)
-        return []
-    out = []
-    with pdfplumber.open(path) as pdf:
-        for n, page in enumerate(pdf.pages, start=1):
-            text = (page.extract_text() or "").strip()
-            if len(text) >= MIN_SECTION_CHARS:
-                first = text.split("\n", 1)[0][:80].strip()
-                out.append((first or f"Page {n}", text))
-    return out
+def sectionise(path: Path) -> list[tuple[str, str]]:
+    """Read a file through the shared extractor and split it into sections.
 
-
-def extract_pptx(path: Path) -> list[tuple[str, str]]:
-    """Return [(slide_title, text)] from a PPTX, one entry per slide."""
-    try:
-        from pptx import Presentation
-    except ImportError:
-        print(f"  ! {path.name}: install python-pptx to read PPTX", file=sys.stderr)
+    The extractor returns one flat string per document; the MAS chunks markdown
+    on '##' headings, so a single wall of text would become one unusable chunk.
+    Split on blank-line blocks and treat each block's first line as its title —
+    which happens to match how decks are written (a slide title, then content).
+    """
+    text = extract_text_from_path(path)
+    if not text or not text.strip():
         return []
-    out = []
-    for n, slide in enumerate(Presentation(path).slides, start=1):
-        parts = [sh.text.strip() for sh in slide.shapes
-                 if getattr(sh, "has_text_frame", False) and sh.text.strip()]
-        if not parts:
+
+    # Existing markdown already carries structure — keep it as-is.
+    if path.suffix.lower() == ".md" and re.search(r"^##\s", text, re.M):
+        return [(path.stem, text)]
+
+    blocks = [b.strip() for b in re.split(r"\n\s*\n", text) if b.strip()]
+    sections: list[tuple[str, str]] = []
+    for block in blocks:
+        if len(block) < MIN_SECTION_CHARS:
+            # Too short to be knowledge on its own — fold into the previous one
+            # (usually a slide title separated from its body).
+            if sections:
+                title, body = sections[-1]
+                sections[-1] = (title, f"{body}\n{block}")
             continue
-        text = "\n".join(parts)
-        if len(text) >= MIN_SECTION_CHARS:
-            out.append((parts[0][:80], text))
-    return out
+        first_line = block.split("\n", 1)[0][:80].strip()
+        sections.append((first_line or path.stem, block))
 
-
-def extract_md(path: Path) -> list[tuple[str, str]]:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    return [(path.stem, text)] if len(text) >= MIN_SECTION_CHARS else []
-
-
-EXTRACTORS = {".pdf": extract_pdf, ".pptx": extract_pptx, ".md": extract_md, ".txt": extract_md}
+    # Nothing survived the length filter: keep the document whole rather than
+    # dropping content that a human might still want indexed.
+    if not sections and len(text.strip()) >= MIN_SECTION_CHARS:
+        return [(path.stem, text.strip())]
+    return sections
 
 
 def screen(text: str) -> list[str]:
@@ -125,17 +148,22 @@ def main() -> int:
         return 2
     out_dir = Path(args.out).expanduser()
 
-    files = [p for p in sorted(src_dir.iterdir()) if p.suffix.lower() in EXTRACTORS]
+    files = [p for p in sorted(src_dir.iterdir()) if p.is_file() and is_extractable(p)]
     if not files:
-        print(f"No PDF/PPTX/MD files in {src_dir}")
+        print(f"No readable documents in {src_dir}")
+        if not _SHARED_EXTRACTOR:
+            print("(MAS checkout not found — only .md/.txt can be read. "
+                  "Set YEDDA_MAS_DIR to enable PDF/PPTX/DOCX/XLSX.)")
         return 1
 
-    print(f"found {len(files)} file(s) in {src_dir}\n")
+    print(f"found {len(files)} file(s) in {src_dir}")
+    print(f"extractor: {'shared (yedda_mas.rag.extract)' if _SHARED_EXTRACTOR else 'local fallback — md/txt only'}\n")
     written = skipped = 0
     for path in files:
-        sections = EXTRACTORS[path.suffix.lower()](path)
+        sections = sectionise(path)
         if not sections:
-            print(f"  – {path.name}: no readable text, skipped")
+            print(f"  – {path.name}: no readable text, skipped "
+                  "(missing parser library, or the file is image-only)")
             skipped += 1
             continue
 
