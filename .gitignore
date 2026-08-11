@@ -39,3 +39,6 @@ node_modules/
 *.tmp
 *.bak
 linkedin-contacts-roi-crm.csv
+
+# CEO's editorial spreadsheet export — his working document, not repo content
+data/editorial-sheet.json

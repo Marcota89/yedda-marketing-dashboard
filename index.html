@@ -1202,6 +1202,42 @@ h1,h2,h3,h4 {
 .rate-btn.approve:hover, .rate-btn.approve.active { background: #16a34a; color: #fff; }
 .rate-btn.revise { border-color: var(--orange); color: var(--orange); }
 .rate-btn.revise:hover, .rate-btn.revise.active { background: var(--orange); color: #fff; }
+
+/* ── Revision capture: turns the reviewer's rewrite into training data ── */
+.rev-wrap { margin-top: 10px; }
+.rev-open-btn {
+  background: none; border: 1px dashed var(--line); border-radius: 6px;
+  color: var(--text-soft); font-size: 12px; padding: 6px 12px; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.rev-open-btn:hover { border-color: var(--teal); color: var(--teal-deep); }
+.rev-box {
+  margin-top: 10px; padding: 14px; border: 1px solid var(--teal);
+  border-radius: 8px; background: var(--teal-xl);
+}
+.rev-box label {
+  display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--teal-deep); margin-bottom: 6px;
+}
+.rev-box textarea { width: 100%; resize: vertical; background: #fff; }
+.rev-note { width: 100%; margin-top: 8px; font-size: 13px; background: #fff; }
+.rev-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.rev-save { font-size: 13px; padding: 7px 16px; }
+.rev-cancel { font-size: 13px; padding: 7px 16px; }
+.rev-status { font-size: 12px; margin: 8px 0 0; }
+.rev-status.ok { color: var(--teal-deep); }
+.rev-status.err { color: var(--orange-dark, #c2540a); }
+.rev-saved {
+  margin-top: 10px; padding: 8px 12px; border-radius: 6px;
+  background: var(--teal-xl); border: 1px solid var(--teal);
+  font-size: 12px; color: var(--teal-deep); font-weight: 600;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.rev-sim { font-weight: 400; color: var(--text-soft); }
+.rev-edit-btn {
+  margin-left: auto; background: none; border: 0; color: var(--teal-deep);
+  font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0;
+}
 .rate-btn.reject { border-color: #dc2626; color: #dc2626; }
 .rate-btn.reject:hover, .rate-btn.reject.active { background: #dc2626; color: #fff; }
 .rating-saved-tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-left: auto; }
@@ -2537,6 +2573,17 @@ textarea::placeholder {
               <option value="Mixed" selected>Mixed (Abbey + Kai)</option>
               <option value="Abbey">Abbey only</option>
               <option value="Kai">Kai only</option>
+            </select>
+          </div>
+          <div class="sched-field"><label for="sgSector">Sector</label>
+            <select id="sgSector" class="sched-input" title="Yedda sells into four sectors — pick one to move the content off retail defaults">
+              <option value="rotate" selected>Rotate across sectors</option>
+              <option value="food_retail">Food Retail</option>
+              <option value="fashion">Fashion Retail</option>
+              <option value="qsr">QSR / Restaurants</option>
+              <option value="logistics">Logistics</option>
+              <option value="manufacturing">Manufacturing</option>
+              <option value="safety">Health &amp; Safety</option>
             </select>
           </div>
         </div>
@@ -4935,7 +4982,143 @@ function renderRatingBar(i) {
         onclick="ratePost(${i},'rejected')">❌ Skip</button>
       ${savedTag}
     </div>
+    ${_revisionPanelHTML(i, r)}
   `;
+}
+
+/* ── Teach the AI: capture what was actually published (CEO request #8) ──────
+   Rewriting a draft is work the reviewer already does; today it is thrown away.
+   Captured here, each draft→published pair becomes a worked example the MAS
+   feeds back into generation, so drafts stop being disposable. */
+function _revisionPanelHTML(i, rating) {
+  if (rating !== 'revise' && rating !== 'approved') return '';
+  const saved = _getRevisions()[i];
+  if (saved) {
+    return `<div class="rev-saved">✓ Your version was saved and is teaching the AI${
+      saved.similarity != null ? ` <span class="rev-sim">— ${Math.round(saved.similarity * 100)}% of the draft survived</span>` : ''}
+      <button class="rev-edit-btn" onclick="toggleRevisionBox(${i}, true)">edit</button></div>`;
+  }
+  return `
+    <div class="rev-wrap">
+      <button class="rev-open-btn" onclick="toggleRevisionBox(${i})">✍️ Paste the version you actually published</button>
+      <div id="revBox-${i}" class="rev-box" style="display:none;">
+        <label for="revText-${i}">Your final text — the AI studies what you changed</label>
+        <textarea id="revText-${i}" rows="7" class="sched-input" placeholder="Paste the post exactly as you published it on LinkedIn…"></textarea>
+        <input id="revNote-${i}" class="sched-input rev-note" placeholder="Optional: why you changed it (e.g. too corporate, wrong angle)">
+        <div class="rev-actions">
+          <button class="sched-gen-run rev-save" onclick="saveRevision(${i}, this)">💾 Save &amp; teach</button>
+          <button class="btn-outline rev-cancel" onclick="toggleRevisionBox(${i})">Cancel</button>
+        </div>
+        <p id="revStatus-${i}" class="rev-status"></p>
+      </div>
+    </div>`;
+}
+
+/* Revisions live locally too, so the loop survives the MAS being offline and the
+   pairs can be replayed later. */
+const REVISIONS_KEY = 'yedda_revisions';
+let _revCache = null;
+function _getRevisions() {
+  if (_revCache !== null) return _revCache;
+  try { _revCache = JSON.parse(localStorage.getItem(REVISIONS_KEY) || '{}'); } catch (_) { _revCache = {}; }
+  return _revCache;
+}
+function _saveRevisions(map) {
+  _revCache = map;
+  try { localStorage.setItem(REVISIONS_KEY, JSON.stringify(map)); } catch (_) {}
+}
+
+function toggleRevisionBox(i, prefill) {
+  const box = document.getElementById(`revBox-${i}`);
+  if (!box) { // saved state — re-render the card to expose the editor again
+    const saved = _getRevisions()[i];
+    if (saved) {
+      const map = { ..._getRevisions() };
+      delete map[i];
+      _saveRevisions(map);
+      showPost(i, document.getElementById(`prow-${i}`));
+      setTimeout(() => {
+        const t = document.getElementById(`revText-${i}`);
+        if (t) { t.value = saved.published || ''; toggleRevisionBox(i); }
+      }, 60);
+    }
+    return;
+  }
+  const open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  if (!open) {
+    const t = document.getElementById(`revText-${i}`);
+    if (t) { if (prefill && !t.value) t.value = (posts[i] && posts[i].body) || ''; t.focus(); }
+  }
+}
+
+async function saveRevision(i, btn) {
+  const textEl = document.getElementById(`revText-${i}`);
+  const noteEl = document.getElementById(`revNote-${i}`);
+  const statusEl = document.getElementById(`revStatus-${i}`);
+  const published = (textEl?.value || '').trim();
+  const draft = (posts[i] && posts[i].body) || '';
+
+  if (published.length < 40) {
+    // Mirrors the MAS rule: a two-word "revision" teaches nothing.
+    statusEl.className = 'rev-status err';
+    statusEl.textContent = 'Paste the full published post — at least a couple of sentences.';
+    return;
+  }
+  if (!draft) {
+    statusEl.className = 'rev-status err';
+    statusEl.textContent = 'Could not read the original draft for this post.';
+    return;
+  }
+
+  setLoading(btn, true, '⏳ Saving…');
+  const pairId = `post-${(posts[i] && posts[i]._id) || i}-${new Date().toISOString().slice(0, 10)}`;
+  const payload = {
+    pair_id: pairId,
+    channel: 'linkedin_post',
+    draft,
+    published,
+    author: 'roi',
+    note: (noteEl?.value || '').trim() || undefined,
+  };
+
+  let similarity = null, taught = false, msg = '';
+  try {
+    const r = await _masMarketing('/revision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }, { timeout: 8000 });
+
+    if (r && r.ok) {
+      const d = await r.json().catch(() => ({}));
+      similarity = typeof d.similarity === 'number' ? d.similarity : null;
+      taught = true;
+      msg = similarity != null
+        ? `✓ Saved — only ${Math.round(similarity * 100)}% of the draft survived. The AI will study this.`
+        : '✓ Saved — the AI will study this revision.';
+    } else if (r && r.status === 422) {
+      // Expected rejection, not an error to retry.
+      statusEl.className = 'rev-status err';
+      statusEl.textContent = 'The MAS rejected this as too short to learn from.';
+      setLoading(btn, false);
+      return;
+    } else {
+      msg = '✓ Saved locally. The MAS is offline — it will pick this up next time.';
+    }
+  } catch (_) {
+    msg = '✓ Saved locally. The MAS is offline — it will pick this up next time.';
+  }
+
+  const map = { ..._getRevisions() };
+  map[i] = { published, note: payload.note || '', similarity, taught, at: new Date().toISOString() };
+  _saveRevisions(map);
+
+  statusEl.className = 'rev-status ok';
+  statusEl.textContent = msg;
+  setLoading(btn, false);
+  showToast(taught ? '🧠 Revision saved — the AI is learning from it.' : '💾 Revision saved locally.', 'success', 4500);
+  setTimeout(() => showPost(i, document.getElementById(`prow-${i}`)), 900);
 }
 
 function ratePost(i, rating) {
@@ -5326,7 +5509,7 @@ function _pickEvenly(days, n) {
   return Array.from({length: n}, (_, i) => days[Math.round(i * (days.length - 1) / (n - 1))]);
 }
 
-async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey, articles}) {
+async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey, articles, sector, postIndex = 0}) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dateStr    = dateObj.toISOString().slice(0,10);
@@ -5356,9 +5539,13 @@ async function _generateSingleWeekPost({dateObj, persona, pillar, topic, apiKey,
 - Proof points: 54% accuracy improvement, 55-second report generation, ROI 180–400% in 12 months, Carrefour POC 54% shrinkage reduction in a 90-day POC (7-month payback)
 - Yedda.ai turns existing CCTV into Visual AI operational intelligence — no new hardware`;
 
+  // Real draft→published pairs from the MAS corpus. Empty string when offline.
+  const _worked = await _getWorkedExamples('linkedin_post', 3);
+
   const systemPrompt = `You are the LinkedIn content strategist for Yedda.ai, an enterprise Visual AI company.
 
 ${_brandRules}
+${_sectorBlock(sector, postIndex)}${_worked ? '\n' + _worked + '\n' : ''}
 
 PERSONA — ${persona}: ${persona === 'Abbey' ? 'Abbey is the Visual AI Guide — thoughtful, strategic, teal energy' : persona === 'Kai' ? 'Kai is the IA Analyst — data-driven, precise, orange energy' : 'Use Abbey or Kai as fits the content'}
 
@@ -5491,6 +5678,7 @@ async function _generateWeekPostsDirectInner(btn) {
   const topic    = document.getElementById('sgTopic').value.trim();
   const pillars  = [...document.querySelectorAll('.sched-pillar-checks input:checked')].map(el => el.value);
   const apiKey   = await _getGeminiKey();
+  const sector   = (document.getElementById('sgSector') || {}).value || 'rotate';
   const articles = window._apifyArticles || [];
 
   if (!startVal || !endVal) { showToast('⚠️ Select start and end dates.', 'error'); return; }
@@ -5531,7 +5719,7 @@ async function _generateWeekPostsDirectInner(btn) {
     if (progressBar) progressBar.style.width = `${Math.round((i + 0.5) / picked.length * 100)}%`;
 
     try {
-      const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet });
+      const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet, sector, postIndex: i });
       addGeneratedPostToCalendar(post);
       const idx = posts.length - 1;
 
@@ -5876,9 +6064,13 @@ PROOF POINTS (include at least one per post): 54% accuracy improvement, 55-secon
 FORBIDDEN WORDS: revolutionary, game-changing, leverage, AI-powered, real-time, disruptive, cutting-edge, best-in-class, seamless, robust, artificial intelligence.
 AUDIENCE: CEOs, COOs, CDOs, VP Operations, Board Members at retail (100+ stores), logistics (500+ vehicles), F&B QSR (50+ locations). Peer-to-peer tone.`;
 
+  // Real draft→published pairs from the MAS corpus. Empty string when offline.
+  const _worked = await _getWorkedExamples('linkedin_post', 3);
+
   const systemPrompt = `You are a LinkedIn content writer for Yedda.ai, an enterprise Visual AI company specializing in Intelligence Augmentation (IA) for retail operations, loss prevention, queue management, and logistics.
 
 ${_brandRules}
+${_worked ? '\n' + _worked + '\n' : ''}
 
 CHARACTERS: Abbey (Visual AI Guide, teal #4BADB8) and Kai (IA Analyst, orange #F07830).
 
@@ -6344,6 +6536,83 @@ async function _getRoiVoice() {
   return _roiVoiceCache;
 }
 
+/* ═══ MAS MARKETING API ═══════════════════════════════════════════════════════
+   Feedback loop with the MAS (draft→published pairs, few-shot examples and the
+   canonical forbidden vocabulary). The MAS runs locally, so every call is
+   best-effort: when it is offline the platform keeps working on its own data.
+
+   Dual path: the endpoints live under /api/v1/marketing, but a version-rewrite
+   middleware on the MAS side historically ate that prefix. We try the versioned
+   path first and fall back to the unversioned one, so this works against both. */
+const _MKT_BASES = ['/api/v1/marketing', '/api/marketing'];
+let _mktBaseOk = null; // remembers which prefix answered
+
+async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) {
+  const bases = _mktBaseOk ? [_mktBaseOk] : _MKT_BASES;
+  for (const base of bases) {
+    const ctrl = new AbortController();
+    const tId = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(_MAS_BASE + base + path, { ...opts, signal: ctrl.signal });
+      clearTimeout(tId);
+      if (r.status === 404 && !_mktBaseOk) continue; // wrong prefix — try the other
+      _mktBaseOk = base;
+      return r;
+    } catch (e) {
+      clearTimeout(tId);
+      if (!quiet) console.warn('MAS marketing unreachable:', e.message);
+    }
+  }
+  return null; // MAS offline or no prefix matched
+}
+
+/* ── Sectors ─────────────────────────────────────────────────────────────────
+   Keys MIRROR config/verticals/ in the MAS exactly. Inventing labels here would
+   give the two systems different taxonomies — the same drift risk as two
+   vocabulary lists. The blurbs are the operational hooks: enough for the model
+   to leave retail defaults behind. */
+const _SECTORS = {
+  food_retail:   { label: 'Food Retail',      hook: 'supermarkets and grocery — shrinkage at checkout and back-of-store, fresh-section waste, queue flow at peak, planogram compliance' },
+  fashion:       { label: 'Fashion Retail',   hook: 'apparel stores — fitting-room conversion, floor staff positioning, theft of high-value items, visual merchandising compliance' },
+  qsr:           { label: 'QSR / Restaurants',hook: 'quick service — drive-thru and counter service times, food-safety procedure adherence, kitchen throughput at rush, portion and prep consistency' },
+  logistics:     { label: 'Logistics',        hook: 'distribution centres — dock-to-stock time, cargo loss at the loading dock and shift handover, dwell time at bay, picking accuracy, OTIF' },
+  manufacturing: { label: 'Manufacturing',    hook: 'plants and lines — line stoppages and their root cause, per-station bottlenecks, PPE and safety-procedure compliance, quality checkpoints' },
+  safety:        { label: 'Health & Safety',  hook: 'workplace safety across sites — PPE adherence, restricted-zone violations, equipment-path incidents, near-miss patterns before they become injuries' },
+};
+
+// Sector guidance for the prompt. 'rotate' picks one deterministically per post
+// so a week's calendar spreads across sectors instead of repeating one.
+function _sectorBlock(sector, seedIndex = 0) {
+  let key = sector;
+  if (!key || key === 'rotate') {
+    const keys = Object.keys(_SECTORS);
+    key = keys[Math.abs(seedIndex) % keys.length];
+  }
+  const s = _SECTORS[key];
+  if (!s) return '';
+  return `\nSECTOR FOCUS — ${s.label}: ${s.hook}
+Ground the post in THIS sector's operational reality: its vocabulary, its KPIs, the people who run it. Yedda serves retail, logistics, manufacturing and F&B — do not default to supermarket examples unless the sector above is food retail.\n`;
+}
+
+/* Worked examples (draft→published pairs) served by the MAS. The F31 injects the
+   very same block, so both sides write in one voice — the /api/brand-prompts
+   pattern, one level up. Session-cached; silently absent when the MAS is down. */
+const _mktExamplesCache = {};
+async function _getWorkedExamples(channel = 'linkedin_post', limit = 3) {
+  const key = `${channel}:${limit}`;
+  if (key in _mktExamplesCache) return _mktExamplesCache[key];
+  let block = '';
+  try {
+    const r = await _masMarketing(`/examples?channel=${encodeURIComponent(channel)}&limit=${limit}`);
+    if (r && r.ok) {
+      const d = await r.json();
+      if (d && d.count > 0 && typeof d.examples === 'string') block = d.examples;
+    }
+  } catch (_) {}
+  _mktExamplesCache[key] = block;
+  return block;
+}
+
 /* ═══ SHARED GEMINI KEY ═══════════════════════════════════════════════════════
    The Gemini key is a PLATFORM setting (Vercel env GEMINI_API_KEY served by
    /api/gemini-key), so every user shares it — Marco updates it once, Roi reflects
@@ -6410,9 +6679,33 @@ const _FORBIDDEN_FALLBACK = ['revolutionary', 'game-changing', 'leverage', 'AI-p
   'real-time', 'disruptive', 'cutting-edge', 'best-in-class', 'seamless', 'robust',
   'artificial intelligence', 'utilize', 'synergy'];
 
+/* The MAS owns a wider list (35 terms) that also blocks legal-risk claims —
+   "guarantee", "ensures", "certifies compliance", "95% accuracy", "surveillance",
+   "monitor employees". Neither list contains the other, so the gate uses the
+   UNION: the MAS terms plus the marketing-jargon ones only we track. Fetched
+   once per session, cached, and safely absent when the MAS is offline. */
+let _masVocabCache; // undefined = not fetched, null = unavailable
+async function _getCanonicalVocabulary() {
+  if (_masVocabCache !== undefined) return _masVocabCache;
+  _masVocabCache = null;
+  try {
+    const r = await _masMarketing('/forbidden-vocabulary');
+    if (r && r.ok) {
+      const d = await r.json();
+      const terms = Array.isArray(d) ? d : (d.terms || d.forbidden || d.vocabulary);
+      if (Array.isArray(terms) && terms.length) _masVocabCache = terms;
+    }
+  } catch (_) {}
+  return _masVocabCache;
+}
+
 function _forbiddenHits(text, brand) {
-  const base = (brand && Array.isArray(brand.forbidden_words) && brand.forbidden_words.length)
+  const local = (brand && Array.isArray(brand.forbidden_words) && brand.forbidden_words.length)
     ? brand.forbidden_words : _FORBIDDEN_FALLBACK;
+  // union — canonical MAS terms win nothing, they simply add to ours
+  const base = _masVocabCache && _masVocabCache.length
+    ? [...new Set([..._masVocabCache, ...local])]
+    : local;
   // "real-time" must also catch the spaced and fused spellings
   const list = base.flatMap(w => /^real[- ]?time$/i.test(w) ? ['real-time', 'real time', 'realtime'] : [w]);
   const lower = String(text || '').toLowerCase();
@@ -6425,6 +6718,7 @@ function _forbiddenHits(text, brand) {
 // Returns { text, violations } — text possibly rewritten, violations whatever
 // survived. Callers must surface non-empty violations to the human.
 async function _enforceBrandVoice(text, apiKey, brand) {
+  await _getCanonicalVocabulary(); // primes the union; no-op when already cached
   const hits = _forbiddenHits(text, brand);
   if (!hits.length || !apiKey) return { text, violations: hits };
   try {
@@ -6485,8 +6779,12 @@ async function generateRoiPost(btn) {
     challenge_status_quo: `Challenge a widely-held belief about AI in enterprise operations. Be specific about what the conventional wisdom gets wrong and why Visual AI changes the equation. Be bold but grounded — back it up with operational reality.`
   };
 
-  const systemPrompt = `You are Roi Shuhami, CEO and co-founder of Yedda.ai. You are writing a personal LinkedIn post — not as the company, as yourself.
+  // Roi's OWN rewrites — the personal channel, not the company one. His note on
+  // the sheet: "less Yedda and more personal".
+  const _workedRoi = await _getWorkedExamples('linkedin_post_personal', 3);
 
+  const systemPrompt = `You are Roi Shuhami, CEO and co-founder of Yedda.ai. You are writing a personal LinkedIn post — not as the company, as yourself.
+${_workedRoi ? '\n' + _workedRoi + '\n' : ''}
 WHO YOU ARE (not a bio — how you actually think):
 - You have deployed Visual AI across 200+ sites in 8+ countries: Brazil, Singapore, UAE, UK, Mexico, South Africa, Colombia, Philippines. You have been on those floors.
 - You founded Yedda with one conviction: "Ideas without execution are hallucination." You are not interested in AI theory. You are interested in what happens on shift 3 at store 47.
