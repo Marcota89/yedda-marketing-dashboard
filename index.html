@@ -6278,7 +6278,7 @@ function addGeneratedPostToCalendar(post, _retried = false) {
       <div class="post-date"><div class="post-day">${post._dateDay}</div><div class="post-month">${post._dateMonth}</div></div>
       <div>
         <div class="post-hook">"${esc((post._hookPreview||'').slice(0,80))}${(post._hookPreview||'').length>80?'…':''}"</div>
-        <div class="post-angle">${esc((post.src||'').split('·')[0].trim())} · ${esc((post.meta||{}).char||'Abbey')} · Auto-generated</div>
+        <div class="post-angle">${_originLabel(post)} · ${esc((post.meta||{}).char||'Abbey')}</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
         ${tagHtml}
@@ -8035,6 +8035,20 @@ async function addManualPeoplePost(btn) {
   }
 }
 
+/* Where a queued post came from. Everything used to read "Auto-generated",
+   so a weekly batch the MAS produced overnight looked identical to something
+   generated here two minutes ago — the reviewer could not tell which pipeline
+   to trust or which to fix. */
+const _ORIGINS = {
+  f31: ['🤖 MAS weekly batch', 'var(--teal-deep)'],
+};
+function _originLabel(post) {
+  const o = _ORIGINS[post && post._source];
+  if (o) return `<strong style="color:${o[1]};">${o[0]}</strong>`;
+  const src = esc((post && post.src || '').split('·')[0].trim());
+  return `${src || 'Generated here'} · Auto-generated`;
+}
+
 /* restore generated posts from localStorage — called on load and after rebuild */
 function restoreGeneratedPosts() {
   const saved = getGeneratedPosts();
@@ -8065,7 +8079,7 @@ function restoreGeneratedPosts() {
           <div class="post-date"><div class="post-day">${esc(post._dateDay || '—')}</div><div class="post-month">${esc(post._dateMonth || '—')}</div></div>
           <div>
             <div class="post-hook">"${esc(post._hookPreview || post.src)}"</div>
-            <div class="post-angle">${esc((post.src || '').split('·')[0].trim())} · ${esc((post.meta||{}).char || 'Abbey')} · Auto-generated</div>
+            <div class="post-angle">${_originLabel(post)} · ${esc((post.meta||{}).char || 'Abbey')}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
             ${tagHtml}
