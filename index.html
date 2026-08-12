@@ -5167,6 +5167,9 @@ async function saveRevision(i, btn) {
       statusEl.textContent = 'The MAS rejected this as too short to learn from.';
       setLoading(btn, false);
       return;
+    } else if (await _postRevisionToCloud(payload)) {
+      taught = true;
+      msg = '✓ Saved to the cloud queue — the MAS will learn from this on its next sync.';
     } else {
       msg = '✓ Saved locally. The MAS is offline — it will pick this up next time.';
     }
@@ -6611,6 +6614,60 @@ async function _getRoiVoice() {
 const _MKT_BASES = ['/api/v1/marketing', '/api/marketing'];
 let _mktBaseOk = null; // remembers which prefix answered
 
+/* Cloud mirror: /api/mas-mirror serves the same assets from Supabase, so a
+   machine without the local MAS (Roi's) gets the real vocabulary, verticals and
+   worked examples instead of the offline fallbacks. Keyed the same way the sync
+   script writes them. */
+const _MIRROR_KEYS = {
+  '/verticals': 'verticals',
+  '/forbidden-vocabulary': 'forbidden_vocabulary',
+};
+function _mirrorKeyFor(path) {
+  if (_MIRROR_KEYS[path]) return _MIRROR_KEYS[path];
+  if (path.startsWith('/examples')) {
+    const m = path.match(/[?&]channel=([^&]+)/);
+    return 'examples:' + (m ? decodeURIComponent(m[1]) : 'all');
+  }
+  return null;
+}
+
+async function _masMirror(path, timeout = 6000) {
+  const key = _mirrorKeyFor(path);
+  if (!key) return null; // not a mirrored asset (writes never go here)
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const r = await fetch('/api/mas-mirror?key=' + encodeURIComponent(key), { signal: ctrl.signal });
+    clearTimeout(tId);
+    return r.ok ? r : null;
+  } catch (_) {
+    clearTimeout(tId);
+    return null;
+  }
+}
+
+/* A revision is a training signal a human already produced — the one thing here
+   we cannot regenerate. When the local MAS is unreachable it goes to the cloud
+   queue instead, and the MAS imports it on its next sync. Without this, every
+   edit Roi makes lands in his own localStorage and teaches nobody. */
+async function _postRevisionToCloud(payload, timeout = 8000) {
+  const ctrl = new AbortController();
+  const tId = setTimeout(() => ctrl.abort(), timeout);
+  try {
+    const r = await fetch('/api/mas-mirror', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, source: payload.author || 'platform' }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tId);
+    return r.ok;
+  } catch (_) {
+    clearTimeout(tId);
+    return false;
+  }
+}
+
 async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) {
   const bases = _mktBaseOk ? [_mktBaseOk] : _MKT_BASES;
   for (const base of bases) {
@@ -6627,7 +6684,14 @@ async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) 
       if (!quiet) console.warn('MAS marketing unreachable:', e.message);
     }
   }
-  return null; // MAS offline or no prefix matched
+  // Local MAS is out of reach. For reads, the mirror carries the same payload;
+  // for writes it cannot, so those keep returning null and the caller decides.
+  const isRead = !opts || !opts.method || opts.method.toUpperCase() === 'GET';
+  if (isRead) {
+    const mirrored = await _masMirror(path, timeout);
+    if (mirrored) return mirrored;
+  }
+  return null; // MAS offline and nothing mirrored for this path
 }
 
 /* ── Sectors ─────────────────────────────────────────────────────────────────
@@ -7067,18 +7131,19 @@ async function saveRoiPostRevision(btn) {
   }
 
   setLoading(btn, true, '⏳ Saving…');
+  const payload = {
+    pair_id: `roi-post-${Date.now()}`,
+    channel: 'linkedin_post_personal', // his voice, not the company's
+    draft,
+    published,
+    author: 'roi',
+    note: note || undefined,
+  };
   try {
     const r = await _masMarketing('/revision', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pair_id: `roi-post-${Date.now()}`,
-        channel: 'linkedin_post_personal', // his voice, not the company's
-        draft,
-        published,
-        author: 'roi',
-        note: note || undefined,
-      }),
+      body: JSON.stringify(payload),
     }, { timeout: 8000 });
 
     if (r && r.ok) {
@@ -7090,11 +7155,21 @@ async function saveRoiPostRevision(btn) {
       showToast('🧠 Personal-voice example saved.', 'success', 4500);
     } else if (r && r.status === 422) {
       statusEl.textContent = 'The MAS rejected this as too short to learn from.';
+    } else if (await _postRevisionToCloud(payload)) {
+      // This runs on Roi's machine, where the local MAS never answers. Losing
+      // his revision here is losing the only example of his own voice.
+      statusEl.textContent = '✓ Saved to the cloud queue — the MAS will study this on its next sync.';
+      showToast('🧠 Personal-voice example saved.', 'success', 4500);
     } else {
-      statusEl.textContent = '⚠ The MAS is offline — this example was not saved. Try again when it is running.';
+      statusEl.textContent = '⚠ Could not reach the MAS or the cloud queue — copy your text before leaving this page.';
     }
   } catch (_) {
-    statusEl.textContent = '⚠ The MAS is offline — this example was not saved. Try again when it is running.';
+    if (await _postRevisionToCloud(payload)) {
+      statusEl.textContent = '✓ Saved to the cloud queue — the MAS will study this on its next sync.';
+      showToast('🧠 Personal-voice example saved.', 'success', 4500);
+    } else {
+      statusEl.textContent = '⚠ Could not reach the MAS or the cloud queue — copy your text before leaving this page.';
+    }
   } finally {
     setLoading(btn, false);
   }

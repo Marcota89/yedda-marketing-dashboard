@@ -42,3 +42,6 @@ linkedin-contacts-roi-crm.csv
 
 # CEO's editorial spreadsheet export — his working document, not repo content
 data/editorial-sheet.json
+
+.vercel
+.env*
