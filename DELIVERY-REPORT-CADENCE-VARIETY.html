@@ -1,0 +1,280 @@
+<title>Cadence & Variety Delivered</title>
+<style>
+  :root {
+    --bg:#F5F9F8; --surface:#FFFFFF; --surface-2:#EDF4F2; --ink:#16302C; --muted:#5C7472;
+    --accent:#0E7C6B; --accent-ink:#0A5D51; --orange:#F07830; --line:#D9E5E2;
+    --ok:#1D7A4F; --ok-bg:#E3F2EA; --warn:#9A6A00; --warn-bg:#FCF3DC; --crit:#B3261E; --crit-bg:#FBE9E7;
+    --code-bg:#EBF2F0; --shadow:0 1px 3px rgba(22,48,44,.07);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0D1715; --surface:#132220; --surface-2:#1A2C29; --ink:#DFEAE7; --muted:#8FA6A2;
+    --accent:#37B69E; --accent-ink:#5CCBB6; --orange:#F08A4E; --line:#24393533;
+    --ok:#5BC48F; --ok-bg:#16352718; --warn:#E0B45E; --warn-bg:#3A2E0F55; --crit:#F28B82; --crit-bg:#3A1A1855;
+    --code-bg:#1B2E2B; --shadow:none; } }
+  :root[data-theme="dark"] {
+    --bg:#0D1715; --surface:#132220; --surface-2:#1A2C29; --ink:#DFEAE7; --muted:#8FA6A2;
+    --accent:#37B69E; --accent-ink:#5CCBB6; --orange:#F08A4E; --line:#24393533;
+    --ok:#5BC48F; --ok-bg:#16352718; --warn:#E0B45E; --warn-bg:#3A2E0F55; --crit:#F28B82; --crit-bg:#3A1A1855;
+    --code-bg:#1B2E2B; --shadow:none; }
+  *{box-sizing:border-box} body{background:var(--bg);color:var(--ink);font:15.5px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 20px 80px}
+  main{max-width:900px;margin:0 auto}
+  header{padding:52px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+  .lede{color:var(--muted);font-size:16.5px;max-width:66ch;margin:0 0 22px}
+  .meta-strip{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 22px}
+  .meta-chip{font-size:12.5px;padding:4px 11px;border-radius:100px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .meta-chip strong{color:var(--ink);font-weight:600}
+  .quote{border-left:3px solid var(--orange);padding:12px 18px;margin:18px 0;background:var(--surface);border-radius:0 12px 12px 0;font-style:italic}
+  .quote small{display:block;font-style:normal;color:var(--muted);margin-top:6px;font-size:13px}
+  h2{font-size:21px;margin:54px 0 6px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+  h2 .tag{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;white-space:nowrap}
+  .h2-sub{color:var(--muted);margin:0 0 20px;max-width:68ch}
+  h3{font-size:16px;margin:26px 0 8px}
+  p{max-width:70ch}
+  code,.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:.87em;background:var(--code-bg);padding:1.5px 6px;border-radius:5px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:14px 0;box-shadow:var(--shadow)}
+  .card h3{margin-top:0} .card p:last-child{margin-bottom:0}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px} .grid2 .card{margin:0}
+  .table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+  td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:100px;white-space:nowrap}
+  .pill-ok{background:var(--ok-bg);color:var(--ok)} .pill-warn{background:var(--warn-bg);color:var(--warn)}
+  .pill-crit{background:var(--crit-bg);color:var(--crit)} .pill-neutral{background:var(--surface-2);color:var(--muted)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 12px 12px 0;padding:16px 20px;margin:20px 0}
+  .callout p{margin:0} .callout p+p{margin-top:8px}
+  ul{padding-left:22px} li{margin:5px 0;max-width:68ch}
+  /* mock of the real card */
+  .mock{background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:14px 16px;margin:12px 0 6px;font-size:14px}
+  .mock-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;font-weight:600}
+  .mock-hook{font-weight:600;margin-bottom:3px}
+  .mock-angle{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{display:inline-flex;align-items:center;gap:3px;font-family:ui-monospace,Consolas,monospace;font-size:10.5px;letter-spacing:.04em;padding:2px 8px;border-radius:999px;line-height:1.5;white-space:nowrap}
+  .chip-src{background:var(--ok-bg);color:var(--accent-ink);border:1px solid var(--accent)}
+  .chip-vert{background:#f1ede4;color:#5a4a1e;border:1px solid #d9cfae}
+  .chip-dup{background:#fff3e0;color:#b45309;border:1px solid #f0a050;font-weight:700}
+  .chip-cad{background:var(--orange);color:#fff;font-weight:700}
+  .chip-cad.ok{background:var(--accent)}
+  .before-after{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+  .ba-cell{background:var(--surface-2);border-radius:10px;padding:12px 14px;font-size:13.5px}
+  .ba-cell .ba-head{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+  .ba-before .ba-head{color:var(--warn)} .ba-after .ba-head{color:var(--ok)}
+  @media (max-width:560px){.before-after{grid-template-columns:1fr}}
+  footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+<main>
+<header>
+  <p class="eyebrow">Yedda Marketing · Delivery report</p>
+  <h1>Cadence and variety: what changed, technically and visually</h1>
+  <p class="lede">Everything shipped in response to the CEO's two complaints — three posts a week, and no more repetition — plus what the verification found along the way. All of it is live (platform) or merged and running (MAS).</p>
+  <div class="meta-strip">
+    <span class="meta-chip"><strong>4 phases</strong> executed and verified</span>
+    <span class="meta-chip"><strong>MAS PR #16</strong> merged, CI 5/5</span>
+    <span class="meta-chip"><strong>5 platform commits</strong> deployed</span>
+    <span class="meta-chip"><strong>2 new failure shapes</strong> found and fixed</span>
+    <span class="meta-chip">shipped <strong>Aug 18, 2026</strong></span>
+  </div>
+  <div class="quote">"only creating 3 posts instead of 3 per week, + also work on the fetching of the news or posts articles, it keeps repeating and not much variety. only get post of retail and ai-vision over and over again"<small>— Roi, with a screenshot of the Create panel</small></div>
+</header>
+
+<!-- ============ VISUAL ============ -->
+<section>
+  <h2><span class="tag">Visual</span> What Roi sees on every card now</h2>
+  <p class="h2-sub">The card in his screenshot showed a truncated hook and a pillar chip — nothing about <em>where</em> the post came from or <em>which sector</em> it covered. Five posts from one headline looked like five different posts.</p>
+
+  <div class="mock">
+    <div class="mock-label">Before</div>
+    <div class="mock-hook">"Computer vision is finding its way into everyday retail…"</div>
+    <div class="mock-angle">Generated here · Auto-generated · Abbey</div>
+    <div class="chips"><span class="chip" style="background:var(--surface);border:1px solid var(--line);color:var(--muted)">THOUGHT LEADERSHIP</span></div>
+  </div>
+  <div class="mock">
+    <div class="mock-label">Now</div>
+    <div class="mock-hook">"Retail shrink is a visibility problem, not a security problem."</div>
+    <div class="mock-angle">Generated here · Auto-generated · Abbey</div>
+    <div class="chips">
+      <span class="chip chip-src">🔗 lpmag.com</span>
+      <span class="chip chip-vert">Food Retail</span>
+      <span class="chip chip-dup">⚠ same source ×2</span>
+      <span class="chip" style="background:var(--surface);border:1px solid var(--line);color:var(--muted)">THOUGHT LEADERSHIP</span>
+    </div>
+  </div>
+  <div class="mock">
+    <div class="mock-label">Section header</div>
+    <div class="chips" style="align-items:center">
+      <span style="font-weight:700;color:var(--accent-ink)">Auto-Generated Posts ✨</span>
+      <span class="chip chip-cad">This week: 2 of 3</span>
+      <span style="color:var(--muted);font-size:12px;margin-left:8px">All · ✅ Approved · 🔁 Revise · ❌ Rejected · ✓ Published ·</span>
+      <span class="chip" style="background:var(--surface);border:1px solid var(--accent);color:var(--accent-ink)">All verticals ▾</span>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Element</th><th>Before</th><th>Now</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Source chip</strong></td><td>Nothing</td><td>🔗 clickable domain (e.g. <code>lpmag.com</code>) or 📰 the headline it came from</td></tr>
+      <tr><td><strong>Vertical chip</strong></td><td>Did not exist</td><td>Food Retail · Logistics · QSR · Fashion · Manufacturing · Health &amp; Safety</td></tr>
+      <tr><td><strong>Duplicate badge</strong></td><td>Repetition discovered by reading</td><td><strong>"⚠ same source ×N"</strong> when 2+ posts share a URL or headline — actionable (reject one)</td></tr>
+      <tr><td><strong>Weekly cadence</strong></td><td>No indicator</td><td><strong>"This week: N of 3"</strong> in the header — orange until the target is met, teal after</td></tr>
+      <tr><td><strong>Vertical filter</strong></td><td>Status filters only</td><td>"All verticals" dropdown beside the status filters</td></tr>
+      <tr><td><strong>Raw-JSON posts</strong></td><td>2 cards showed <code>{ "content": "Retailers are…</code></td><td>Render as clean text</td></tr>
+      <tr><td><strong>Save &amp; teach offline</strong></td><td>"this example was not saved"</td><td>"Saved to the cloud queue — the MAS will study this on its next sync"</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout">
+    <p><strong>A change visible in the content, not the chrome:</strong> generated posts now come out with the real brand voice, worked examples, and topics that rotate by sector. That is invisible as a UI element and obvious in the text.</p>
+  </div>
+</section>
+
+<!-- ============ COMPLAINT 1 ============ -->
+<section>
+  <h2><span class="tag">Complaint 1</span> "3 posts instead of 3 per week"</h2>
+  <p class="h2-sub">Three causes stacked, all confirmed in code — none of them was a guess.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Root cause</th><th>Where</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>The prompt asked for <strong>exactly 2 posts + 1 research summary</strong>; the summary is filtered out as non-publishable → 2 per run</td><td><code>f31_content_marketing.py:228</code></td><td><code>F31Config.posts_per_run=3</code> + <code>post_angles</code>; the prompt builds N posts with distinct mandatory angles</td></tr>
+      <tr><td class="num">2</td><td>The weekly scheduler job <strong>hand-built the F31Config with two fields</strong> — no web search, no brand voice, no examples, no queue intake (surviving bug 6)</td><td><code>run_scheduler.py:1344</code></td><td>Job now calls <code>runtime.f31_graph()</code>; alerts when a run delivers &lt; 3 or <code>delivered=False</code></td></tr>
+      <tr><td class="num">3</td><td>Fixed topic <code>"restaurant technology operations"</code>, every Monday, forever</td><td><code>run_scheduler.py:1353</code></td><td><code>vertical_for_week()</code> by ISO week (deterministic) + <code>topic_for_vertical()</code> from each vertical's real pain points — 6 weeks, 6 sectors</td></tr>
+      <tr><td class="num">4</td><td>3 posts + summary do not fit the 1024-token default → truncated mid-JSON → parsed to nothing (the shape of the six silent empty weeks)</td><td><code>llm_bridge.py</code></td><td><code>_llm_for(..., max_tokens=2048)</code> for F31</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card">
+    <h3>Verified through the production path with a real LLM — not a mock</h3>
+    <div class="before-after">
+      <div class="ba-cell ba-before"><div class="ba-head">Before</div>2 posts/run · same topic every week · brand voice absent from the prompt · examples absent</div>
+      <div class="ba-cell ba-after"><div class="ba-head">After</div><strong>3 posts</strong> (thought leadership / social proof / education, ~1000 chars each) · vertical of the week (QSR) · brand voice <strong>True</strong> · examples <strong>True</strong> · JSON intact · 3 delivered to intake</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPLAINT 2 ============ -->
+<section>
+  <h2><span class="tag">Complaint 2</span> "keeps repeating — only retail and ai-vision"</h2>
+  <p class="h2-sub">Measured before touching anything: of 53 posts, the same story became a post up to 5 times. Two causes, both literal.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Root cause</th><th>Where</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td class="num">5</td><td><strong>Five fixed news queries</strong>, three with "retail" and/or "computer vision" — the same five every week</td><td><code>index.html:5827</code></td><td>Pool of <strong>24 sector-specific queries</strong> (4 per vertical, trade-press vocabulary) shipped by the MAS in <code>news_queries.yaml</code>, served in <code>/verticals</code>, mirrored to the cloud; the page samples 5 per ISO week, least-covered verticals first, seeded so a refresh doesn't reshuffle</td></tr>
+      <tr><td class="num">6</td><td>The "already used" list lived in <code>localStorage</code> — <strong>per browser</strong>. Marco's and Roi's sets never met; each forgot on cache clear</td><td><code>index.html:5857</code></td><td>Table <code>used_articles</code> in Supabase + <code>/api/used-articles</code>: one shared memory, matched by <strong>normalized URL and title hash</strong> — the same story republished by four outlets is one story. 32 historic titles backfilled</td></tr>
+      <tr><td class="num">7</td><td>Every post in a batch got the <strong>same article set</strong> — three posts could be one headline in three tones</td><td><code>index.html:5783</code></td><td>Post <em>i</em> leads with article <em>i</em>; no two posts share a lead source; each post carries <code>_vertical</code>/<code>_leadUrl</code></td></tr>
+      <tr><td class="num">8</td><td>Parser fell to "last resort" when the model returned JSON with raw newlines inside the string → the whole object became the post body</td><td><code>index.html:6182</code></td><td><code>unwrapJsonBody</code>: strict parse → tolerant (escape control chars) → bounded extraction. 7/7 cases including the exact live shape; also applied at render</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card">
+    <h3>Verified across "two machines"</h3>
+    <ul>
+      <li>Machine A marks <code>lpmag.com/nrf-protect-2026/?utm_source=x</code> as used → Machine B checks <code>lpmag.com/nrf-protect-2026/</code> (no utm, no www) → <strong>recognized</strong> (<code>used: true, by: marco</code>)</li>
+      <li>Same story, different headline punctuation → <strong>title hash matches</strong></li>
+      <li>Headless render already samples <strong>5 queries from 5 different sectors</strong> — QSR, safety, fashion, grocery, logistics. Zero "computer vision retail".</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TECHNICAL ============ -->
+<section>
+  <h2><span class="tag">Technical</span> Everything that changed, by layer</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Platform — new endpoints &amp; tables</h3>
+      <ul>
+        <li><code>api/used-articles.js</code> + <code>used_articles</code> — global dedupe (GET list/check, POST mark)</li>
+        <li><code>api/posts.js?stats=1</code> — distribution by vertical and source, <code>repeat_ratio</code>, top repeated sources</li>
+        <li><code>api/mas-mirror.js</code> — now carries <code>news_queries</code> per vertical to every machine</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Platform — page (<code>index.html</code>)</h3>
+      <ul>
+        <li><code>_filterSeenAsync</code> / <code>_markSeen</code> — cloud first, localStorage as fallback and fast cache</li>
+        <li><code>_weeklyQueries()</code> — seeded weekly sample from the per-vertical pool</li>
+        <li>Batch rotation of article sets; <code>_vertical</code>/<code>_leadUrl</code> on posts</li>
+        <li><code>unwrapJsonBody</code> hardened; applied at render</li>
+        <li><code>_masLocalDown</code> — a machine with no local MAS goes straight to the mirror (was ~12 s of timeouts)</li>
+        <li>RSS cache-bust per ISO week, not per request</li>
+        <li>Chips, badge, cadence, vertical filter (see Visual)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>MAS — PR #16 (merged, CI 5/5)</h3>
+      <ul>
+        <li><code>F31Config.posts_per_run</code> + <code>post_angles</code>; N-post prompt spec</li>
+        <li><code>_llm_for(..., max_tokens=)</code>; F31 at 2048</li>
+        <li><code>vertical_loader</code>: <code>list_verticals</code> / <code>vertical_for_week</code> / <code>topic_for_vertical</code></li>
+        <li>Weekly job via <code>runtime.f31_graph()</code> + short-batch alert</li>
+        <li>PR-crisis job via <code>runtime.f_pr_crisis_graph()</code> — its hand-built config had no <code>consult_fn</code>, so <strong>Phase 65's RBAC never applied on cron</strong></li>
+        <li>Parity guard scans all <code>scripts/*.py</code>, exempts per construction site — found 5 more (2 real bugs, 3 legitimate now named)</li>
+        <li><code>news_queries.yaml</code> × 6 verticals, exposed in <code>/verticals</code></li>
+        <li>Consult falls back to the local store when pgvector has the collection empty</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>MAS — follow-up <span class="mono">aa19660</span></h3>
+      <ul>
+        <li>Router stores anchored to the repo root — the scheduled-task server read <code>data/</code> relative to its cwd and served <code>count=0</code> with 18 pairs on disk</li>
+        <li>Official dashboard restarted on the new <code>main</code>; mirror re-synced from it (18 pairs, 5 examples)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOUND ============ -->
+<section>
+  <h2><span class="tag">Found by verifying</span> Two new failure shapes — both from the catalogue</h2>
+  <div class="card">
+    <h3>11th · <span class="pill pill-crit">brand voice gone again, silently</span></h3>
+    <p><code>POSTGRES_URL</code> entered the MAS <code>.env</code> (milestone v1.5) for other workflows. With the DSN present, the consult went to <code>pg_store</code> — where <code>marketing</code> was <strong>never ingested</strong> — received <code>[]</code> without error, and the round-6 local fallback was never reached. <strong>From that day every F31 prompt lost BRAND-VOICE again.</strong> The code's own comment described the scenario it "prevented" — but only covered "no DSN", not "DSN and empty collection".</p>
+    <p>Fix: probe at construction; pg empty + local has the collection → serve local (RBAC identical). <code>test_consult_pg_empty_fallback.py</code> locks it.</p>
+  </div>
+  <div class="card">
+    <h3>12th · <span class="pill pill-crit">count=0 with 18 pairs on disk</span></h3>
+    <p>The official dashboard, started by a scheduled task, served <code>/stats: count 0</code>. The router built <code>ContentPairStore()</code> with the default <code>Path("data")</code> — relative to the process cwd. The runtime already anchored <em>its</em> copy to the repo root; the router was a second reader with a different answer. Fix: anchor both stores; proven by reading 18 pairs from <code>/tmp</code>.</p>
+  </div>
+  <div class="callout">
+    <p><strong>Baseline, so the improvement is measurable:</strong> <code>/api/posts?stats=1</code> on the 53 existing posts — 32 distinct sources, <strong>repeat_ratio 0.40</strong> (two of every five posts reused a source), <code>by_vertical</code> all "unknown". New posts carry a vertical; the number is trackable from here.</p>
+  </div>
+</section>
+
+<!-- ============ TESTS ============ -->
+<section>
+  <h2><span class="tag">Locked in</span> Tests that keep it from regressing</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Test</th><th>Guards</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_f31_cadence.py</code></td><td>posts_per_run=3, N follows config not a literal, distinct angles, rotation covers every vertical, deterministic per week, topic from the vertical's own pain points</td><td class="num">10</td></tr>
+      <tr><td><code>test_consult_pg_empty_fallback.py</code></td><td>pg empty + local present → local; pg populated → pg; nothing anywhere → handle not None</td><td class="num">3</td></tr>
+      <tr><td><code>test_runner_config_parity.py</code></td><td>no hand-built config anywhere in <code>scripts/</code>; allowlist has no stale entries</td><td class="num">16</td></tr>
+      <tr><td><code>test_marketing_router_verticals.py</code></td><td>every vertical ships ≥3 news queries, none generic, no duplicates; stores anchored to repo</td><td class="num">31</td></tr>
+      <tr><td>Parser suite (node)</td><td>raw newlines · valid · fenced · posts array · nested object · truncated · plain</td><td class="num">7</td></tr>
+      <tr><td>Headless render (puppeteer)</td><td>seeded posts: dup badge fires on utm/www variant, cadence renders, filter has 7 options, 0 JS errors</td><td class="num">1</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ STATE ============ -->
+<section>
+  <h2><span class="tag">State</span> Where everything stands</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>MAS PR #16</td><td><span class="pill pill-ok">merged</span> <code>ac3be61</code>, CI 5/5 green</td></tr>
+      <tr><td>MAS follow-up <code>aa19660</code></td><td><span class="pill pill-ok">on main</span></td></tr>
+      <tr><td>Official dashboard</td><td><span class="pill pill-ok">running on new main</span> — 6 verticals with queries, 18 pairs, 5 examples</td></tr>
+      <tr><td>Cloud mirror</td><td><span class="pill pill-ok">synced from the official MAS</span> — Roi gets the query pool and examples</td></tr>
+      <tr><td>Platform</td><td><span class="pill pill-ok">deployed &amp; verified live</span> — 5 commits on main</td></tr>
+      <tr><td>Split <code>index.html</code> (9,300 lines)</td><td><span class="pill pill-neutral">deferred to backlog</span> — refactoring on top of week-old code, in the week Roi evaluates the result, doubles regression risk. 4-step plan recorded.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout">
+    <p><strong>First real proof:</strong> next Monday's F31 run should deliver <strong>3 posts</strong> for the <code>manufacturing</code> vertical (ISO week 34), each with the "🤖 MAS weekly batch" badge, a vertical chip, and no source repeated from the last 45 days.</p>
+  </div>
+</section>
+
+<footer>Delivery report · August 18, 2026 · MAS: PR #16 → <span class="mono">ac3be61</span>, <span class="mono">aa19660</span> · Platform: <span class="mono">6985402 · 30917be</span> and follow-ups · Diagnosis report: <a href="https://claude.ai/code/artifact/4ab1b1a0-d6ef-489e-bae6-5327ab05e388" style="color:var(--accent)">planning artifact</a></footer>
+</main>

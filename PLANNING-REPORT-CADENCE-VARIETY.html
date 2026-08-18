@@ -1,0 +1,229 @@
+<title>Cadência e Variedade</title>
+<style>
+  :root {
+    --bg:#F5F9F8; --surface:#FFFFFF; --surface-2:#EDF4F2; --ink:#16302C; --muted:#5C7472;
+    --accent:#0E7C6B; --accent-ink:#0A5D51; --orange:#F07830; --line:#D9E5E2;
+    --ok:#1D7A4F; --ok-bg:#E3F2EA; --warn:#9A6A00; --warn-bg:#FCF3DC; --crit:#B3261E; --crit-bg:#FBE9E7;
+    --code-bg:#EBF2F0; --shadow:0 1px 3px rgba(22,48,44,.07);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#0D1715; --surface:#132220; --surface-2:#1A2C29; --ink:#DFEAE7; --muted:#8FA6A2;
+    --accent:#37B69E; --accent-ink:#5CCBB6; --orange:#F08A4E; --line:#24393533;
+    --ok:#5BC48F; --ok-bg:#16352718; --warn:#E0B45E; --warn-bg:#3A2E0F55; --crit:#F28B82; --crit-bg:#3A1A1855;
+    --code-bg:#1B2E2B; --shadow:none; } }
+  :root[data-theme="dark"] {
+    --bg:#0D1715; --surface:#132220; --surface-2:#1A2C29; --ink:#DFEAE7; --muted:#8FA6A2;
+    --accent:#37B69E; --accent-ink:#5CCBB6; --orange:#F08A4E; --line:#24393533;
+    --ok:#5BC48F; --ok-bg:#16352718; --warn:#E0B45E; --warn-bg:#3A2E0F55; --crit:#F28B82; --crit-bg:#3A1A1855;
+    --code-bg:#1B2E2B; --shadow:none; }
+  *{box-sizing:border-box} body{background:var(--bg);color:var(--ink);font:15.5px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 20px 80px}
+  main{max-width:900px;margin:0 auto}
+  header{padding:52px 0 8px;border-bottom:2px solid var(--accent);margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+  .lede{color:var(--muted);font-size:16.5px;max-width:66ch;margin:0 0 22px}
+  .quote{border-left:3px solid var(--orange);padding:12px 18px;margin:18px 0;background:var(--surface);border-radius:0 12px 12px 0;font-style:italic}
+  .quote small{display:block;font-style:normal;color:var(--muted);margin-top:6px;font-size:13px}
+  h2{font-size:21px;margin:54px 0 6px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+  h2 .tag{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;white-space:nowrap}
+  .h2-sub{color:var(--muted);margin:0 0 20px;max-width:68ch}
+  h3{font-size:16px;margin:26px 0 8px}
+  p{max-width:70ch}
+  code,.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:.87em;background:var(--code-bg);padding:1.5px 6px;border-radius:5px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:14px 0;box-shadow:var(--shadow)}
+  .card h3{margin-top:0} .card p:last-child{margin-bottom:0}
+  .table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+  td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:100px;white-space:nowrap}
+  .pill-ok{background:var(--ok-bg);color:var(--ok)} .pill-warn{background:var(--warn-bg);color:var(--warn)}
+  .pill-crit{background:var(--crit-bg);color:var(--crit)} .pill-neutral{background:var(--surface-2);color:var(--muted)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 12px 12px 0;padding:16px 20px;margin:20px 0}
+  .callout p{margin:0} .callout p+p{margin-top:8px}
+  ul{padding-left:22px} li{margin:5px 0;max-width:68ch}
+  .phase{display:flex;gap:14px;align-items:flex-start;margin:14px 0}
+  .phase-n{flex:0 0 40px;height:40px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .phase-body{flex:1} .phase-body h3{margin:6px 0 4px}
+  .phase-meta{font-size:13px;color:var(--muted);margin-bottom:6px}
+  footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+<main>
+<header>
+  <p class="eyebrow">Yedda Marketing · Planejamento</p>
+  <h1>Cadência e variedade: por que o Roi vê 3 posts repetitivos, e o que muda</h1>
+  <p class="lede">Diagnóstico com evidência de código e de dados das duas reclamações do CEO, mais um novo mapeamento do projeto em busca de melhorias técnicas e visuais. Só planejamento — nada foi executado.</p>
+  <div class="quote">"the marketspace is still only creating 3 posts instead of 3 per week, + also work on the fetching of the news or posts articles, it keeps repeating and not much variety. only get post of retail and ai-vision over and over again"<small>— Roi, 12 ago 2026, com a captura do painel Create</small></div>
+</header>
+
+<section>
+  <h2><span class="tag">Resumo</span> As duas reclamações têm 5 causas-raiz, todas confirmadas no código</h2>
+  <p>Nenhuma é conjectura: cada uma foi localizada na linha exata e, onde possível, confirmada contra os 53 posts que estão na nuvem hoje.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Reclamação</th><th>Causa-raiz</th><th>Onde</th><th>Gravidade</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>"3 posts em vez de 3 por semana"</td><td>O prompt do F31 pede <strong>exatamente 2 posts + 1 research summary</strong>; o summary é filtrado pelo allowlist do intake. Cada run semanal entrega <strong>2</strong>. Os 3 da captura são acumulado de runs.</td><td><code>f31_content_marketing.py:228-232</code></td><td><span class="pill pill-crit">alta</span></td></tr>
+      <tr><td class="num">2</td><td>(mesma)</td><td>O job semanal do scheduler <strong>monta o F31Config à mão</strong> — só <code>llm_fn</code> e <code>delivery_fn</code>. Sem web search, sem brand voice, sem exemplos, sem intake. É o <strong>bug 6 sobrevivente</strong>: o guard de paridade da rodada 5 cobre <code>scripts/run_*.py</code>, mas esta montagem está embutida no scheduler e escapou.</td><td><code>run_scheduler.py:1344</code></td><td><span class="pill pill-crit">alta</span></td></tr>
+      <tr><td class="num">3</td><td>"retail e ai-vision repetidamente"</td><td>O job semanal usa <strong>tópico fixo</strong> <code>"restaurant technology operations"</code>, toda segunda, para sempre. Nenhuma rotação de vertical.</td><td><code>run_scheduler.py:1353</code></td><td><span class="pill pill-crit">alta</span></td></tr>
+      <tr><td class="num">4</td><td>"pouca variedade nas notícias"</td><td>A busca de notícias usa <strong>5 queries fixas</strong>, 3 delas com "retail" e/ou "computer vision". As mesmas 5 toda semana. É literalmente o que o Roi descreveu.</td><td><code>index.html:5827-5833</code></td><td><span class="pill pill-warn">média</span></td></tr>
+      <tr><td class="num">5</td><td>"keeps repeating"</td><td>O dedupe de artigos já usados vive em <code>localStorage</code> — <strong>por navegador</strong>. Você e o Roi têm listas de "vistos" diferentes; cada máquina esquece ao limpar cache. Resultado medido: <strong>a mesma notícia gerou até 5 posts</strong>.</td><td><code>index.html:5857-5870</code></td><td><span class="pill pill-crit">alta</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout">
+    <p><strong>Achado que reforça:</strong> dos 53 posts na nuvem, <em>"Weekly Supply Chain News Round-Up"</em> gerou 5 posts, <em>"NRF PROTECT 2026"</em> gerou 5, <em>"Everseen Acquires Viztel"</em> gerou 4. Não é impressão do Roi — é o dado.</p>
+    <p><strong>Achado lateral:</strong> 2 dos 53 posts têm <strong>JSON cru como texto</strong> (<code>{ "content": "Retailers are rapidly…</code>). O parser cai no "last resort" quando o Gemini devolve JSON dentro de JSON, e o objeto inteiro vira o corpo do post. Visível ao Roi na lista.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag">Reclamação 1</span> Cadência: como chegar a 3 posts por semana, de verdade</h2>
+  <p class="h2-sub">"3 por semana" tem duas leituras, e a solução deve servir às duas: 3 posts <em>novos e distintos</em> na fila toda semana, prontos para o Roi aprovar.</p>
+
+  <div class="card">
+    <h3>1a · Prompt do F31: 3 posts em vez de 2 <span class="pill pill-neutral">MAS</span></h3>
+    <p>Trocar o template fixo de "2 posts + 1 summary" por <strong>N posts parametrizável</strong> (<code>F31Config.posts_per_run</code>, default 3) + 1 summary opcional. Cada post recebe um <strong>ângulo distinto obrigatório</strong> no próprio prompt — thought leadership / social proof / educação — em vez de deixar o modelo repetir o mesmo formato três vezes.</p>
+    <p>Risco a controlar: com <code>max_output_tokens=1024</code> e <code>thinking_budget=0</code>, 3 posts + summary pode truncar. Subir para 2048 e testar antes de fixar.</p>
+  </div>
+
+  <div class="card">
+    <h3>1b · Scheduler pelo caminho de produção <span class="pill pill-neutral">MAS</span> <span class="pill pill-crit">o mais importante</span></h3>
+    <p>O job de segunda-feira precisa fazer <code>build_runtime().f31_graph()</code> como o runner faz desde a rodada 5 — não montar config própria. A montagem oficial em <code>runtime.py:812</code> tem <code>web_search_fn</code>, <code>brand_voice_consult_fn</code>, <code>content_examples_fn</code>, <code>queue_intake_fn</code>; a do scheduler tem <strong>dois campos</strong>. Enquanto não convergir, os posts do cron saem <strong>sem voz de marca, sem exemplos e sem pesquisa web</strong> — o que também explica a monotonia: sem web search, o modelo escreve do zero sobre o mesmo tópico.</p>
+    <p><strong>E estender o guard de paridade</strong> para varrer <code>F31Config(</code> em qualquer arquivo de <code>scripts/</code>, não só nos <code>run_*.py</code>. A quinta montagem à mão não pode nascer de novo.</p>
+  </div>
+
+  <div class="card">
+    <h3>1c · Escalonamento opcional: 3 runs menores em vez de 1 grande</h3>
+    <p>Alternativa: manter 1 post por run e agendar <strong>seg / qua / sex</strong>. Vantagem: os posts chegam espaçados e cada um pode reagir a notícias da própria semana. Desvantagem: 3× as chamadas de LLM e 3 janelas de falha. <strong>Recomendo começar por 1a+1b</strong> (1 run, 3 posts) e migrar para 1c só se o Roi preferir a chegada espaçada.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag">Reclamação 2</span> Variedade: quatro camadas de rotação</h2>
+  <p class="h2-sub">A monotonia vem de fontes fixas em cada camada. A correção é rotação em cada uma — e um dedupe que atravesse máquinas.</p>
+
+  <div class="card">
+    <h3>2a · Tópico semanal rotativo pelas 6 verticais <span class="pill pill-neutral">MAS</span></h3>
+    <p>O MAS já serve 6 verticais com contexto regulatório (<code>fashion</code>, <code>food_retail</code>, <code>logistics</code>, <code>safety</code>, …). O job semanal deve <strong>escolher a vertical pelo número da semana</strong> (<code>week % 6</code>) e derivar o tópico dela — em vez de "restaurant technology operations" para sempre. Em 6 semanas, o Roi vê as 6 verticais; hoje ele vê 1.</p>
+    <p>Refinamento: pesar pela vertical <em>menos publicada</em> nos últimos 30 dias (dado já disponível na fila), em vez de round-robin cego.</p>
+  </div>
+
+  <div class="card">
+    <h3>2b · Queries de notícia: de 5 fixas para um pool rotativo <span class="pill pill-neutral">plataforma</span></h3>
+    <p>Trocar <code>_APIFY_QUERIES_BASE</code> por um <strong>pool de ~25 queries organizadas por vertical</strong> (4 por vertical), e sortear 5 por semana com peso para as verticais menos cobertas. Exemplos do que hoje não entra: <em>cold chain compliance</em>, <em>warehouse safety incidents</em>, <em>QSR labor scheduling</em>, <em>fashion returns fraud</em>, <em>pharma dispensing errors</em>. O Roi para de ver só retail + visão computacional porque as queries param de ser só sobre isso.</p>
+    <p>O pool deve viver no MAS junto às verticais (<code>config/verticals/*/news_queries.yaml</code>) e chegar à página pelo endpoint <code>/verticals</code> — assim uma vertical nova traz suas queries junto, e o espelho na nuvem já entrega ao Roi.</p>
+  </div>
+
+  <div class="card">
+    <h3>2c · Dedupe de artigos na nuvem, não no navegador <span class="pill pill-neutral">plataforma</span> <span class="pill pill-crit">o mais importante</span></h3>
+    <p>Mover <code>yedda_seen_articles</code> de <code>localStorage</code> para uma tabela <code>used_articles</code> no Supabase (URL normalizada + hash do título + data). A verificação passa a ser <strong>global</strong>: se qualquer máquina já gerou post daquela notícia, ela não volta — para ninguém. É o único jeito de "keeps repeating" parar de acontecer entre você e o Roi.</p>
+    <p>Bônus: o mesmo registro alimenta um <strong>filtro de similaridade de título</strong> (Jaccard &gt; 0.6 = mesma notícia com manchete diferente), que pega o caso "Everseen Acquires Viztel" republicado por 4 veículos.</p>
+  </div>
+
+  <div class="card">
+    <h3>2d · Diversidade forçada no batch</h3>
+    <p>Ao gerar N posts numa sessão, garantir que <strong>nenhum par compartilhe fonte nem vertical</strong>. Hoje <code>_sectorBlock</code> já rotaciona por <code>postIndex</code>, mas a fonte não — 3 posts podem sair da mesma manchete. Uma regra simples no montador do batch resolve.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag">Novo mapeamento</span> Melhorias técnicas encontradas</h2>
+  <p class="h2-sub">O que apareceu ao revisitar o projeto além das reclamações. Ordenado por impacto.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Melhoria</th><th>Por quê</th><th>Esforço</th></tr></thead>
+    <tbody>
+      <tr><td class="num">T1</td><td><strong>Parser de resposta robusto</strong> — desembrulhar JSON aninhado antes do "last resort"</td><td>2 posts na nuvem hoje mostram <code>{ "content": …</code> como texto. É o bug mais visível ao Roi depois da repetição.</td><td><span class="pill pill-ok">baixo</span></td></tr>
+      <tr><td class="num">T2</td><td><strong>Guard de paridade ampliado</strong> — varrer <code>F31Config(</code> em todo <code>scripts/</code></td><td>A montagem à mão em <code>run_scheduler.py</code> passou pelo guard atual. São 4 montagens no repo; só 1 deveria existir.</td><td><span class="pill pill-ok">baixo</span></td></tr>
+      <tr><td class="num">T3</td><td><strong>Teste de contrato do <code>ContentPairStore</code></strong> (rodada 10)</td><td>O espelho na nuvem importa a API do MAS e nada lá registra isso. Já pedido; sem resposta ainda.</td><td><span class="pill pill-ok">baixo</span></td></tr>
+      <tr><td class="num">T4</td><td><strong>Métrica de variedade na fila</strong> — distribuição por vertical/fonte nos últimos 30 dias, exposta em <code>/stats</code></td><td>Sem medir, "pouca variedade" continua sendo opinião. Com o número, o job semanal pode escolher a vertical menos coberta (2a) e você vê a melhora.</td><td><span class="pill pill-warn">médio</span></td></tr>
+      <tr><td class="num">T5</td><td><strong>Alerta de batch vazio/pequeno</strong> — se o run semanal entregar &lt; 3 posts, notificar</td><td>O F31 já parou 6 semanas em silêncio uma vez (thinking tokens). Um run que entrega 0 ou 1 hoje passa despercebido até o Roi reclamar.</td><td><span class="pill pill-ok">baixo</span></td></tr>
+      <tr><td class="num">T6</td><td><strong>Dividir o <code>index.html</code></strong> (9.307 linhas, 449 KB, arquivo único)</td><td>Toda mudança de UI toca o mesmo arquivo; o risco de regressão cresce a cada rodada. Extrair ao menos os módulos de geração, Radar e fila para arquivos JS separados. Não urgente, mas é a dívida que mais encarece tudo o resto.</td><td><span class="pill pill-crit">alto</span></td></tr>
+      <tr><td class="num">T7</td><td><strong>Cache-busting do RSS por semana, não por request</strong></td><td>O <code>_cb=Date.now()</code> anula o cache de 5 min do proxy em toda chamada. Trocar por chave semanal mantém frescor e reduz chamadas ao Google News (que já bloqueia por rate limit).</td><td><span class="pill pill-ok">baixo</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2><span class="tag">Novo mapeamento</span> Melhorias visuais no painel do Roi</h2>
+  <p class="h2-sub">O que a captura dele mostra — e o que ela não mostra, mas deveria.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Melhoria</th><th>O que o Roi ganha</th></tr></thead>
+    <tbody>
+      <tr><td class="num">V1</td><td><strong>Fonte visível em cada card</strong> — o veículo/manchete que originou o post, como chip clicável</td><td>Hoje o card mostra "Computer vision is finding its way into everyday retail…" truncado. Se ele visse "via Loss Prevention Magazine · NRF PROTECT", saberia na hora que 5 posts vieram da mesma notícia — e nós também.</td></tr>
+      <tr><td class="num">V2</td><td><strong>Chip de vertical</strong> ao lado do chip de ângulo (Thought Leadership / Social Proof / Education)</td><td>Ele já tem o ângulo; falta o setor. "Logistics · Social Proof" comunica variedade (ou a falta dela) num relance.</td></tr>
+      <tr><td class="num">V3</td><td><strong>Indicador de cadência semanal</strong> — "Esta semana: 2 de 3 posts" no topo do painel Create</td><td>Responde à reclamação dele antes de ele fazê-la. Se o run de segunda entregou 2, ele vê 2/3 e sabe que falta 1 — e nós vemos que o job falhou parcialmente.</td></tr>
+      <tr><td class="num">V4</td><td><strong>Alerta de duplicata</strong> — se dois posts na lista compartilham fonte, badge "⚠ mesma fonte" em ambos</td><td>Torna a repetição visível e acionável (rejeitar um) em vez de deixar o Roi descobrir lendo.</td></tr>
+      <tr><td class="num">V5</td><td><strong>Filtro por vertical</strong> na barra de filtros (junto a All / Approved / Revise…)</td><td>Ele pode perguntar "o que temos de logística?" sem rolar a lista.</td></tr>
+      <tr><td class="num">V6</td><td><strong>Preview do texto sem JSON cru</strong> (depende de T1)</td><td>Os dois posts que hoje mostram <code>{ "content": …</code> passam a mostrar o texto.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2><span class="tag">Plano</span> Ordem de execução recomendada</h2>
+  <p class="h2-sub">Quatro fases. As duas primeiras resolvem as reclamações; as demais consolidam. Cada fase é verificável isoladamente contra a fila real antes de avançar.</p>
+
+  <div class="phase"><div class="phase-n">1</div><div class="phase-body">
+    <h3>Cadência + rotação de tópico <span class="pill pill-crit">resolve a reclamação</span></h3>
+    <div class="phase-meta">MAS · itens 1a, 1b, 2a, T2, T5 · ~1 sessão</div>
+    <ul>
+      <li>Job semanal via <code>build_runtime().f31_graph()</code>; guard de paridade ampliado para pegar a montagem embutida</li>
+      <li><code>posts_per_run=3</code> com ângulos distintos obrigatórios; <code>max_output_tokens</code> ajustado e testado</li>
+      <li>Vertical da semana por <code>week % 6</code>; tópico derivado dela</li>
+      <li>Alerta se o run entregar &lt; 3</li>
+      <li><strong>Verificação:</strong> disparar o job manualmente e conferir na fila: 3 posts, vertical correta, selo "MAS weekly batch", voz de marca presente no prompt capturado</li>
+    </ul>
+  </div></div>
+
+  <div class="phase"><div class="phase-n">2</div><div class="phase-body">
+    <h3>Variedade de notícias + dedupe global <span class="pill pill-crit">resolve a reclamação</span></h3>
+    <div class="phase-meta">plataforma + Supabase · itens 2b, 2c, 2d, T1, T7 · ~1 sessão</div>
+    <ul>
+      <li>Tabela <code>used_articles</code> no Supabase; <code>_filterSeen</code> passa a consultar a nuvem (com fallback local se offline)</li>
+      <li>Pool de queries por vertical, sorteio semanal com peso; cache-busting semanal</li>
+      <li>Regra de batch: nenhum par de posts com mesma fonte ou vertical</li>
+      <li>Parser: desembrulhar JSON aninhado antes do fallback</li>
+      <li><strong>Verificação:</strong> gerar 5 posts em duas máquinas diferentes e confirmar zero fonte repetida entre elas; conferir que os 2 posts com JSON cru renderizam texto</li>
+    </ul>
+  </div></div>
+
+  <div class="phase"><div class="phase-n">3</div><div class="phase-body">
+    <h3>Visibilidade para o Roi</h3>
+    <div class="phase-meta">plataforma · itens V1–V5, T4 · ~1 sessão</div>
+    <ul>
+      <li>Chip de fonte e chip de vertical em cada card; badge de duplicata; filtro por vertical</li>
+      <li>Indicador "Esta semana: N de 3" no topo do Create</li>
+      <li><code>/stats</code> expõe distribuição por vertical/fonte (alimenta o indicador e a escolha de vertical da fase 1)</li>
+    </ul>
+  </div></div>
+
+  <div class="phase"><div class="phase-n">4</div><div class="phase-body">
+    <h3>Dívida estrutural</h3>
+    <div class="phase-meta">ambos · itens T3, T6 · quando houver folga</div>
+    <ul>
+      <li>Teste de contrato do <code>ContentPairStore</code> (já pedido ao MAS)</li>
+      <li>Extrair módulos do <code>index.html</code> — o único item que não é urgente, mas é o que mais encarece os outros</li>
+    </ul>
+  </div></div>
+
+  <div class="callout">
+    <p><strong>O que responder ao Roi agora, antes de executar:</strong> as duas coisas que ele viu são reais e têm causa localizada. O "3 posts" é porque o job pede 2 por semana e um deles é descartado como não-publicável; a repetição é porque a busca usa 5 termos fixos e o filtro de "já usado" não é compartilhado entre máquinas. A fase 1 muda o que ele vê na próxima segunda-feira; a fase 2, na semana seguinte.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag">Decisões</span> O que precisa de você antes da execução</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Decisão</th><th>Opções</th><th>Minha recomendação</th></tr></thead>
+    <tbody>
+      <tr><td>Cadência</td><td>1 run com 3 posts (seg) <em>vs</em> 3 runs de 1 post (seg/qua/sex)</td><td><strong>1 run com 3</strong> — mais simples, menos pontos de falha; migrar só se o Roi preferir chegada espaçada</td></tr>
+      <tr><td>Rotação de vertical</td><td>round-robin cego <em>vs</em> menos-coberta-nos-últimos-30-dias</td><td>Começar <strong>round-robin</strong> (fase 1); trocar para menos-coberta quando T4 existir (fase 3)</td></tr>
+      <tr><td>Onde vive o pool de queries</td><td>hardcoded na página <em>vs</em> <code>config/verticals/</code> no MAS</td><td><strong>No MAS</strong> — o espelho já leva ao Roi, e vertical nova traz queries junto</td></tr>
+      <tr><td>Divisão do <code>index.html</code></td><td>agora <em>vs</em> depois das fases 1-3</td><td><strong>Depois</strong> — não bloqueia nada e mexer no arquivo enquanto as fases o alteram dobra o risco</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>Planejamento gerado em 12 de agosto de 2026 · Evidência: <span class="mono">f31_content_marketing.py:228</span> · <span class="mono">run_scheduler.py:1344,1353</span> · <span class="mono">runtime.py:812</span> · <span class="mono">index.html:5827,5857</span> · 53 posts em <span class="mono">/api/posts</span> · Nada executado.</footer>
+</main>
