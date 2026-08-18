@@ -27,7 +27,7 @@ Iniciado 2026-08-12 a partir do relatório aprovado. Fase 1 em andamento.
 - R4.2 (split index.html) deliberately deferred: phases 1-3 shipped with an unplanned 11th failure shape and three route fixes; refactoring 9.3k lines on top of week-old code doubles regression risk in the week Roi evaluates the result. Backlog with plan below.
 
 ## Milestone complete — 2026-08-18
-MAS: PR #16 merged (ac3be61), CI 5/5 green, official dashboard restarted on new main, mirror synced.
+MAS: PR #16 merged (ac3be61) + aa19660 (router stores anchored to repo — found when the scheduled-task server served count=0), CI 5/5 green, official dashboard restarted on new main, mirror synced.
 Platform: 3 commits on main, deployed, headless-verified.
 
 ## Backlog (v-next)
