@@ -1,7 +1,7 @@
 ---
 milestone: cadencia-variedade
-status: in_progress
-current_phase: 4
+status: complete
+current_phase: done
 ---
 # State
 Iniciado 2026-08-12 a partir do relatório aprovado. Fase 1 em andamento.
@@ -21,3 +21,16 @@ Iniciado 2026-08-12 a partir do relatório aprovado. Fase 1 em andamento.
 - Headless verified with seeded posts: dup badge fires on utm/www variants, cadence renders, 7 filter options, 0 JS errors.
 - Baseline measured: 53 posts, 32 distinct sources, repeat_ratio 0.40, by_vertical all unknown (pre-change posts).
 - Mirror fast-path: local MAS failure remembered per session → reads go straight to mirror (was ~12s wait for Roi).
+
+## Phase 4 — closed
+- R4.1 done by the MAS on their own (e3443ca, contract test for ContentPairStore).
+- R4.2 (split index.html) deliberately deferred: phases 1-3 shipped with an unplanned 11th failure shape and three route fixes; refactoring 9.3k lines on top of week-old code doubles regression risk in the week Roi evaluates the result. Backlog with plan below.
+
+## Milestone complete — 2026-08-18
+MAS: PR #16 merged (ac3be61), CI 5/5 green, official dashboard restarted on new main, mirror synced.
+Platform: 3 commits on main, deployed, headless-verified.
+
+## Backlog (v-next)
+- R4.2 Extract from index.html, in this order (each independently deployable): (1) news fetch + dedupe + pool → news.js; (2) generation prompts + parser → generate.js; (3) Radar/People's Posts → radar.js; (4) queue/intake UI → queue.js. Keep index.html as shell + boot. Gate: puppeteer smoke (seeded posts, 0 JS errors) before each step.
+- Weight vertical rotation by /api/posts?stats=1 (least-covered) instead of ISO-week round-robin, now that the metric exists.
+- Backfill _vertical on the 53 historic posts (classify by src keywords) so by_vertical stops reading "unknown".
