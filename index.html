@@ -1930,6 +1930,12 @@ a:focus-visible,
 .st-muted { color: var(--muted) !important; }
 
 /* ═══ WORD BREAK — long content ═══ */
+.post-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.src-chip,.vert-chip,.dup-badge{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.04em;padding:1px 7px;border-radius:999px;line-height:1.5;text-decoration:none;white-space:nowrap;}
+.src-chip{background:var(--teal-xl,#e6f4f1);color:var(--teal-deep);border:1px solid var(--teal);}
+.src-chip:hover{background:var(--teal);color:#fff;}
+.vert-chip{background:#f1ede4;color:#5a4a1e;border:1px solid #d9cfae;}
+.dup-badge{background:#fff3e0;color:#b45309;border:1px solid #f0a050;font-weight:700;}
 .post-hook, .post-angle, .li-post-body, .news-item-title,
 .roi-output-text, .roiCommentText, .roiPostText {
   word-break: break-word;
@@ -4638,6 +4644,7 @@ function _genSectionHeaderHTML(count) {
       <button id="gen-collapse-btn" onclick="toggleGenCollapse()" title="${collapsed ? 'Expand' : 'Collapse'} posts" aria-label="${collapsed ? 'Expand' : 'Collapse'} auto-generated posts" aria-expanded="${collapsed ? 'false' : 'true'}" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--teal-deep);padding:0 4px 0 0;line-height:1;">${chevron}</button>
       <span class="week-dot"></span>Auto-Generated Posts ✨
       <span id="gen-count-badge" style="background:var(--teal);color:#fff;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;margin-left:2px;">${count > 0 ? count : ''}</span>
+      ${_weekCadenceHtml()}
       <div id="gen-controls" style="margin-left:auto;display:${collapsed ? 'none' : 'flex'};gap:6px;align-items:center;flex-wrap:wrap;">
         <div id="gen-filter-tabs" style="display:flex;gap:4px;">
           <button class="gen-filter-btn active" onclick="filterGeneratedPosts('all')" data-filter="all">All</button>
@@ -4646,6 +4653,7 @@ function _genSectionHeaderHTML(count) {
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('rejected')" data-filter="rejected">❌ Rejected</button>
           <button class="gen-filter-btn" onclick="filterGeneratedPosts('published')" data-filter="published" style="border-color:var(--teal);">✓ Published</button>
         </div>
+        ${_verticalFilterHtml()}
         <button id="cloud-sync-btn" onclick="loadRemotePosts()" title="Sync posts to the cloud (Supabase)" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">☁ Cloud</button>
         <button onclick="exportContentBank()" title="Download approved posts as LINKEDIN-CONTENT-BANK.md snippet" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">📥 Export</button>
         <button onclick="clearAllGeneratedPosts()" style="background:none;border:1px solid #e55;color:#e55;border-radius:999px;padding:3px 10px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.08em;cursor:pointer;white-space:nowrap;">🗑 Clear All</button>
@@ -6420,6 +6428,7 @@ Return ONLY a JSON object with these exact fields (no markdown, no explanation):
 }
 
 function addGeneratedPostToCalendar(post, _retried = false) {
+  setTimeout(_refreshWeekCadence, 0);
   // assign stable id if missing
   if (!post._id) post._id = Date.now().toString();
 
@@ -6468,6 +6477,7 @@ function addGeneratedPostToCalendar(post, _retried = false) {
       <div>
         <div class="post-hook">"${esc((post._hookPreview||'').slice(0,80))}${(post._hookPreview||'').length>80?'…':''}"</div>
         <div class="post-angle">${_originLabel(post)} · ${esc((post.meta||{}).char||'Abbey')}</div>
+        <div class="post-chips">${_cardChipsHtml(post)}</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
         ${tagHtml}
@@ -6813,8 +6823,18 @@ async function _postRevisionToCloud(payload, timeout = 8000) {
   }
 }
 
+let _masLocalDown = false; // set after the local MAS fails once; skip straight to the mirror after that
 async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) {
+  const isReadEarly = !opts || !opts.method || opts.method.toUpperCase() === 'GET';
+  // On a machine with no local MAS (Roi's), the two 6s timeouts made every
+  // read wait ~12s before the mirror answered. Remember the outage per session
+  // and go to the mirror at once; writes still try the MAS (they cannot mirror).
+  if (_masLocalDown && isReadEarly) {
+    const mirrored = await _masMirror(path, timeout);
+    if (mirrored) return mirrored;
+  }
   const bases = _mktBaseOk ? [_mktBaseOk] : _MKT_BASES;
+  let anyNetworkFailure = false;
   for (const base of bases) {
     const ctrl = new AbortController();
     const tId = setTimeout(() => ctrl.abort(), timeout);
@@ -6826,9 +6846,11 @@ async function _masMarketing(path, opts, { timeout = 6000, quiet = true } = {}) 
       return r;
     } catch (e) {
       clearTimeout(tId);
+      anyNetworkFailure = true;
       if (!quiet) console.warn('MAS marketing unreachable:', e.message);
     }
   }
+  if (anyNetworkFailure) _masLocalDown = true;
   // Local MAS is out of reach. For reads, the mirror carries the same payload;
   // for writes it cannot, so those keep returning null and the caller decides.
   const isRead = !opts || !opts.method || opts.method.toUpperCase() === 'GET';
@@ -8310,6 +8332,74 @@ function _originLabel(post) {
   return `${src || 'Generated here'} · Auto-generated`;
 }
 
+/* ── Card chips the CEO asked for without asking: source, vertical, duplicate ──
+   The card said "Computer vision is finding its way into everyday retail…" for
+   five posts that came from ONE headline. Showing the outlet and the vertical
+   makes repetition visible at a glance — to him and to us — and a "same source"
+   badge makes it actionable (reject one) instead of something he discovers by
+   reading. */
+function _postSourceDomain(post) {
+  const u = post && (post._leadUrl || post._sourceUrl || (post.meta || {}).url || '');
+  try { return u ? new URL(u).hostname.replace(/^www\./, '') : ''; } catch (_) { return ''; }
+}
+function _postSourceKey(post) {
+  // Prefer the URL (normalized); fall back to the headline in `src` before the "·".
+  const u = post && (post._leadUrl || post._sourceUrl || (post.meta || {}).url || '');
+  if (u) return 'u:' + _normUrl(u);
+  const t = (post && post.src || '').split('·')[0].trim().toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  return t ? 't:' + t : '';
+}
+function _verticalLabel(key) {
+  if (!key) return '';
+  const live = _SECTORS_LIVE && _SECTORS_LIVE.find(v => v.key === key);
+  if (live && live.label) return live.label;
+  return String(key).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+function _postVertical(post) {
+  return (post && (post._vertical || (post.meta || {}).vertical || post.vertical)) || '';
+}
+function _sourceChipHtml(post) {
+  const dom = _postSourceDomain(post);
+  const u = post && (post._leadUrl || post._sourceUrl || (post.meta || {}).url || '');
+  if (dom) return `<a class="src-chip" href="${esc(u)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Source article">🔗 ${esc(dom)}</a>`;
+  const head = (post && post.src || '').split('·')[0].trim();
+  return head && head !== 'Generated here' ? `<span class="src-chip" title="Source headline">📰 ${esc(head.slice(0, 40))}${head.length > 40 ? '…' : ''}</span>` : '';
+}
+function _verticalChipHtml(post) {
+  const v = _postVertical(post);
+  return v ? `<span class="vert-chip" data-vertical="${esc(v)}" title="Vertical">${esc(_verticalLabel(v))}</span>` : '';
+}
+function _dupBadgeHtml(post, allPosts) {
+  const k = _postSourceKey(post);
+  if (!k) return '';
+  const n = (allPosts || posts).filter(q => q && q !== post && _postSourceKey(q) === k).length;
+  return n > 0 ? `<span class="dup-badge" title="${n} other post(s) from this same source">⚠ same source ×${n + 1}</span>` : '';
+}
+function _cardChipsHtml(post) {
+  return `${_sourceChipHtml(post)}${_verticalChipHtml(post)}${_dupBadgeHtml(post)}`;
+}
+/* This week: N of 3 — the number that answers "3 posts a week?" before he
+   asks. Counts posts dated in the current ISO week (any status). */
+function _weekCadenceHtml() {
+  const wk = _isoWeek(); const yr = new Date().getFullYear(); const TARGET = 3;
+  const n = posts.filter(p => {
+    if (!p) return false;
+    const d = p._dateISO ? new Date(p._dateISO) : (p._dateDay && p._dateMonth ? new Date(`${p._dateDay} ${p._dateMonth} ${yr}`) : null);
+    return d && !isNaN(d) && _isoWeek(d) === wk && d.getFullYear() === yr;
+  }).length;
+  const ok = n >= TARGET;
+  return `<span id="week-cadence" title="Posts dated this ISO week vs the 3/week target" style="background:${ok ? 'var(--teal)' : '#F07830'};color:#fff;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;margin-left:6px;white-space:nowrap;">This week: ${n} of ${TARGET}</span>`;
+}
+function _refreshWeekCadence() {
+  const el = document.getElementById('week-cadence');
+  if (el) el.outerHTML = _weekCadenceHtml();
+}
+function _verticalFilterHtml() {
+  const keys = _SECTORS_LIVE ? _SECTORS_LIVE.map(v => v.key) : Object.keys(_SECTORS);
+  const opts = keys.map(k => `<option value="${esc(k)}">${esc(_verticalLabel(k))}</option>`).join('');
+  return `<select id="gen-vertical-filter" onchange="filterGeneratedPosts(document.querySelector('.gen-filter-btn.active')?.dataset.filter || 'all')" title="Filter by vertical" style="background:none;border:1px solid var(--teal);color:var(--teal-deep);border-radius:999px;padding:2px 8px;font-size:10px;font-family:var(--font-mono);letter-spacing:0.06em;cursor:pointer;"><option value="">All verticals</option>${opts}</select>`;
+}
+
 /* restore generated posts from localStorage — called on load and after rebuild */
 function restoreGeneratedPosts() {
   const saved = getGeneratedPosts();
@@ -8341,6 +8431,7 @@ function restoreGeneratedPosts() {
           <div>
             <div class="post-hook">"${esc(post._hookPreview || post.src)}"</div>
             <div class="post-angle">${_originLabel(post)} · ${esc((post.meta||{}).char || 'Abbey')}</div>
+            <div class="post-chips">${_cardChipsHtml(post)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation()">
             ${tagHtml}
@@ -8531,11 +8622,15 @@ function filterGeneratedPosts(filter) {
   const ratings = getRatings();
   const sec = document.getElementById('generated-week-section');
   if (!sec) return;
+  const vsel = document.getElementById('gen-vertical-filter');
+  const vwant = vsel ? vsel.value : '';
   sec.querySelectorAll('.post-row').forEach(row => {
     const idx = parseInt(row.id.replace('prow-', ''), 10);
     if (isNaN(idx)) return;
     const status = getPostStatus(idx);
     const rating = ratings[idx] || 'unrated';
+    // Vertical filter applies on top of the status filter.
+    if (vwant && _postVertical(posts[idx]) !== vwant) { row.classList.add('gen-hidden'); return; }
     if (filter === 'all') {
       row.classList.remove('gen-hidden');
     } else if (filter === 'published') {

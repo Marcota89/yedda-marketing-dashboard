@@ -17,6 +17,42 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // GET ?stats=1 — distribution by vertical and by source over the last N days.
+  // "Not much variety" was an opinion until this existed; now it is a number,
+  // and the weekly query rotation can weight toward the least-covered vertical.
+  if (req.method === 'GET' && (req.query || {}).stats) {
+    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
+    const since = new Date(Date.now() - days * 864e5).toISOString();
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/marketing_posts?select=post_data,created_at&created_at=gte.${since}&order=created_at.desc&limit=500`,
+      { headers: HEADERS }
+    );
+    const data = await r.json();
+    if (!r.ok) return res.status(r.status).json({ error: data });
+    const byVertical = {}, bySource = {}, byOrigin = {};
+    let total = 0;
+    for (const row of data) {
+      const p = row.post_data || {};
+      total++;
+      const v = p._vertical || (p.meta && p.meta.vertical) || 'unknown';
+      byVertical[v] = (byVertical[v] || 0) + 1;
+      const src = String(p.src || '').split('·')[0].trim() || 'unknown';
+      bySource[src] = (bySource[src] || 0) + 1;
+      const o = p._source || 'platform';
+      byOrigin[o] = (byOrigin[o] || 0) + 1;
+    }
+    const repeated = Object.entries(bySource).filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]);
+    res.setHeader('Cache-Control', 'public, max-age=120');
+    return res.status(200).json({
+      days, total,
+      by_vertical: byVertical,
+      by_origin: byOrigin,
+      distinct_sources: Object.keys(bySource).length,
+      repeated_sources: repeated.slice(0, 10).map(([s, n]) => ({ source: s, posts: n })),
+      repeat_ratio: total ? +(1 - Object.keys(bySource).length / total).toFixed(3) : 0,
+    });
+  }
+
   // GET — return all posts (including images) ordered by creation date
   if (req.method === 'GET') {
     const r = await fetch(
