@@ -4685,7 +4685,7 @@ function exportContentBank() {
     const postDate = rawDate || dateStr;
     const pillar   = post._pillar || 'Thought Leadership';
     const type     = typeMap[pillar] || 'Text Post';
-    const rawBody  = post.body || '';
+    const rawBody  = unwrapJsonBody(post.body || '');
     const topic    = post._hookPreview || rawBody.split('\n')[0].slice(0, 80) || '(no topic)';
     const source   = post.src || 'Industry Research';
     const statusBadge = status === 'published' ? ' ✓ Published' : '';
@@ -4944,7 +4944,7 @@ function renderPost(i) {
       </div>
       <button class="li-follow">+ Follow</button>
     </div>
-    <div class="li-body">${esc(p.body).replace(/\n/g,'<br>')}</div>
+    <div class="li-body">${esc(unwrapJsonBody(p.body)).replace(/\n/g,'<br>')}</div>
     <div class="li-tags">${esc(p.tags)}</div>
 
     <!-- Option B: clickable source -->
@@ -5286,7 +5286,7 @@ function renderQueue() {
   list.innerHTML = approved.map(([i]) => {
     const p = posts[parseInt(i)];
     if (!p) return '';
-    const hook = esc(p.body.split('\n')[0].replace(/`/g,''));
+    const hook = esc(unwrapJsonBody(p.body).split('\n')[0].replace(/`/g,''));
     const isSent = sent[i];
     return `
     <div class="queue-item">
@@ -5779,14 +5779,28 @@ async function _generateWeekPostsDirectInner(btn) {
   for (let i = 0; i < picked.length; i++) {
     const pillar   = pillars[i % pillars.length];
     const personaI = persona === 'Mixed' ? (i % 2 === 0 ? 'Abbey' : 'Kai') : persona;
+    // Every post in the batch used to get the SAME article set, so three posts
+    // could all be the same headline in three tones. Rotate: post i leads with
+    // article i (mod N), then the next two, so no two posts share a lead source
+    // and every selected article gets its turn.
     const selected = articles.filter(a => a._selected);
-    const articleSet = selected.length ? selected : articles.slice(0, 3);
+    const poolArts = selected.length ? selected : articles.slice(0, Math.max(3, picked.length));
+    const articleSet = poolArts.length
+      ? Array.from({ length: Math.min(3, poolArts.length) }, (_, k) => poolArts[(i + k) % poolArts.length])
+      : [];
 
     if (progressTxt) progressTxt.textContent = `Generating post ${i + 1} of ${picked.length} · ${pillar}…`;
     if (progressBar) progressBar.style.width = `${Math.round((i + 0.5) / picked.length * 100)}%`;
 
     try {
       const post = await _generateSingleWeekPost({ dateObj: picked[i], persona: personaI, pillar, topic, apiKey, articles: articleSet, sector, postIndex: i });
+      // Which vertical this post covered — feeds the weekly query rotation
+      // (least-covered first) and the vertical chip on the card.
+      try {
+        const liveKeys = _SECTORS_LIVE ? _SECTORS_LIVE.map(v => v.key) : Object.keys(_SECTORS);
+        post._vertical = (!sector || sector === 'rotate') ? liveKeys[Math.abs(i) % liveKeys.length] : sector;
+        post._leadUrl = articleSet[0] && articleSet[0].url || '';
+      } catch (_) {}
       addGeneratedPostToCalendar(post);
       const idx = posts.length - 1;
 
@@ -5824,16 +5838,69 @@ async function _generateWeekPostsDirectInner(btn) {
 
 /* ── APIFY INTEGRATION ── */
 const APIFY_KEY = 'yedda_apify';
-const _APIFY_QUERIES_BASE = [
-  'computer vision AI retail',
-  'AI loss prevention shrinkage retail',
-  'operational intelligence logistics manufacturing',
-  'AI workplace safety',
-  'retail technology CCTV analytics'
-];
+/* News queries used to be five fixed strings, three of them "retail" and/or
+   "computer vision". Roi saw the same stories every week — literally. The pool
+   now comes from the MAS verticals (news_queries per vertical, 24 in all),
+   through the cloud mirror so it reaches every machine, and the page samples
+   five per ISO week with a bias toward verticals it has covered least. The
+   list below is only the offline fallback. */
+const _NEWS_POOL_FALLBACK = {
+  fashion:       ['fashion retail inventory accuracy RFID store operations', 'apparel returns fraud loss prevention'],
+  food_retail:   ['grocery shrink self-checkout loss prevention', 'supermarket food safety compliance audit technology'],
+  logistics:     ['warehouse cargo theft prevention CCTV analytics', 'distribution center OTIF dock congestion operations'],
+  manufacturing: ['manufacturing unplanned downtime OEE video analytics', 'plant floor safety compliance camera monitoring'],
+  qsr:           ['quick service restaurant food safety compliance technology', 'restaurant labor cost scheduling AI operations'],
+  safety:        ['workplace safety near miss reporting AI', 'OSHA audit evidence camera compliance'],
+};
+function _isoWeek(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+}
+// Deterministic per week so a refresh does not reshuffle mid-week; different
+// weeks get different picks. Seeded LCG — no Math.random, no surprises.
+function _seededPick(arr, n, seed) {
+  const a = arr.slice(); let s = (seed * 9301 + 49297) % 233280;
+  for (let i = a.length - 1; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor((s / 233280) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a.slice(0, n);
+}
+function _newsPoolByVertical() {
+  // _SECTORS_LIVE is filled by _loadSectors() from the MAS/mirror; it now carries news_queries.
+  const live = Array.isArray(_SECTORS_LIVE) && _SECTORS_LIVE.some(v => Array.isArray(v.news_queries) && v.news_queries.length);
+  if (live) {
+    const out = {}; _SECTORS_LIVE.forEach(v => { if (Array.isArray(v.news_queries) && v.news_queries.length) out[v.key] = v.news_queries.slice(); });
+    return out;
+  }
+  return _NEWS_POOL_FALLBACK;
+}
+function _weeklyQueries(n = 5) {
+  const pool = _newsPoolByVertical();
+  const keys = Object.keys(pool);
+  if (!keys.length) return ['visual AI operations'];
+  const week = _isoWeek();
+  // Weight toward verticals used least in the last ~30 posts (local memory of what we generated).
+  let counts = {};
+  try { (JSON.parse(localStorage.getItem('yedda_generated_posts') || '[]')).slice(-30).forEach(p => { const k = p && p._vertical; if (k) counts[k] = (counts[k] || 0) + 1; }); } catch (_) {}
+  const ordered = keys.slice().sort((a, b) => (counts[a] || 0) - (counts[b] || 0) || a.localeCompare(b));
+  // One query from each of the least-covered verticals first, rotating the start by week.
+  const picks = [];
+  for (let i = 0; i < ordered.length && picks.length < n; i++) {
+    const k = ordered[(i + week) % ordered.length];
+    const qs = _seededPick(pool[k], 1, week * 31 + i);
+    if (qs[0]) picks.push(qs[0]);
+  }
+  if (picks.length < n) {
+    const rest = keys.flatMap(k => pool[k]).filter(q => !picks.includes(q));
+    picks.push(..._seededPick(rest, n - picks.length, week * 7));
+  }
+  return picks;
+}
+// Resolved lazily: _SECTORS_LIVE is not loaded when this script parses.
+function _apifyQueriesBase() { return _weeklyQueries(5); }
 // Rolling 7-day window — forces fresh results and rotates queries weekly
-const _afterDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // "2026-06-09"
-const APIFY_QUERIES = _APIFY_QUERIES_BASE.map(q => `${q} after:${_afterDate}`);
+const _afterDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+function _apifyQueries() { return _apifyQueriesBase().map(q => `${q} after:${_afterDate}`); }
 
 function saveApifySettings() {
   const token = document.getElementById('apifyToken').value.trim();
@@ -5853,16 +5920,66 @@ function showApifyModalStatus(msg, color) {
 
 let _fetchNewsController = null;
 
-// Cross-session dedup — tracks seen article URLs across fetches (rolling 300)
+// Cross-machine dedup. The list used to live only in localStorage — per
+// browser — so Marco's and Roi's "already used" sets never met, and the same
+// story became a post up to five times. /api/used-articles is the shared
+// memory; localStorage stays as the offline fallback and as a fast local cache.
 const _SEEN_KEY = 'yedda_seen_articles';
+let _cloudSeen = null; // { urls:Set, hashes:Set, at:number } — refreshed per fetch
+function _normUrl(u) {
+  try { const x = new URL(String(u || '').trim()); return x.hostname.toLowerCase().replace(/^www\./, '') + x.pathname.replace(/\/+$/, '').toLowerCase(); }
+  catch (_) { return String(u || '').trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/[?#].*$/, '').replace(/\/+$/, ''); }
+}
+async function _sha1short(str) {
+  try { const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 20); }
+  catch (_) { return null; }
+}
+async function _titleHash(t) {
+  const norm = String(t || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\b(the|a|an|of|in|on|for|to|and|with|at|by|from|its|is|are)\b/g, ' ').replace(/\s+/g, ' ').trim();
+  return _sha1short(norm);
+}
 function _getSeenUrls() {
   try { return new Set(JSON.parse(localStorage.getItem(_SEEN_KEY) || '[]')); } catch(_) { return new Set(); }
 }
-function _markSeen(articles) {
+async function _refreshCloudSeen() {
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const r = await fetch('/api/used-articles?days=45', { signal: ctrl.signal }); clearTimeout(t);
+    if (!r.ok) return null;
+    const d = await r.json();
+    _cloudSeen = { urls: new Set(d.urls || []), hashes: new Set(d.hashes || []), at: Date.now() };
+    return _cloudSeen;
+  } catch (_) { clearTimeout(t); return null; }
+}
+function _markSeen(articles, usedBy) {
   const seen = _getSeenUrls();
   articles.forEach(a => { if (a.url) seen.add(a.url); });
   try { localStorage.setItem(_SEEN_KEY, JSON.stringify([...seen].slice(-300))); } catch(_) {}
+  // Cloud write is best-effort and async — the page must never wait on it.
+  const payload = articles.filter(a => a && (a.url || a.title)).slice(0, 100)
+    .map(a => ({ url: a.url, title: a.title, used_by: usedBy || 'platform' }));
+  if (payload.length) {
+    fetch('/api/used-articles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ articles: payload }) }).catch(() => {});
+    if (_cloudSeen) payload.forEach(a => { if (a.url) _cloudSeen.urls.add(_normUrl(a.url)); });
+  }
 }
+async function _filterSeenAsync(articles) {
+  const local = _getSeenUrls();
+  const cloud = _cloudSeen || await _refreshCloudSeen();
+  const out = [];
+  for (const a of articles) {
+    if (a.url && local.has(a.url)) continue;
+    if (cloud) {
+      if (a.url && cloud.urls.has(_normUrl(a.url))) continue;
+      const h = a.title ? await _titleHash(a.title) : null;
+      if (h && cloud.hashes.has(h)) continue; // same story, different outlet
+    }
+    out.push(a);
+  }
+  return out;
+}
+// Sync shim for callers that cannot await; the async fetch paths use _filterSeenAsync.
 function _filterSeen(articles) {
   const seen = _getSeenUrls();
   return articles.filter(a => !a.url || !seen.has(a.url));
@@ -5889,7 +6006,7 @@ async function fetchApifyNews(btn) {
     resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching news via Apify…</div>` + _skeletonCards(3);
     try {
       const raw = await fetchViaApify(token, signal);
-      let articles = _filterSeen(raw);
+      let articles = await _filterSeenAsync(raw);
       if (articles.length === 0 && raw.length > 0) {
         showToast('ℹ️ No new Apify news — showing recent seen items', 'info', 5000);
         articles = raw;
@@ -5905,7 +6022,7 @@ async function fetchApifyNews(btn) {
   resultsEl.innerHTML = `<div class="apify-loading"><div class="yd-spinner dark"></div> Fetching latest news from Google News…</div>` + _skeletonCards(3);
   try {
     const raw = await fetchViaRSS(signal);
-    let articles = _filterSeen(raw);
+    let articles = await _filterSeenAsync(raw);
     if (articles.length === 0 && raw.length > 0) {
       showToast('ℹ️ No new articles — showing recent seen items. Use "Clear history" to see all.', 'info', 7000);
       articles = raw;
@@ -5930,14 +6047,14 @@ async function fetchApifyNews(btn) {
 
 async function fetchViaApify(token, signal) {
   const runInput = {
-    queries: APIFY_QUERIES.map(q => ({ query: q, maxResults: 3 })),
+    queries: _apifyQueries().map(q => ({ query: q, maxResults: 3 })),
     outputFormat: 'camelCase',
     maxCrawledPlacesPerSearch: 3,
   };
   const res = await fetch(
     `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${token}&timeout=30&memory=256`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal, body: JSON.stringify({
-        queries: APIFY_QUERIES.join('\n'),
+        queries: _apifyQueries().join('\n'),
         resultsPerPage: 5,
         maxPagesPerQuery: 1,
         mobileResults: false,
@@ -5969,8 +6086,10 @@ async function fetchViaApify(token, signal) {
 
 async function fetchViaRSS(signal) {
   const yr   = new Date().getFullYear();
-  const q    = _APIFY_QUERIES_BASE.map(qu => qu + ' ' + yr).join('|');
-  const bust = `&_cb=${Date.now()}`;
+  const q    = _apifyQueriesBase().map(qu => qu + ' ' + yr).join('|');
+  // Per ISO week, not per request: keeps the proxy's 5-min cache useful and
+  // stops hammering Google News, while still rotating with the weekly queries.
+  const bust = `&_cb=${new Date().getFullYear()}w${_isoWeek()}`;
   const r    = await fetch(`/api/rss?q=${encodeURIComponent(q)}&count=5${bust}`, signal ? { signal } : {});
   if (!r.ok) throw new Error(`RSS proxy HTTP ${r.status}`);
   const data = await r.json();
@@ -6077,23 +6196,49 @@ async function useSelectedNews(btn) {
 }
 
 function unwrapJsonBody(text) {
+  // The model sometimes returns JSON inside JSON, or a JSON object whose
+  // string value carries *raw* newlines (invalid JSON — JSON.parse throws).
+  // Two posts in the live queue rendered as `{ "content": "Retailers are…`
+  // because the old regex tail-strip stopped at the first quote-brace and
+  // JSON.parse never got a chance. Order here: strict parse → tolerant parse
+  // (escape raw control chars) → greedy extraction of the first string field.
   if (!text || typeof text !== 'string') return text || '';
   let t = text.trim();
+  // fenced ```json ... ``` around the object
+  t = t.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
   if (!t.startsWith('{')) return text;
-  // Try JSON.parse first
+  const pick = (o) => {
+    if (!o || typeof o !== 'object') return null;
+    const v = o.body ?? o.content ?? o.text ?? o.post ?? o.linkedin_post;
+    if (typeof v === 'string') return unwrapJsonBody(v);
+    if (v && typeof v === 'object') return unwrapJsonBody(JSON.stringify(v));
+    // {"posts":[{...}]} — take the first
+    if (Array.isArray(o.posts) && o.posts.length) return pick(o.posts[0]);
+    return null;
+  };
+  // 1) strict
+  try { const v = pick(JSON.parse(t)); if (v) return v; } catch (_) {}
+  // 2) tolerant: escape raw newlines/tabs inside string literals, then parse
   try {
-    const inner = JSON.parse(t);
-    const v = inner.body || inner.content || inner.text;
-    if (v && typeof v === 'string') return unwrapJsonBody(v);
-  } catch(_) {}
-  // Greedy regex — works even with truncated/malformed JSON
-  const m = t.match(/"(?:body|content|text)"\s*:\s*"([\s\S]+)/);
-  if (!m) return text;
-  let extracted = m[1];
-  // Strip trailing JSON artifacts: closing quote + optional comma/brace
-  extracted = extracted.replace(/"\s*[,}]?\s*$/, '');
-  // Unescape
-  return extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    let inStr = false, esc = false, out = '';
+    for (const ch of t) {
+      if (esc) { out += ch; esc = false; continue; }
+      if (ch === '\\') { out += ch; esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; out += ch; continue; }
+      if (inStr && ch === '\n') { out += '\\n'; continue; }
+      if (inStr && ch === '\r') { continue; }
+      if (inStr && ch === '\t') { out += '\\t'; continue; }
+      out += ch;
+    }
+    const v = pick(JSON.parse(out)); if (v) return v;
+  } catch (_) {}
+  // 3) greedy: first string field, up to the closing quote before , or }
+  const m = t.match(/"(?:body|content|text|post)"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"[a-zA-Z_]+"\s*:|\})/);
+  if (m) return m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+  // 4) last resort — the old greedy tail
+  const g = t.match(/"(?:body|content|text)"\s*:\s*"([\s\S]+)/);
+  if (!g) return text;
+  return g[1].replace(/"\s*[,}]?\s*$/, '').replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 }
 
 async function generatePostFromNews(articles, apiKey, selectedPillars) {
